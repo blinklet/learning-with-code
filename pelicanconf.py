@@ -5,7 +5,7 @@ SITENAME = 'Learning with Code'
 SITEURL = 'https://learningwithcode.com'
 LINKS = (('My other blog', 'https://brianlinkletter.com/'),)
 SOCIAL = (("github", "https://github.com/blinklet"), ('linkedin', 'https://www.linkedin.com/in/brianlinkletter/'), ('twitter', 'http://twitter.com/belinkletter'),)
-STATIC_PATHS = ['images']
+STATIC_PATHS = ['images','extras']
 PAGE_PATHS = ['pages']
 ARTICLE_PATHS = ['']
 SUMMARY_MAX_LENGTH = None
@@ -19,17 +19,19 @@ OUTPUT_PATH = 'output/'
 PATH = 'content/'
 THEME = './themes/Flex-2.5.0'
 THEME_STATIC_DIR = 'theme'
+
+FEED_ALL_ATOM = None
+CATEGORY_FEED_ATOM = None
+TRANSLATION_FEED_ATOM = None
+AUTHOR_FEED_ATOM = None
+AUTHOR_FEED_RSS = None
 FEED_ATOM = None
 FEED_ATOM_URL = None
 FEED_RSS = None
 FEED_RSS_URL = None
 FEED_DOMAIN = None
-FEED_DOMAIN = SITEURL
-FEED_ALL_ATOM = 'feeds/all.atom.xml'
-CATEGORY_FEED_ATOM = 'feeds/%s.atom.xml'
-TRANSLATION_FEED_ATOM = None
-AUTHOR_FEED_ATOM = None
-AUTHOR_FEED_RSS = None
+
+
 
 
 SITELOGO = ''
