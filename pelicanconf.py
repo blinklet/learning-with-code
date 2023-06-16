@@ -20,7 +20,7 @@ OUTPUT_PATH = 'output/'
 PATH = 'content/'
 THEME = './themes/Flex-2.5.0'
 THEME_STATIC_DIR = 'theme'
-DEFAULT_METADATA = {'status': 'draft',}
+DEFAULT_METADATA = {'status': 'published',}
 
 # Feeds disabled
 FEED_ALL_ATOM = None
@@ -38,7 +38,7 @@ FEED_DOMAIN = None
 SITELOGO = ''
 FAVICON = ''
 SITETITLE = 'Learning with Code'
-SITESUBTITLE = 'Learning how to use Python for work and for fun'
+SITESUBTITLE = 'Learning Python for work and for fun'
 SITEDESCRIPTION = 'Learning how to use Python for work and for fun: Data science, networking, internet of things'
 USE_GOOGLE_FONTS = True
 BROWSER_COLOR = '#333333'
