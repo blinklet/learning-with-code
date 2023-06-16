@@ -4,6 +4,7 @@ summary: This test post should display a post with in-line images.
 category: Examples
 date: 2023-06-09
 modified: 2023-06-09
+status: published
 
 Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. 
 

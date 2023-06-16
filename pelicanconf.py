@@ -1,5 +1,6 @@
 from datetime import datetime
 
+# Pelican settings
 AUTHOR = 'Brian Linkletter'
 SITENAME = 'Learning with Code'
 SITEURL = 'https://learningwithcode.com'
@@ -19,7 +20,9 @@ OUTPUT_PATH = 'output/'
 PATH = 'content/'
 THEME = './themes/Flex-2.5.0'
 THEME_STATIC_DIR = 'theme'
+DEFAULT_METADATA = {'status': 'draft',}
 
+# Feeds disabled
 FEED_ALL_ATOM = None
 CATEGORY_FEED_ATOM = None
 TRANSLATION_FEED_ATOM = None
@@ -31,11 +34,10 @@ FEED_RSS = None
 FEED_RSS_URL = None
 FEED_DOMAIN = None
 
-
-
-
+# Flex theme settings
 SITELOGO = ''
 FAVICON = ''
+SITETITLE = 'Learning with Code'
 SITESUBTITLE = 'Learning how to use Python for work and for fun'
 SITEDESCRIPTION = 'Learning how to use Python for work and for fun: Data science, networking, internet of things'
 USE_GOOGLE_FONTS = True
