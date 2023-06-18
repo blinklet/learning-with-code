@@ -9,6 +9,7 @@ SOCIAL = (("github", "https://github.com/blinklet"), ('linkedin', 'https://www.l
 STATIC_PATHS = ['images','extras']
 PAGE_PATHS = ['pages']
 ARTICLE_PATHS = ['']
+ARTICLE_EXCLUDES = ['extras']
 SUMMARY_MAX_LENGTH = None
 TIMEZONE = 'America/Toronto'
 DEFAULT_LANG = 'en'
@@ -42,7 +43,8 @@ SITESUBTITLE = 'Learning Python for work and for fun'
 SITEDESCRIPTION = 'Learning how to use Python for work and for fun: Data science, networking, internet of things'
 USE_GOOGLE_FONTS = True
 BROWSER_COLOR = '#333333'
-PYGMENTS_STYLE = 'monokai'
+PYGMENTS_STYLE = 'emacs'
+PYGMENTS_STYLE_DARK = 'monokai'
 MAIN_MENU = True
 MENUITEMS = (("Categories", "/categories.html"),)
 COPYRIGHT_YEAR = datetime.now().year
@@ -57,4 +59,6 @@ HOME_HIDE_TAGS = True
 DISABLE_URL_HASH = True
 THEME_COLOR_AUTO_DETECT_BROWSER_PREFERENCE = True
 THEME_COLOR_ENABLE_USER_OVERRIDE = True
+
+
 
