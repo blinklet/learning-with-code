@@ -7,7 +7,7 @@ category: Python
 status: published
 
 <!--
-A bit of extra CSS code to make all images are centered in the post
+A bit of extra CSS code to center all images in the post
 -->
 <style>
 img
@@ -31,29 +31,29 @@ I wrote this tutorial while I was learning Flask and developing my [*usermapper-
 
 <!--more-->
 
-### Flask overview
+## Flask overview
 
 Flask is a Python framework, or code library, that makes it easier for developers to build web applications. 
 
 I think it's helpful to think about Flask as a server that you may configure with Python statements and functions.  To use Flask, you write a Python program that configures the Flask server so that it "routes" users to "view functions" based on the address information in the URL the user entered in a web browser. The Flask server has a "user interface" that is managed by Python tools like *decorators*. 
 
-#### Prerequisite learning
+### Prerequisite learning
 
 I previously wrote a blog post describing [*The Minimum You Need to Know About Python*]({filename}python-minimum-you-need-to-know.md) and created a [YouTube playlist about building *Usermapper*]({filename}python-learning-network-engineers.md), my first useful Python program.
 
 Those efforts treated Python like a simple scripting language. They focused on Python syntax and basic logic, and built programs in a procedural way. To appreciate the Flask framework, you need to learn more about Python's object-oriented programming features and how they are used. In my case, I re-read the second half of the [*Learning Python* book](https://learning-python.com/) which covers both functional programming and object-oriented programming in Python, and covers Decorators.
 
-#### Learning about Flask
+### Learning about Flask
 
 Next, I watched a video tutorial about using Flask. There are many great videos on YouTube that introduce Flask. I looked at a few and I most enjoyed the [Web Programming video from the Harvard CS50 course](https://www.youtube.com/watch?v=zdgYw-3tzfI&list=PLWKjhJtqVAbmGw5fN5BQlwuug-8bDmabi&index=8&t=2108s). It covers Flask in a two-hour-long video and it gave me confidence I could get started. Later versions of this course have been expanded so, if you want more information about Flask and web programming, go to the [latest version of the CS50 course](https://cs50.harvard.edu).
 
 Finally, I browsed through the [Flask documentation](https://flask.palletsprojects.com). I did not deep-dive into the docs. I browsed through them and learned just enough to get started.
 
-#### Before you start Flask programming
+### Before you start Flask programming
 
 Before you go further, you should review the object-oriented features in Python, read about decorators and how they are used in Python, and watch the *CS50 Flask video* mentioned above or a similar introduction-to-Flask video. You should have already created one or more simple command-line programs using Python and should be comfortable using the *Git* version control system. 
 
-### No database (yet)
+## No database (yet)
 
 As you will see later, even a simple Flask app must store data somewhere so it can be used by the Flask "views" in the application. Most beginner Flask tutorials show you how to build a web app that [registers user names](https://flask.palletsprojects.com/en/1.1.x/tutorial/) or [stores objects like photos](https://blog.miguelgrinberg.com/post/the-flask-mega-tutorial-part-i-hello-world) in a database, but I disagree with forcing beginners to use databases in their first Flask applications.
 
@@ -63,11 +63,11 @@ Most network engineers who just want to "wrap" their command-line tools in a Fla
 
 Eventually, you will need to learn about databases. Using a database allows you to deploy your web app in a more flexible environment, as you will see later when you deploy this web app to a Python platform-as-a-service. If, at some point in the future, you find your web app is used by more than a few people, you should consider incorporating a database.
 
-### Set up the programming environment
+## Set up the programming environment
 
 The first step in any programming project is to set up your environment. Create directories for source code, then create a Git repository, a remote Git repository, and a Python virtual environment.
 
-#### Project directories
+### Project directories
 
 Create a directory in which you will build the Flask app and, eventually, in which you will clone the [Usermapper source code](https://github.com/blinklet/usermapper) so you can import its functions into your web app.
 
@@ -87,7 +87,7 @@ $ cd usermapper-web
 
 In VScode, open the *usermapper-web* folder.
 
-##### Git repository
+#### Git repository
 
 Initialize a Git repository for the *usermapper-web* directory. 
 
@@ -112,7 +112,7 @@ Then change the branch name to *main*.
 $ git branch -M main
 ```
 
-##### Create a remote Git repository
+#### Create a remote Git repository
 
 Go to GitHub and create a new repository named *usermapper-web*. Get the URL of the repository and copy it to the clipboard. In my example, the GitHub URL is: [https://github.com/blinklet/usermapper-web.git](https://github.com/blinklet/usermapper-web.git).
 
@@ -123,7 +123,7 @@ $ git remote add origin https://github.com/blinklet/usermapper-web.git
 $ git push --set-upstream origin main
 ```
 
-##### Python virtual environment
+#### Python virtual environment
 
 Create and start a Python virtual environment in the *usermapper-web* directory:
 
@@ -142,7 +142,7 @@ Now, install Flask in the *usermapper-web* virtual environment:
 
 Now we're almost ready to get started.
 
-### Flask "Hello, World!"
+## Flask "Hello, World!"
 
 Test that Flask is working by pasting in the classic [Flask "Hello, World!" app](https://flask.palletsprojects.com/en/1.1.x/quickstart/#a-minimal-application) into a file and running it.
 
@@ -178,7 +178,7 @@ Then, run Flask:
 
 You should see some text appear in the terminal console that tells you the IP address and port from which the Flask app is being served. In my case, it is `127.0.0.1`, which is my PC's localhost address. In the browser, go to `localhost:5000` and see the text, "Hello, World!"
 
-#### Flask templates, HTML & CSS
+### Flask templates, HTML & CSS
 
 See the data rendered by the browser by using the developer tools. Enter the *CTRL-SHIFT-I* key combination to see the browser's Developer Tools or *CTRL-U* to see the source code on the page. In this example, the source code consists only of simple text with no [HTML markup](https://www.w3schools.com/html/html_intro.asp). 
 
@@ -244,7 +244,7 @@ Look at the web page's source code in the browser development tools: `CTRL-U` in
 
 This example is not very interesting because it just serves up a web page named *index.html*, like any other web server. Soon, you will use Flask and Jinja templates to render web pages that includes data generated by the Flask program at run time, and allows the user to send data to the Flask application.
 
-#### Flask development mode
+### Flask development mode
 
 To avoid restarting Flask when you modify your application code, set another environment variable to tell Flask to operate in a *development environment*. Flask will then automatically reload any changed code and will give you helpful error debug traces in the browser window, instead of in the console.
 
@@ -254,7 +254,7 @@ CTRL-C
 (env) $ flask run
 ```
 
-### Get user input using Flask forms
+## Get user input using Flask forms
 
 Enough about the basics. Now, you may begin developing the real Flask application. The application used as an example in this tutorial needs to accept input from the user. HTML web pages use *forms* to gather and submit user input to the Flask application.
 
@@ -285,7 +285,7 @@ In the browser, go to `localhost:5000`. Your web page should look similar to the
 
 The form looks OK but it does not do anything. You need to change the code so the form submits data to the Flask application.
 
-#### Flask form extensions
+### Flask form extensions
 
 As always, it's best to use tools others have created to make your programming easier. Use the [Python *WTForms* package](http://wtfforms.com/) and the [*Fask-WTF* Flask extension](https://flask-wtf.readthedocs.io/en/stable/) to handle forms in your application. Even with these helper libraries, you still need to know the basic HTML code for [HTML forms](https://www.w3schools.com/html/html_forms.asp).
     
@@ -354,7 +354,7 @@ Save the file and refresh the browser. Look at the page source code in the brows
 </form>
 ```
 
-#### Adding input validation to Flask forms
+### Adding input validation to Flask forms
 
 Validate that the submitted form has data in it. Modify the application so it will show the text entered by the user after the form is submitted. 
 
@@ -403,7 +403,7 @@ Jinja templates can include [conditional statements](https://pythonise.com/serie
 
 Save the file and refresh the browser. See how the page renders with no values below the form, then shows values when they are entered in the form.
 
-### Uploading files
+## Uploading files
 
 In *application.py*, import the *wtforms.SubmitField* class from the *flask_wtf* module. Import the *FileField*, *FileRequired*, and *FileAllowed* classes from the *flask-wtf.file* module. Also, import the *os* module so you can get system information like the Flask project directory when saving the file to the server. You no longer need the *StringField* and *DataRequired* classes from *wtforms* so you can delete those. 
 
@@ -496,7 +496,7 @@ Now, you can upload a YAML file using its original filename in the relative dire
 
 ![screenshot]({static}/images/flask-web-app-tutorial/flask-010.png){width=90%}
 
-#### Saving temporary files
+### Saving temporary files
 
 Saving an uploaded file to a single location on disk could cause problems for web apps used by multiple users. Multiple users may overwrite each others' configuration files. 
 
@@ -526,7 +526,7 @@ Save the file and refresh the browser. Upload a config file. Check the filesyste
 test.yaml  tmpcrlrrmwa  tmppe646x2r
 ```
 
-#### Limit the upload file size
+### Limit the upload file size
 
 As an additional check, limit the allowed size of the uploaded file. A malicious user could use up all your disk space or memory they submit a very large file.
 
@@ -541,11 +541,11 @@ app.config['MAX_CONTENT_LENGTH'] = 1024 * 1024
 
 Now, any file that exceeds one megabyte in size will fail to upload. According to the docs, Python will [raise an exception called *RequestEntityTooLarge*](https://flask.palletsprojects.com/en/1.1.x/patterns/fileuploads/#improving-uploads) so, if you want, you can [catch that exception](https://docs.python.org/3/tutorial/errors.html#handling-exceptions) and produce a nicer error announcement (also a future task).
 
-#### Application files
+### Application files
 
 The two files should now look like the two listings below:
 
-##### application.py
+#### application.py
 
 ```
 from flask import Flask, render_template
@@ -582,7 +582,7 @@ def index():
     return render_template('index.html', form=form, data=filename)
 ```
 
-##### templates/index.html
+#### templates/index.html
 
 ```
 <!DOCTYPE html>
@@ -609,7 +609,7 @@ def index():
 </html>
 ```
 
-### Downloading a file from a Flask app
+## Downloading a file from a Flask app
 
 You will eventually want users to be able to download the XML file generated by the Usermapper package. To experiment with this functionality, write some code that will download the file you recently uploaded.
 
@@ -688,13 +688,13 @@ Now, a web app user can upload any file and then download the same file. By work
 
 You are ready to convert an existing Python command-line application to a Flask web app, or to build your own original Flask web app.
 
-### Wrapping an existing program in a Flask web app
+## Wrapping an existing program in a Flask web app
 
 In this tutorial, you will create a Flask app that will upload and read the contents of a YAML configuration file so the Usermapper program I previously wrote can read the uploaded configuration file and generate the XML file. Then, the Flask application will allow the user to download the generated XML file.
 
 To "wrap" my Usermapper command-line program in a Flask web app, you need to import functions from my Usermapper package and reuse them. To get access to these functions, you must install the Usermapper package in your Python virtual environment. 
 
-#### Install the CLI package you plan to convert
+### Install the CLI package you plan to convert
 
 Clone the Usermapper source code to the *~/Projects* folder.
 
@@ -737,7 +737,7 @@ By re-using packaged code in this way, any changes I make to my original usermap
 
 Keeping the code for the two applications separated like this enables developers to work individually on their projects, as long as the interfaces are agreed between projects. This avoids maintaining the same code in two different projects. 
 
-#### Using Usermapper functions
+### Using Usermapper functions
 
 Import the usermapper package's functions into the *application.py* Flask program. Also, import the *yaml* module from the Python standard library. The *application.py* file's imports should change as follows. 
 
@@ -819,7 +819,7 @@ Reload the browser and upload the config file again. This time use a real config
 See a new file named *user-mapping.xml* has been created in the a randomly-named directory in the *usermapper-web/downloads/* directory. 
 
 
-#### Create a file preview in the web app
+### Create a file preview in the web app
 
 To provide some feedback to the user so they know the file generation worked, add some code that previews the contents of the XML file on the web page.
 
@@ -883,7 +883,7 @@ This displays the contents of *user-mapping.xml* in the browser. The file text n
 
 It would also be helpful to add a button that will copy the text from the *user-mapping.xml* file. To do that, you would need to include some [JavaScript to enable a copy field](https://www.w3schools.com/howto/howto_js_copy_clipboard.asp). So, that's a topic for another tutorial.
 
-#### Cleaning up temporary files
+### Cleaning up temporary files
 
 Delete temporary files after the user has downloaded them so they do not eventually fill up your disk with temporary files.
 
@@ -911,7 +911,7 @@ $ grep CRON var/log/syslog
 
 > **Note:** Hard-coding the temporary file location like this  is not ideal. You will eventually deploy this program to a remote server or to a serverless platform which may handle temporary files differently. As a future improvement, you may [define the temporary file location using an environment variable](https://stackoverflow.com/questions/2229825/where-can-i-set-environment-variables-that-crontab-will-use) so you can configure it to the appropriate value on any service or server where you deploy this app.
 
-#### Create a separate download page
+### Create a separate download page
 
 After uploading a config file and generating a user-mapping file, you will find that refreshing the browser generates a new temporary directory containing a new *user-mapping.xml* file. If you keep refreshing the browser, you generate more and more temporary files. Someone could create a minor denial of service attack and fill up your downloads directory with temporary files just my holding down the *CTRL-R* key combination in their browser!
 
@@ -1068,7 +1068,7 @@ Refresh the browser to test the application. After uploading a configuration fil
 
 You should see that, after you upload a file, you are redirected to a page that previews the generated XML file and provides a link to download it. Refreshing the browser no longer regenerates the download file.
 
-### Commit your code to Git, and record TO-DOs
+## Commit your code to Git, and record TO-DOs
 
 Now your program is fully functional. Commit the new code to Git and push it to the remote repository.
 
@@ -1108,17 +1108,17 @@ In the *Usermapper-web* project repository, I added the following issues:
 
 4. Use session cookies instead of passing variables between routes using dynamic urls. It is more secure and more flexible. See: Flask-Session.
 
-### A quick break
+## A quick break
 
 Congratulations on making it this far through the tutorial. You successfully converted a Python command-line application into a web app using Flask and Flask extensions. At this point, you have a fully-functioning web app that runs in the development environment on your PC. If you only plan to use the application by yourself, you could stop here.
 
 If you wish to share this application with others, continue reading. The next half of this tutorial shows you how to make the web app look more professional with the Bootstrap CSS library, and how to deploy the web app to a production environment running on a cloud service so everyone in the world can use it.
 
-### Style your web app with Bootstrap
+## Style your web app with Bootstrap
 
 Currently, your web app works but it looks terrible. I imagine you want to make the web app look more professional but you don't want to spend an extra week learning CSS and JavaScript. You will achieve faster results if you use the [*Bootstrap* library](https://getbootstrap.com/), which provides a set of HTML classes you can use to style and structure a web page.
 
-#### Bootstrap-Flask
+### Bootstrap-Flask
 
 To keep things simple, I will use the *[Bootstrap-Flask](https://bootstrap-flask.readthedocs.io/en/stable/)* helper library instead of manually importing Bootstrap and working with classes. Hopefully, the library developer will keep it up to date because Bootstrap 5 is coming out soon.
 
@@ -1143,7 +1143,7 @@ bootstrap = Bootstrap(app)
 
 Bootstrap-Flask provides some Jinja macros that make developing templates a bit easier -- especially for more complex elements like tables and forms. I am using it as a quick way to style my web app forms without learning a lot about Bootstrap, itself. However, Bootstrap-Flask covers only a small amount of Bootstrap functionality so, if you need it, the normal Bootstrap 4 classes are all still available.
 
-#### Jinja Template hierarchy and design
+### Jinja Template hierarchy and design
 
 Now is a good time to start using the [block rendering features in Jinja templates](https://jinja.palletsprojects.com/en/master/templates/#base-template) because you will have a common elements, like a header or navigation bar, on each new page you create. To lean more about Jinja templates and template inheritance, see the following tutorials or videos from [Pythonise](https://pythonise.com/), listed below:
 
@@ -1235,7 +1235,7 @@ The *download.html* template will look like:
 
 Reload the web page and see the fonts have changed. This gives us some indication tha Bootstrap is working properly. That's how simple it is to add Bootstrap to the page. 
 
-#### Adding Bootstrap styles
+### Adding Bootstrap styles
 
 Now we need to dig through the *[Bootstrap](https://getbootstrap.com/docs/4.1/getting-started/introduction/)* and *[Bootstrap-Flask](https://bootstrap-flask.readthedocs.io/en/stable/)* documentation. We'll be using *div* classes and other tag classes to style the elements on the web page. Because I do not have the time to become an expert in CSS, I'll use only the classes that *Bootstrap* and *Bootstrap-Flask* provide.
 
@@ -1306,7 +1306,7 @@ Save the file and refresh the browser. Your web page should now look similar to 
 
 ![screenshot]({static}/images/flask-web-app-tutorial/flask-040.png){width=90%}
 
-#### Using the Bootstrap grid
+### Using the Bootstrap grid
 
 Next, use [Bootstrap's grid system](https://getbootstrap.com/docs/4.0/layout/grid/) to arrange elements on the index web page. Create one row with two columns: one containing the form and another containing some information for the user.   
 
@@ -1365,7 +1365,7 @@ Similarly, add a grid layout to the *downloads.html* template. The content block
 {% endblock %}
 ```
 
-#### Jinja filters
+### Jinja filters
 
 Previously, in the *download.html* template, you used HTML preformatted text tags to present the *user-mapping.xml* file preview. This is OK, but could be better. You have limited style options in the preformatted text and the displayed lines are spaced a bit too far apart.
 
@@ -1434,7 +1434,7 @@ Save the file and refresh the browser. After you upload a configuration file, th
 
 ![screenshot]({static}/images/flask-web-app-tutorial/flask-060.png){width=90%}
 
-### More styling and content
+## More styling and content
 
 Make more changes to the templates. At this point, you can use your personal taste to design your web page. To learn a bit more about Bootstrap classes, watch the [Bootstrap course on Scrimba](https://scrimba.com/learn/bootstrap4). The course consists of ten videos covering everything you need to know to produce a page similar to what I have created, below. Each video is only a few minutes long.
 
@@ -1442,7 +1442,7 @@ In the final templates, listed below, I spent more time refining the positioning
 
 I also added additional text that explains how to use the program. 
 
-#### The base.html template
+### The base.html template
 
 The final version of the *base.html* template is shown below:
 
@@ -1492,7 +1492,7 @@ The final version of the *base.html* template is shown below:
 </html>
 ```
 
-#### The index.html template
+### The index.html template
 
 The final version of the *index.html* template is shown below:
 
@@ -1579,7 +1579,7 @@ Refresh the browser and see the results. The index page should look like the scr
 
 ![screenshot]({static}/images/flask-web-app-tutorial/flask-070.png){width=90%}
 
-#### The download.html template
+### The download.html template
 
 The final version of the *download.html* template is shown below:
 
@@ -1622,7 +1622,7 @@ Refresh the browser and see the results. After you upload a configuration file t
 
 ![screenshot]({static}/images/flask-web-app-tutorial/flask-080.png){width=90%}
 
-### Preparing to deploy your Flask application
+## Preparing to deploy your Flask application
 
 Currently, you are running your Flask application on your local PC in a *development environment*. All your environment variables are either hard-coded in the source code, or manually configured in the Linux shell in which your application runs. Your application's secret key, which must be kept secret, is visible for all to see in GitHub because it is part of the source code in the *application.py* file.
 
@@ -1632,7 +1632,7 @@ In addition, the application configuration information may be different dependin
 
 This section of the tutorial shows you how to set up a configuration file that [sets up environment variables for your development environment](https://hackingandslacking.com/configuring-your-flask-application-4e5341d7affb). You can then configure Git to ignore the configuration file. Depending on the platform you use to deploy your application to a public-facing web site, you may have a separate configuration file on the remote server.
 
-#### Environment variables
+### Environment variables
 
 You need to store your [environment variables in a separate file](https://flask.palletsprojects.com/en/1.1.x/cli/#environment-variables-from-dotenv) that we can set Git to ignore, so it will never be uploaded to your public GitHub repository. That file is typically named *.env* and is referred to as a "dot-env" file. 
 
@@ -1654,7 +1654,7 @@ SECRET_KEY=b8rD0UJDkrr6MrdP8RQ1GpLPEA_SYsrrIfMuTjfw5AI
 
 Many other environment variables affect both Flask and Bootstrap. You can modify the operation and appearance of your program, to some degree, just by defining additional environment variables in the *.env* file.
 
-##### Add the *.env* file to *.gitignore*
+#### Add the *.env* file to *.gitignore*
 
 To prevent yourself, from accidentally uploading the secret key to GitHub, add the *.env* file to *.gitignore*:
 
@@ -1667,7 +1667,7 @@ To prevent yourself, from accidentally uploading the secret key to GitHub, add t
 
 Other programmers who clone your project's GitHub repository will be missing the *.env* file so the program will not work for them until they build their own *.env* file. They can infer which variables need to be defined in the file by looking at the source code in *application.py*. Most open-source Python projects have documentation for developers that tells them which environment files they need to define. That's another item for my to-do list.
 
-##### Install *python-dotenv*
+#### Install *python-dotenv*
 
 To enable Python programs to read the contents of the *.env* file, you must install the the [*python-dotenv* package](https://github.com/theskumar/python-dotenv#python-dotenv-----) in your Python virtual environment.
 
@@ -1675,7 +1675,7 @@ To enable Python programs to read the contents of the *.env* file, you must inst
 (env) $ pip install python-dotenv
 ```
 
-##### Modify *application.py*
+#### Modify *application.py*
 
 Edit the *application.py* file. Import the *load_dotenv* module from the *dotenv* package.
 
@@ -1705,7 +1705,7 @@ In the above code, you build the path to the *.env* file and to load the environ
 
 Save the file. Refresh the browser. Everything should work the same as before except that now, when we commit the changes and push them to Github, we have a secret key that remains on our local PC but does appear anywhere in the public GitHub repository.
 
-#### Saving the requirements.txt file
+### Saving the requirements.txt file
 
 To simplify installing the Flask application on a remote server, create a *requirements.txt* file for the Flask application. 
 
@@ -1745,7 +1745,7 @@ $ source env/bin/activate
 (env) $
 ```
 
-#### *application.py* listing
+### *application.py* listing
 
 The application.py source code should now look like the listing below:
 
@@ -1825,7 +1825,7 @@ def download(tempfolder,filename):
         temp_dir, filename, as_attachment=True)
 ```
 
-#### Commit changes to Git
+### Commit changes to Git
 
 Commit these changes to git and push them to GitHub. 
 
@@ -1836,7 +1836,7 @@ Commit these changes to git and push them to GitHub.
 (env) $
 ```
 
-### Deploying a Flask application to Microsoft Azure
+## Deploying a Flask application to Microsoft Azure
 
 Now you are ready to deploy the web application to a remote server. You have two different ways to deploy the applications. 
 
@@ -1848,13 +1848,13 @@ In this tutorial, I chose to use a web app platform because I did not want to sp
 
 This tutorial uses the [Microsoft Azure App Service](https://docs.microsoft.com/en-us/azure/app-service/overview) because Azure offers a permanently-free app-service tier.
 
-#### Azure Portal 
+### Azure Portal 
 
 If you do not already have an Azzure account, [create one](https://azure.microsoft.com/en-us/free/).  The Azure Portal web interface is available at: [https://portal/azure.com](https://portal/azure.com). 
 
 Follow the Azure quickstart documentation about deploying a Python web app. The [Azure Web App Quick-Start Guide](https://docs.microsoft.com/en-us/azure/app-service/quickstart-python?tabs=bash&pivots=python-framework-flask), which uses the Azure CLI, is the easiest way to deploy your web-app to Azure.
 
-#### Azure CLI 
+### Azure CLI 
 
 Install the [Azure command-line interface (CLI)](https://docs.microsoft.com/en-us/cli/azure/) on your Linux PC. Run the following command:
 
@@ -1870,7 +1870,7 @@ Login to your Azure account:
 
 A browser window will open and prompt you to login. Follow the instructions in the browser. After you login, you may close the browser window or tab.
 
-#### Deploy your web app using Git
+### Deploy your web app using Git
 
 You already have a *usermapper-web* Git repository on your PC. Use the Azure CLI to deploy your web app to an Azure Web App by following the steps outlined below. 
 
@@ -1913,7 +1913,7 @@ You can launch the app at http://usermapper.azurewebsites.net
 
 See the web app information in the command's output. Go to the URL listed in the deployment response: http://usermapper.azurewebsites.net. You should see a server error. How do you debug this?
 
-##### Check web app logs
+#### Check web app logs
 
 To investigate the error, look at web app logs in the Azure portal. Or, run the following Azure CLI command:
 
@@ -1933,7 +1933,7 @@ It looks like you do not have a secret key configured. This is because you did n
 
 Quit the command with CTRL-C.
 
-##### Configure web app environment variables
+#### Configure web app environment variables
 
 The Azure Portal offers an intuitive user interface for changing the [Azure web application configuration settings](https://docs.microsoft.com/en-us/azure/app-service/configure-common) but it's easier to show the command-line-interface in a blog post like this so [use the Azure CLI to configure the web app](https://docs.microsoft.com/en-us/azure/app-service/configure-language-python). In your Linux PC's terminal window, enter the Azure CLI command shown below, except your resource group name and web app name will be different:
 
@@ -1950,7 +1950,7 @@ You configured the environment variables for the FLASK_APP, FLASK_ENV, and SECRE
 
 The application looks like it works. Upload a config file. Then download the *user-mapping.xml* file. It seems to work OK.
 
-#### The web app's filesystem
+### The web app's filesystem
 
 Remember that the usermapper program saves downloaded files in temporary directories. Have a look at the web app's filesystem and see those files on the remote web app service. 
 
@@ -1976,7 +1976,7 @@ tmphqspiosn  tmpnwjs1vmj
 
 See one or more temporary directories have already been created. Each one should contain a *user-mapping.xml* file.
 
-##### Problems cleaning up files on a web app
+#### Problems cleaning up files on a web app
 
 Unfortunately, you cannot delete these temporary files on a scheduled basis using the same method you used when you were developing the web app.
 
@@ -1988,19 +1988,19 @@ For now, because you want to use the free service provided by Microsoft Azure, y
 
 Azure offers a platform service called *WebJobs* that runs a script on a scheduled basis, which could clean up files for you. Regretably, the [WebJobs service](https://docs.microsoft.com/en-us/azure/app-service/webjobs-create#CreateScheduledCRON) is not available for Python apps. Maybe it will be available for Python apps in the future.
 
-#### Custom domain name
+### Custom domain name
 
 Currently, your web app is a subdomain in the *azurewebsites.net* domain. 
 
 If you want to [map a custom domain name to your new web app](https://docs.microsoft.com/en-us/azure/app-service/app-service-web-tutorial-custom-domain), you must upgrade to a paid Azure Web Services tier. I chose not to upgrade to a paid service tier at this time.
 
-#### Paid options for web app deployment
+### Paid options for web app deployment
 
 If you already paid for a custom domain name registration, then you are probably willing to spend some money on hosting your web app. If that is the case, you could upgrade to a Basic Azure App Service tier, which costs at least $14 per month. Then, you could refactor your application to use a database and use one of Microsoft Azure's managed database services to your web app. For a small application like this, the database cost would be very low. The Azure App Service already includes value-added services like load balancers and content delivery networks (CDNs).
 
 If you want to keep costs low, purchase a cheap virtual private server (VPS) from any cloud infrastructure provider, including Azure, for around $5 per month. You take on more system administration responsibilities when you [deploy a web app on remote VPS](https://www.linode.com/docs/guides/flask-and-gunicorn-on-ubuntu/). However, you gain more control over the system so you could use cron or any other method you prefer to clean up old files. You can also configure a custom domain to point to a VPS for free, after paying for the domain, and use SSL encryption for free.
 
-### Conclusion
+## Conclusion
 
 This tutorial showed you how to convert an existing Python command-line program into a web app so users can more easily access it. You learned how to use Flask to upload and download files, how to get user input using HTML forms, and how to use Bootstrap to make your application look professional while learning just the minimum you need to know about HTML and CSS. You also learned how to deploy a web app to a Python platform-as-a-service that costs nothing.
 

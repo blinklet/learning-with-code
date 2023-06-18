@@ -24,7 +24,7 @@ I recorded videos as I learned and practiced Python programming. I think these v
 
 This post collects links to all ten videos I created. Over the course of these videos, I wrote a program called *Usermapper* that reads a configuration file and builds an [XML authentication file for the Guacamole web proxy](https://guacamole.apache.org/doc/gug/configuring-guacamole.html#basic-auth). I also used the Git version control system and packaged the code on my [Usermapper GitHub repository](https://github.com/blinklet/usermapper)
 
-### Topics I need to learn
+## Topics I need to learn
 
 I learned some programming during my Electrical Engineering degree program many years ago. After I graduated, except for some basic scripting, I've not had to do any programming.
 
@@ -39,7 +39,7 @@ This video refers to the following resources:
 * [Microsoft's More Python for Beginners videos](https://channel9.msdn.com/Series/More-Python-for-Beginners)
 * [A Python style guide](https://docs.python-guide.org/writing/style/)
 
-### My first Python program
+## My first Python program
 
 In this video, I write the first part of a program that will build a user authentication file that is compatible with the [Apache Guacamole web proxy server](https://guacamole.apache.org/). The output file will eventually be in XML format but this first version creates a Python dictionary populated with all the required information.
 
@@ -54,7 +54,7 @@ I mention the following resources in this video:
 * [The Python standard library](https://docs.python.org/3/library/).
 * [The Guacamole default authentication file format ](https://guacamole.apache.org/doc/gug/configuring-guacamole.html#basic-auth)
 
-### Writing an XML file
+## Writing an XML file
 
 In my previous video, I created a nested dictionary containing the raw data that must be written, in XML format, to the user mapping file. In this video, I add the code that writes an XML file based on that dictionary's contents. I solve problems like parsing through several layers of a nested dictionary to modify values.
 
@@ -65,7 +65,7 @@ I mention the following resources in this video:
 * [Iterating through a list of dictionaries ](https://stackoverflow.com/questions/35864007/python-3-5-iterate-through-a-list-of-dictionaries)
 * [XML Overview ](https://www.w3schools.com/xml/default.asp)
 
-### Reorganizing my program
+## Reorganizing my program
 
 <iframe width="560" height="315" src="https://www.youtube.com/embed/JkiXvgvf7_g" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
 
@@ -77,7 +77,7 @@ I mention the following resources in this video:
 
 * The [Guacamole default authentication file format](https://guacamole.apache.org/doc/gug/configuring-guacamole.html#basic-auth)
 
-### Git and GitHub
+## Git and GitHub
 
 In this video, I use the Git version control system to manage changes to my code and also create a remote repository on Github.
 
@@ -95,7 +95,7 @@ Other resources I mention in this video are:
 * [GitHub First Contributions repo](https://github.com/firstcontributions/first-contributions)
 * [Another good guide to using git](https://alan-turing-institute.github.io/rsd-engineeringcourse/ch02git/02Solo.html)
 
-### Python virtual environments
+## Python virtual environments
 
 In this video, I start making my first program more flexible. I define the input in a configuration file. I learn the YAML file format. I introduce Python virtual environments. Also, I get more practice using Git as I make my code changes. 
 
@@ -113,7 +113,7 @@ Other resources I mention in this video are:
 
 
 
-### Rewriting *mapperdata.py*
+## Rewriting *mapperdata.py*
 
 In this video, I continue making my first program more flexible. I use a Python virtual environment. I install the *PyYAML* package using pip. I rewrite my *mapperdata.py* module to read the YAML config file and build a data structure based on its contents. I make a few classic mistakes while iterating through nested dictionaries and I introduce the useful git restore command. 
 
@@ -130,7 +130,7 @@ Other resources I mention in this video are:
 * [Generate random passwords](https://stackoverflow.com/questions/2257441/random-string-generation-with-upper-case-letters-and-digits)
 * [Python secrets module](https://docs.python.org/3/library/secrets.html)
 
-### Using VS Code
+## Using VS Code
 
 In this video, I finish rewriting my *mapperdata.py* module to read the YAML config file and build a data structure based on its contents. I also introduce the Visual Studio Code text editor, which I'll be using from now on. 
 
@@ -152,7 +152,7 @@ Other resources I mention in this video are:
 * [Padding a string with zeros](https://stackoverflow.com/questions/39402795/how-to-pad-a-string-with-leading-zeros-in-python-3/39402910)
 
 
-### *Requirements.txt* and using *GitHub Issues*
+## *Requirements.txt* and using *GitHub Issues*
 
 In this video, I create a *requirements.txt* file so others can easily deploy the Usermapper application. I also fix a bug I found in the program. I use GitHub Issues to save notes about improvements I would like to make to the application, if I find time in the future. Finally, I discuss what I think it will take to learn enough about the Flask framework so I can move on to the next step.
 
@@ -162,7 +162,7 @@ Resources I mention in this video are:
 
 * [The Flask framework](https://flask.palletsprojects.com)
 
-### Packaging and command-line arguments
+## Packaging and command-line arguments
 
 In this video, I organize my Python modules into a package that others can download and install. I also modify the program so users can specify the input file and output file locations and filenames in command line arguments. The final result is at: [https://github.com/blinklet/usermapper.git](https://github.com/blinklet/usermapper.git)
 
@@ -181,6 +181,6 @@ Other resources I mention in this video are:
 * [Install Python packages hosted on Github](https://pip.pypa.io/en/stable/reference/pip_install/#vcs-support)
 * [References in GitHub](https://docs.github.com/en/free-pro-team@latest/github/writing-on-github/autolinked-references-and-urls)
 
-### Conclusion
+## Conclusion
 
 Over the course of a month, I spend about one hour per evening learning and practicing Python. I found that choosing a specific project to implement in Python helped me learn. If you administer a Guacamole web proxy server, have a look at my [Usermapper](https://github.com/blinklet/usermapper) program! I am now looking forward to learning the Flask framework and building a web site using Python.

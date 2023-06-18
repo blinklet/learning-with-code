@@ -9,11 +9,11 @@ SOCIAL = (("github", "https://github.com/blinklet"), ('linkedin', 'https://www.l
 STATIC_PATHS = ['images','extras']
 PAGE_PATHS = ['pages']
 ARTICLE_PATHS = ['']
-ARTICLE_EXCLUDES = ['extras']
+ARTICLE_EXCLUDES = ['extras', 'output']
 SUMMARY_MAX_LENGTH = None
 TIMEZONE = 'America/Toronto'
 DEFAULT_LANG = 'en'
-DEFAULT_PAGINATION = 10
+DEFAULT_PAGINATION = 6
 RELATIVE_URLS = True
 DEFAULT_CATEGORY = 'Python'
 MARKDOWN = {'extension_configs': {'markdown.extensions.codehilite': {'css_class': 'highlight'}, 'markdown.extensions.extra': {}, 'markdown.extensions.meta': {}, 'markdown.extensions.admonition': {}, 'markdown.extensions.toc': {}}, 'output_format': 'html5'}
@@ -36,7 +36,7 @@ FEED_RSS_URL = None
 FEED_DOMAIN = None
 
 # Flex theme settings
-SITELOGO = ''
+SITELOGO = '/images/about/profile-001-128x128.JPG'
 FAVICON = ''
 SITETITLE = 'Learning with Code'
 SITESUBTITLE = 'Learning Python for work and for fun'
