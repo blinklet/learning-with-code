@@ -9,7 +9,7 @@ SOCIAL = (("github", "https://github.com/blinklet"), ('linkedin', 'https://www.l
 STATIC_PATHS = ['images','extras']
 PAGE_PATHS = ['pages']
 ARTICLE_PATHS = ['']
-ARTICLE_EXCLUDES = ['extras', 'output']
+ARTICLE_EXCLUDES = ['extras', 'output', 'rough_drafts']
 SUMMARY_MAX_LENGTH = None
 TIMEZONE = 'America/Toronto'
 DEFAULT_LANG = 'en'
@@ -57,7 +57,8 @@ CC_LICENSE = {
 }
 HOME_HIDE_TAGS = True
 DISABLE_URL_HASH = True
-THEME_COLOR_AUTO_DETECT_BROWSER_PREFERENCE = True
+THEME_COLOR = 'light'
+THEME_COLOR_AUTO_DETECT_BROWSER_PREFERENCE = False
 THEME_COLOR_ENABLE_USER_OVERRIDE = True
 
 

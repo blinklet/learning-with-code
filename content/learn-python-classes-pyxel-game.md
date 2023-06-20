@@ -24,11 +24,9 @@ I assume the reader has already learned the [basics of Python programming]({file
 
 ## Python Classes
 
-A [Python class](https://docs.python.org/3/tutorial/classes.html) is a type of Python object used in [object-oriented programming](https://www.freecodecamp.org/news/object-oriented-programming-in-python/). Programmers create new objects by [instantiating](https://realpython.com/python-class-constructor/), or calling, classes. They may then use or modify those instances' attributes in their programs. 
+A [Python class](https://docs.python.org/3/tutorial/classes.html) is a type of Python object used in [object-oriented programming](https://www.freecodecamp.org/news/object-oriented-programming-in-python/). Programmers create new objects by [instantiating](https://realpython.com/python-class-constructor/), or calling, classes. Each class also contains an initialization function, called a constructor, that defines the initial state of the instance, based on code defined in the constructor function and any data that may be passed into the class, when it is instantiated.
 
-Each instance of a class is a unique object that may contain variables, called data attributes, and functions, called methods. 
-
-Each class also contains an initialization function, called a constructor, that runs when a new instance is created. It defines the initial state of the instance, based on code defined in the constructor function and any data that may be passed into the instance, when it is created.
+Each instance of a class is a unique object that may contain variables, called data attributes, and functions, called methods. You may then use or modify those instances' attributes and methods in your programs. 
 
 To demonstrate using Python classes, this tutorial will show you how to build a game using Python and the Pyxel framework. You will use Python classes and learn [fundamental object-oriented programming concepts](https://realpython.com/python3-object-oriented-programming/) such as inheritance.[^1]
 
