@@ -116,6 +116,13 @@ If you use a source control system, use the appropriate method to ensure it does
 
 The *.env.example* file will still be tracked in your source code repository so it will be available to other users who may clone it from your source control system. 
 
+### Save your *.env* file in a vault
+
+Optionally, you may want to save the contents of your *.env* file in a vault that you can access from any computer. The *.env* file is not tracked in your source control system so it will not be available if you clone your repository to another computer to either deploy or develop it there.
+
+Every vault will operate differently. In my case, I created a note in my personal password manager and copy-and-pasted the contents of the *.env* file into it. Now, when I move my project to another system, I clone the repository then open my password manager and copy the contents of my note into a new *.env* file.
+
+
 ### Use a *.env* file to set environment variables at run time
 
 To use the environment variables from the *.env* file in your program, import the *dotenv.load_dotenv()* function into your program and call it.

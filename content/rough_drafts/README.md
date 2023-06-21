@@ -64,6 +64,7 @@ data-science-environment.md
 
 Azure-python-big-database.md
 * sample outputs are "xxxx"
+* contains note about Python 3.11 (is this still relevant?)
 * examples are from big corporate DB
 * roughly generalized
 * need to adapt to azure test DB

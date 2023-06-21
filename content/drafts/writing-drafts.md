@@ -1,10 +1,10 @@
 title: Writing drafts for Pelican blogs
 slug: writing-drafts
 summary: Here are some tips for conveniently working on draft blog posts for your Pelican blog while keeping your work in progress from appearing on your published web site.
-date: 2023-05-12
-modified: 2023-05-12
+date: 2023-05-15
+modified: 2023-05-15
 category: Blogging
-status: draft
+<!--status: draft-->
 
 When you work on a post for your Pelican-based blog, you probably don't want the draft post to appear on your published blog. But, that could happen if, while you are working on a draft for your next post, you re-deploy your blog. Here are some tips for conveniently working on draft blog posts for your Pelican blog while keeping your work in progress from appearing on your published web site.
 
@@ -18,10 +18,7 @@ This is not that difficult but it means you cannot test how your post will look 
 
 ## Use *status: draft* metadata
 
-Keep in mind the the output/drafts file will have a naming convention defined by Pelican. 
-
-Define a custom path and filename for your draft by using the *save_as* metadata. This way you don't have to remember how the settings cause Pelican to build the draft file name.
-
+Keep in mind the the *output/drafts* file will have a naming convention defined by Pelican. 
 
 By default, it creates a post file name based on the post's *slug* metadata. If you want to change that, use the settings and configure
 
@@ -32,14 +29,16 @@ DRAFT_SAVE_AS = 'drafts/{slug}.html'
 DRAFT_PAGE_URL = 'drafts/pages/{slug}.html'
 DRAFT_PAGE_SAVE_AS = 'drafts/pages/{slug}.html'
 
-The item in the curly brackets is from the blog post's metadata. You can use the *slug* metadata like the default or you can create your own metadata. For example, you could add *file:* to the post's metadata then change the settings to  
+The item in the curly brackets is from the blog post's metadata. You can use the *slug* metadata like the default or you can create your own metadata. For example, you could add *file:* to all posts' metadata then change the settings to  
 
 DRAFT_URL = 'drafts/{file}.html'
 DRAFT_SAVE_AS = 'drafts/{file}.html'
 DRAFT_PAGE_URL = 'drafts/pages/{file}.html'
 DRAFT_PAGE_SAVE_AS = 'drafts/pages/{file}.html'
 
-We did not change the publishing variables so drafts will be saved accoriding the the *filename* metadata and published files will be saved according to the *slug* metadata.
+We did not change the publishing variables so drafts will be saved according the the custom *file* metadata and published files will be saved according to the *slug* metadata.
+
+You may define a custom path and filename for specific drafts by using the *save_as* metadata in the Markdown file. This way you don't have to set or remember how the Pelican settings cause Pelican to build the draft file name.
 
 Testing draft file
 
