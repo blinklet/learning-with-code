@@ -1,6 +1,6 @@
 title: Create a sample database on Azure cloud
 slug: create-sample-db-azure
-summary: Create your own personal database server on Microsoft's Azure cloud, populate it with sample data, and run the server on Azure's free service tier, which lasts for twelve months
+summary: For the purpose of practicing Python data analytics programming, create your own personal database server on Microsoft's Azure cloud, populate it with sample data, and run the server on Azure's free service tier, which lasts for twelve months
 date: 2022-05-14
 modified: 2022-05-14
 category: Databases
@@ -16,11 +16,13 @@ Microsoft offers solutions to both these challenges. They offer the multiple [sa
 
 This post will show you how to create your own personal database server on Microsoft's Azure cloud, populate it with the AdventureWorks sample database, and connect to the server. I will cover the details of exploring databases using various Python functions in future posts.
 
-## Create a free SQL Server on Azure
+## How to configure services in Azure's free service tier
 
-Microsoft Azure allows many different methods to configure services. You may use [Azure Portal](https://learn.microsoft.com/en-us/azure/azure-portal/), [Azure CLI](https://learn.microsoft.com/en-us/cli/azure/?view=azure-cli-latest), [Azure Resource Manager](https://learn.microsoft.com/en-us/azure/azure-resource-manager/management/overview), [Terraform](https://learn.microsoft.com/en-us/azure/developer/terraform/overview), Microsoft's [Python API](https://learn.microsoft.com/en-us/python/api/overview/azure/resources?view=azure-python), and more.
+Microsoft Azure allows many different methods to configure services. You may use [Azure Portal](https://learn.microsoft.com/en-us/azure/azure-portal/), [Azure CLI](https://learn.microsoft.com/en-us/cli/azure/?view=azure-cli-latest), [Azure Resource Manager](https://learn.microsoft.com/en-us/azure/azure-resource-manager/management/overview), [Terraform](https://learn.microsoft.com/en-us/azure/developer/terraform/overview), Microsoft's [Python API](https://learn.microsoft.com/en-us/python/api/overview/azure/resources?view=azure-python) [^2], and more.
 
-Azure Portal is a web interface and is easy to use, but Azure CLI easiest to include in a blog post where the reader may want to copy and paste steps. I will show you how to quickly create a sample database using Azure CLI and then show you how to connect to it using Python libraries. I will show you how to use Azure Portal in an appendix at the end of this post. I'll write about suing the Azure Python API to create a server in a future post.
+[^2]: I cover Azure's Python API in my post about [creating the *azruntime* program]({filename}manage-azure-infrastructure-python.md).
+
+Azure Portal is a web interface and is easy to use, but Azure CLI is easiest to include in a blog post where the reader may want to copy and paste steps. I will show you how to quickly create a sample database using Azure CLI and then show you how to connect to it using Python libraries. I will show you how to use Azure Portal in an appendix at the end of this post.
 
 ### Create an Azure account
 
@@ -50,11 +52,107 @@ $ az login
 ```
 
 
-### Create an Azure SQL Server
+
+
+## Create a free SQL Server on Azure
+
+When you are operating as a data analyst, you will be almost always be a "user" of an existing database and the database administrator will have provided you with the login credentials you need to read data from it. However, if you want to create a database that you can experiment with, you need to set up a database server and a database, yourself. 
+
+This section describes the minimum configuration required to set up a free sample database for practice purposes. I do not cover SQL database administration topics like adding new database users, setting up user roles and permissions.
+
+### Free service tier restrictions
+
+Microsoft provides some good examples of [using Azure CLI to set up an SQL Server database](https://learn.microsoft.com/en-us/azure/azure-sql/database/scripts/create-and-configure-database-cli?view=azuresql). But, their example cover configurations that are not supported by the free service tier. The largest server configuration supported on the free tier is:
+
+* 1 S0 database
+* 10 database transaction units
+* 250 GB storage
+
+Below, I show the commands that will set up an [SQL Server that will run on the free tier](https://learn.microsoft.com/en-us/azure/azure-sql/database/free-sql-db-free-account-how-to-deploy?view=azuresql).
+
+
+
+### Use Azure CLI to create the database
+
+You need to know the Azure location where you will deploy your services. Pick one located close to you. Next, you need to decide what names you will assign to your resource group, server, and database. You will also have to choose your SQL database userid and password. 
+
+Assign your database server configuration information to shell variables so you can easily use them in your Azure CLI commands:
+
+```bash
+$ location="East US"
+$ resource_group="my-resource-group-name"
+$ server="my-sql-server-name"
+$ database="my-sql-database name"
+$ login="sqldb_userid"
+$ password="sqldb_passwd"
+```
+
+Create a resource group if you have not already created one
+
+```bash
+$ az group create --name $resource_group --location "$location"
+```
+
+Create an SQL Server instance that will run in the free service tier
+
+```bash
+$ az sql server create \
+  --name $server \
+  --resource-group $resource_group \
+  --location "$location" \
+  --admin-user $login \
+  --admin-password $password
+```
+
+Create an SQL database instance that will run on your server and populate it with Microsoft's *AdventureWorks* sample data set.
+
+```bash
+$ az sql db create \
+  --resource-group $resource_group \
+  --server $server \
+  --name $database \
+  --sample-name AdventureWorksLT \
+  --edition GeneralPurpose \
+  --family Gen5 \
+  --capacity 2 \
+  --zone-redundant false
+```
+
+Azure automatically blocks your database server from Internet access. To allow programs running on your development PC to connect to the database, set up a [new firewall rule on the SQL server](https://learn.microsoft.com/en-ca/azure/azure-sql/database/network-access-controls-overview?view=azuresql).
+
+You need to know the correct IP address to allow. You can get your public IP address, which may be different than the IP address configured on your PC, by opening *https://google.com* in your web browser and searching for: "What is my IP address?". This will give you the IP address that external services see when they receive traffic from your PC.
+
+Make a not of the address and then use it to create a firewall rule that allows connections from that IP address. For example, if that IP address was `203.0.113.23`:
+
+```bash
+$ az sql server firewall-rule create \
+  --resource-group $resource_group \
+  --server $server \
+  --name MyHomeIPaddress \
+  --start-ip-address "203.0.113.23" \
+  --end-ip-address "203.0.113.23"
+```
+
+Now your database server is set up and ready to experiment with. If you just started your free trial on Azure, you can use it for twelve months for free.
 
 ## Connect your Python program to the Azure SQL Server
 
+
+(create VM without MS driver installed and see if pyodbc driver works alone)
+(explain that the MS driver is not needed if we do not use Azure AD to authenticate)
+
+See steps in "azure-db-linux.md*
+
+create .env file
+
+create connection string (can I get this using Azure CLI?)
+
+
+
 ### Authenticating your Python program
+
+
+
 
 ## Appendix A: Create Azure SQL Server using Azure Portal
 
@@ -62,6 +160,10 @@ $ az login
 
 
 
+
+
+
+# Extra
 
 Prepare the environment
 
