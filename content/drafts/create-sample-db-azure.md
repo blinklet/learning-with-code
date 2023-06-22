@@ -51,8 +51,40 @@ To login to your Azure account using Azure CLI, run the following command:
 $ az login
 ```
 
+This starts login with interactive mode. A browser window will open up and ask you for your Azure account userid and password
 
+![Azure login window](../images/create-sample-db-azure/az_login-001.png)
 
+Enter userid and then enter your password at the next screen. Adter you login, you should see your account information printed in the terminal window, similar to the account information below:
+
+```json
+[
+  {
+    "cloudName": "AzureCloud",
+    "homeTenantId": "bdface03-6fad-4ke4-8fa7-10dface34567",
+    "id": "e0caca48-577e-4322-a566-b7666607caca",
+    "isDefault": true,
+    "managedByTenants": [],
+    "name": "Azure subscription 1",
+    "state": "Enabled",
+    "tenantId": "bdface03-6fad-4ke4-8fa7-10dface34567",
+    "user": {
+      "name": "my.email.address@gmail.com",
+      "type": "user"
+    }
+  }
+]
+```
+
+#### Solving login problems
+
+Azure has multiple ways to login with Azure CLI. If you have trouble logging in with the interactive method, check the [Azure CLI login instructions](https://learn.microsoft.com/en-us/cli/azure/authenticate-azure-cli) for other methods.
+
+For example, since I use multi-factor authentication, I had to use the following command to login:
+
+```bash
+$ az login --use-device-code
+```
 
 ## Create a free SQL Server on Azure
 
@@ -79,13 +111,15 @@ You need to know the Azure location where you will deploy your services. Pick on
 Assign your database server configuration information to shell variables so you can easily use them in your Azure CLI commands:
 
 ```bash
-$ location="East US"
-$ resource_group="my-resource-group-name"
+$ location="eastus"
+$ resource_group="new-resource-group-name"
 $ server="my-sql-server-name"
-$ database="my-sql-database name"
-$ login="sqldb_userid"
-$ password="sqldb_passwd"
+$ database="my-sql-database-name"
+$ login="sqldb_userid"  (brianbrian)
+$ password="sqldb_passwd" (Jt&4cQb7VurIU$zC)
 ```
+
+#### Create a resource group 
 
 Create a resource group if you have not already created one
 
@@ -93,16 +127,190 @@ Create a resource group if you have not already created one
 $ az group create --name $resource_group --location "$location"
 ```
 
+When the command completes, it will output the information about the newly-created resource group in jason format.
+
+```json
+{
+  "id": "/subscriptions/e0caca48-577e-4322-a566-b7666607caca/resourceGroups/new-resource-group-name",
+  "location": "eastus",
+  "managedBy": null,
+  "name": "new-resource-group-name",
+  "properties": {
+    "provisioningState": "Succeeded"
+  },
+  "tags": null,
+  "type": "Microsoft.Resources/resourceGroups"
+}
+```
+
+
+<!--
+My DB Info:
+
+$ az sql server show --resource-group db-test --name brian-dbserver
+{
+  "administratorLogin": "CloudSA18f60e2c",
+  "administratorLoginPassword": null,
+  "administrators": {
+    "administratorType": "ActiveDirectory",
+    "azureAdOnlyAuthentication": false,
+    "login": "Azure SQL Database",
+    "principalType": "Group",
+    "sid": "02454543-0454-45f7-face-13454ab64566",
+    "tenantId": "bdface03-6fad-4ke4-8fa7-10dface34567"
+  },
+  "externalGovernanceStatus": "Disabled",
+  "federatedClientId": null,
+  "fullyQualifiedDomainName": "brian-dbserver.database.windows.net",
+  "id": "/subscriptions/e0caca48-577e-4322-a566-b7666607caca/resourceGroups/db-test/providers/Microsoft.Sql/servers/brian-dbserver",
+  "identity": null,
+  "keyId": null,
+  "kind": "v12.0",
+  "location": "eastus",
+  "minimalTlsVersion": "1.2",
+  "name": "brian-dbserver",
+  "primaryUserAssignedIdentityId": null,
+  "privateEndpointConnections": [],
+  "publicNetworkAccess": "Enabled",
+  "resourceGroup": "db-test",
+  "restrictOutboundNetworkAccess": "Disabled",
+  "state": "Ready",
+  "tags": {},
+  "type": "Microsoft.Sql/servers",
+  "version": "12.0",
+  "workspaceFeature": null
+}
+
+
+
+$ az sql db show --resource-group db-test --name data-science-test --server brian-dbserver 
+{
+  "autoPauseDelay": null,
+  "availabilityZone": "NoPreference",
+  "catalogCollation": "SQL_Latin1_General_CP1_CI_AS",
+  "collation": "SQL_Latin1_General_CP1_CI_AS",
+  "createMode": null,
+  "creationDate": "2023-04-17T00:22:13.307000+00:00",
+  "currentBackupStorageRedundancy": "Geo",
+  "currentServiceObjectiveName": "S0",
+  "currentSku": {
+    "capacity": 10,
+    "family": null,
+    "name": "Standard",
+    "size": null,
+    "tier": "Standard"
+  },
+  "databaseId": "869999b6-d999-4499-a78b-d44545254545",
+  "defaultSecondaryLocation": "westus",
+  "earliestRestoreDate": "2023-06-14T23:50:25.916015+00:00",
+  "edition": "Standard",
+  "elasticPoolId": null,
+  "elasticPoolName": null,
+  "encryptionProtector": null,
+  "failoverGroupId": null,
+  "federatedClientId": null,
+  "highAvailabilityReplicaCount": null,
+  "id": "/subscriptions/e0caca48-577e-4322-a566-b7666607caca/resourceGroups/db-test/providers/Microsoft.Sql/servers/brian-dbserver/databases/data-science-test",
+  "identity": null,
+  "isInfraEncryptionEnabled": false,
+  "keys": null,
+  "kind": "v12.0,user",
+  "ledgerOn": false,
+  "licenseType": null,
+  "location": "eastus",
+  "longTermRetentionBackupResourceId": null,
+  "maintenanceConfigurationId": "/subscriptions/e0caca48-577e-4322-a566-b7666607caca/providers/Microsoft.Maintenance/publicMaintenanceConfigurations/SQL_Default",
+  "managedBy": null,
+  "manualCutover": null,
+  "maxLogSizeBytes": null,
+  "maxSizeBytes": 268435456000,
+  "minCapacity": null,
+  "name": "data-science-test",
+  "pausedDate": null,
+  "performCutover": null,
+  "preferredEnclaveType": null,
+  "readScale": "Disabled",
+  "recoverableDatabaseId": null,
+  "recoveryServicesRecoveryPointId": null,
+  "requestedBackupStorageRedundancy": "Geo",
+  "requestedServiceObjectiveName": "S0",
+  "resourceGroup": "db-test",
+  "restorableDroppedDatabaseId": null,
+  "restorePointInTime": null,
+  "resumedDate": null,
+  "sampleName": null,
+  "secondaryType": null,
+  "sku": {
+    "capacity": 10,
+    "family": null,
+    "name": "Standard",
+    "size": null,
+    "tier": "Standard"
+  },
+  "sourceDatabaseDeletionDate": null,
+  "sourceDatabaseId": null,
+  "sourceResourceId": null,
+  "status": "Online",
+  "tags": {},
+  "type": "Microsoft.Sql/servers/databases",
+  "zoneRedundant": false
+}
+
+
+-->
+
+#### Create an SQL Server
+
 Create an SQL Server instance that will run in the free service tier
 
 ```bash
 $ az sql server create \
   --name $server \
   --resource-group $resource_group \
-  --location "$location" \
+  --location $location \
   --admin-user $login \
   --admin-password $password
 ```
+
+The server name needs to be unique to the Azure location.
+
+The command will take a few minutes to complete. When it is completed, it will output the server's information to the terminal in JSON format.
+
+```json
+{
+  "administratorLogin": "brianbrian",
+  "administratorLoginPassword": null,
+  "administrators": null,
+  "externalGovernanceStatus": "Disabled",
+  "federatedClientId": null,
+  "fullyQualifiedDomainName": "my-sql-server-name.database.windows.net",
+  "id": "/subscriptions/e0caca48-577e-4322-a566-b7666607caca/resourceGroups/new-resource-group-name/providers/Microsoft.Sql/servers/my-sql-server-name",
+  "identity": null,
+  "keyId": null,
+  "kind": "v12.0",
+  "location": "eastus",
+  "minimalTlsVersion": "1.2",
+  "name": "my-sql-server-name",
+  "primaryUserAssignedIdentityId": null,
+  "privateEndpointConnections": [],
+  "publicNetworkAccess": "Enabled",
+  "resourceGroup": "new-resource-group-name",
+  "restrictOutboundNetworkAccess": "Disabled",
+  "state": "Ready",
+  "tags": null,
+  "type": "Microsoft.Sql/servers",
+  "version": "12.0",
+  "workspaceFeature": null
+}
+```
+
+Add administration information
+
+```bash
+$ az sql server ad-admin
+```
+
+#### Create an SQL database instance
 
 Create an SQL database instance that will run on your server and populate it with Microsoft's *AdventureWorks* sample data set.
 
@@ -112,17 +320,105 @@ $ az sql db create \
   --server $server \
   --name $database \
   --sample-name AdventureWorksLT \
-  --edition GeneralPurpose \
-  --family Gen5 \
-  --capacity 2 \
+  --edition Standard \
+  --service-level-objective S0 \
   --zone-redundant false
 ```
+
+```bash
+$ az sql db create \
+  --resource-group $resource_group \
+  --server $server \
+  --name $database \
+  --sample-name AdventureWorksLT \
+  --service-level-objective S0 \
+  --zone-redundant false
+```
+
+After the command completes, it displays the database information in JSON format:
+
+```json
+{
+  "autoPauseDelay": null,
+  "availabilityZone": "NoPreference",
+  "catalogCollation": "SQL_Latin1_General_CP1_CI_AS",
+  "collation": "SQL_Latin1_General_CP1_CI_AS",
+  "createMode": null,
+  "creationDate": "2023-06-22T00:24:52.130000+00:00",
+  "currentBackupStorageRedundancy": "Geo",
+  "currentServiceObjectiveName": "S0",
+  "currentSku": {
+    "capacity": 10,
+    "family": null,
+    "name": "Standard",
+    "size": null,
+    "tier": "Standard"
+  },
+  "databaseId": "0eddfc16-6a94-485c-acdd-09f91ac43c67",
+  "defaultSecondaryLocation": "westus",
+  "earliestRestoreDate": null,
+  "edition": "Standard",
+  "elasticPoolId": null,
+  "elasticPoolName": null,
+  "encryptionProtector": null,
+  "failoverGroupId": null,
+  "federatedClientId": null,
+  "highAvailabilityReplicaCount": null,
+  "id": "/subscriptions/e0caca48-577e-4322-a566-b7666607caca/resourceGroups/new-resource-group-name/providers/Microsoft.Sql/servers/my-sql-server-name/databases/my-sql-database-name",
+  "identity": null,
+  "isInfraEncryptionEnabled": false,
+  "keys": null,
+  "kind": "v12.0,user",
+  "ledgerOn": false,
+  "licenseType": null,
+  "location": "eastus",
+  "longTermRetentionBackupResourceId": null,
+  "maintenanceConfigurationId": "/subscriptions/e0caca48-577e-4322-a566-b7666607caca/providers/Microsoft.Maintenance/publicMaintenanceConfigurations/SQL_Default",
+  "managedBy": null,
+  "manualCutover": null,
+  "maxLogSizeBytes": null,
+  "maxSizeBytes": 268435456000,
+  "minCapacity": null,
+  "name": "my-sql-database-name",
+  "pausedDate": null,
+  "performCutover": null,
+  "preferredEnclaveType": null,
+  "readScale": "Disabled",
+  "recoverableDatabaseId": null,
+  "recoveryServicesRecoveryPointId": null,
+  "requestedBackupStorageRedundancy": "Geo",
+  "requestedServiceObjectiveName": "S0",
+  "resourceGroup": "new-resource-group-name",
+  "restorableDroppedDatabaseId": null,
+  "restorePointInTime": null,
+  "resumedDate": null,
+  "sampleName": null,
+  "secondaryType": null,
+  "sku": {
+    "capacity": 10,
+    "family": null,
+    "name": "Standard",
+    "size": null,
+    "tier": "Standard"
+  },
+  "sourceDatabaseDeletionDate": null,
+  "sourceDatabaseId": null,
+  "sourceResourceId": null,
+  "status": "Online",
+  "tags": null,
+  "type": "Microsoft.Sql/servers/databases",
+  "zoneRedundant": false
+}
+
+```
+
+### Enable access through database firewall
 
 Azure automatically blocks your database server from Internet access. To allow programs running on your development PC to connect to the database, set up a [new firewall rule on the SQL server](https://learn.microsoft.com/en-ca/azure/azure-sql/database/network-access-controls-overview?view=azuresql).
 
 You need to know the correct IP address to allow. You can get your public IP address, which may be different than the IP address configured on your PC, by opening *https://google.com* in your web browser and searching for: "What is my IP address?". This will give you the IP address that external services see when they receive traffic from your PC.
 
-Make a not of the address and then use it to create a firewall rule that allows connections from that IP address. For example, if that IP address was `203.0.113.23`:
+Make a note of the address and then use it to create a firewall rule that allows connections from that IP address. For example, if that IP address was `203.0.113.23`:
 
 ```bash
 $ az sql server firewall-rule create \
@@ -135,7 +431,18 @@ $ az sql server firewall-rule create \
 
 Now your database server is set up and ready to experiment with. If you just started your free trial on Azure, you can use it for twelve months for free.
 
-## Connect your Python program to the Azure SQL Server
+## Connect your Python program to the Azure SQL Server Database
+
+### Get the connection string
+
+```bash
+$ az sql db show-connection-string --client odbc --name $database --server $server
+```
+
+```bash
+"Driver={ODBC Driver 13 for SQL Server};Server=tcp:my-sql-server-name.database.windows.net,1433;Database=my-sql-database-name;Uid=<username>@my-sql-server-name;Pwd=<password>;Encrypt=yes;TrustServerCertificate=no;"
+```
+
 
 
 (create VM without MS driver installed and see if pyodbc driver works alone)
