@@ -119,6 +119,16 @@ $ login="sqldb_userid"  (brianbrian)
 $ password="sqldb_passwd" (Jt&4cQb7VurIU$zC)
 ```
 
+```bash
+location="eastus"
+resource_group="rg1967"
+server="sqlserver1967"
+database="db1967"
+login="sqldbuserid"
+password="Jt984cQb7VurIUuuzC"
+```
+
+
 #### Create a resource group 
 
 Create a resource group if you have not already created one
@@ -144,120 +154,6 @@ When the command completes, it will output the information about the newly-creat
 ```
 
 
-<!--
-My DB Info:
-
-$ az sql server show --resource-group db-test --name brian-dbserver
-{
-  "administratorLogin": "CloudSA18f60e2c",
-  "administratorLoginPassword": null,
-  "administrators": {
-    "administratorType": "ActiveDirectory",
-    "azureAdOnlyAuthentication": false,
-    "login": "Azure SQL Database",
-    "principalType": "Group",
-    "sid": "02454543-0454-45f7-face-13454ab64566",
-    "tenantId": "bdface03-6fad-4ke4-8fa7-10dface34567"
-  },
-  "externalGovernanceStatus": "Disabled",
-  "federatedClientId": null,
-  "fullyQualifiedDomainName": "brian-dbserver.database.windows.net",
-  "id": "/subscriptions/e0caca48-577e-4322-a566-b7666607caca/resourceGroups/db-test/providers/Microsoft.Sql/servers/brian-dbserver",
-  "identity": null,
-  "keyId": null,
-  "kind": "v12.0",
-  "location": "eastus",
-  "minimalTlsVersion": "1.2",
-  "name": "brian-dbserver",
-  "primaryUserAssignedIdentityId": null,
-  "privateEndpointConnections": [],
-  "publicNetworkAccess": "Enabled",
-  "resourceGroup": "db-test",
-  "restrictOutboundNetworkAccess": "Disabled",
-  "state": "Ready",
-  "tags": {},
-  "type": "Microsoft.Sql/servers",
-  "version": "12.0",
-  "workspaceFeature": null
-}
-
-
-
-$ az sql db show --resource-group db-test --name data-science-test --server brian-dbserver 
-{
-  "autoPauseDelay": null,
-  "availabilityZone": "NoPreference",
-  "catalogCollation": "SQL_Latin1_General_CP1_CI_AS",
-  "collation": "SQL_Latin1_General_CP1_CI_AS",
-  "createMode": null,
-  "creationDate": "2023-04-17T00:22:13.307000+00:00",
-  "currentBackupStorageRedundancy": "Geo",
-  "currentServiceObjectiveName": "S0",
-  "currentSku": {
-    "capacity": 10,
-    "family": null,
-    "name": "Standard",
-    "size": null,
-    "tier": "Standard"
-  },
-  "databaseId": "869999b6-d999-4499-a78b-d44545254545",
-  "defaultSecondaryLocation": "westus",
-  "earliestRestoreDate": "2023-06-14T23:50:25.916015+00:00",
-  "edition": "Standard",
-  "elasticPoolId": null,
-  "elasticPoolName": null,
-  "encryptionProtector": null,
-  "failoverGroupId": null,
-  "federatedClientId": null,
-  "highAvailabilityReplicaCount": null,
-  "id": "/subscriptions/e0caca48-577e-4322-a566-b7666607caca/resourceGroups/db-test/providers/Microsoft.Sql/servers/brian-dbserver/databases/data-science-test",
-  "identity": null,
-  "isInfraEncryptionEnabled": false,
-  "keys": null,
-  "kind": "v12.0,user",
-  "ledgerOn": false,
-  "licenseType": null,
-  "location": "eastus",
-  "longTermRetentionBackupResourceId": null,
-  "maintenanceConfigurationId": "/subscriptions/e0caca48-577e-4322-a566-b7666607caca/providers/Microsoft.Maintenance/publicMaintenanceConfigurations/SQL_Default",
-  "managedBy": null,
-  "manualCutover": null,
-  "maxLogSizeBytes": null,
-  "maxSizeBytes": 268435456000,
-  "minCapacity": null,
-  "name": "data-science-test",
-  "pausedDate": null,
-  "performCutover": null,
-  "preferredEnclaveType": null,
-  "readScale": "Disabled",
-  "recoverableDatabaseId": null,
-  "recoveryServicesRecoveryPointId": null,
-  "requestedBackupStorageRedundancy": "Geo",
-  "requestedServiceObjectiveName": "S0",
-  "resourceGroup": "db-test",
-  "restorableDroppedDatabaseId": null,
-  "restorePointInTime": null,
-  "resumedDate": null,
-  "sampleName": null,
-  "secondaryType": null,
-  "sku": {
-    "capacity": 10,
-    "family": null,
-    "name": "Standard",
-    "size": null,
-    "tier": "Standard"
-  },
-  "sourceDatabaseDeletionDate": null,
-  "sourceDatabaseId": null,
-  "sourceResourceId": null,
-  "status": "Online",
-  "tags": {},
-  "type": "Microsoft.Sql/servers/databases",
-  "zoneRedundant": false
-}
-
-
--->
 
 #### Create an SQL Server
 
@@ -311,6 +207,9 @@ $ az sql server ad-admin
 ```
 
 #### Create an SQL database instance
+
+**WARNING: May need to create firewall rule first? Seems to have helped my connection issue???**
+
 
 Create an SQL database instance that will run on your server and populate it with Microsoft's *AdventureWorks* sample data set.
 
@@ -429,6 +328,14 @@ $ az sql server firewall-rule create \
   --end-ip-address "203.0.113.23"
 ```
 
+```
+az sql server firewall-rule create \
+  --resource-group $resource_group \
+  --server $server \
+  --name MyHomeIPaddress \
+  --start-ip-address 198.84.238.105 \
+  --end-ip-address 198.84.238.105
+```
 Now your database server is set up and ready to experiment with. If you just started your free trial on Azure, you can use it for twelve months for free.
 
 ## Connect your Python program to the Azure SQL Server Database
@@ -457,6 +364,68 @@ create connection string (can I get this using Azure CLI?)
 
 
 ### Authenticating your Python program
+
+
+```
+connection_string = "Driver={ODBC Driver 18 for SQL Server};\
+Server=tcp:sqlserver2008vex.database.windows.net,1433;\
+Database=db2008vex;\
+Uid=sqldbuserid@sqlserver2008vex;\
+Pwd=Jt984cQb7VurIUuuzC2008;\
+Encrypt=yes;\
+TrustServerCertificate=no;"
+
+print(connection_string)
+
+import pyodbc
+conn = pyodbc.connect(connection_string)
+print(conn)
+```
+
+```
+statement = "SELECT @@version;"
+
+cursor = conn2.cursor()
+cursor.execute(statement) 
+
+print(cursor.fetchone())
+```
+```
+('Microsoft SQL Azure (RTM) - 12.0.2000.8 \n\tMay 22 2023 22:22:02 \n\tCopyright (C) 2022 Microsoft Corporation\n',)
+```
+
+```
+statement = """
+SELECT DISTINCT
+  TABLE_SCHEMA
+FROM INFORMATION_SCHEMA.TABLES
+ORDER BY TABLE_SCHEMA
+"""
+
+cursor.execute(statement)
+print(cursor.fetchall())
+```
+```
+[('dbo',), ('SalesLT',), ('sys',)]
+```
+
+
+```
+statement = """
+SELECT
+  TABLE_NAME
+FROM INFORMATION_SCHEMA.TABLES
+WHERE TABLE_SCHEMA = 'SalesLT'
+ORDER BY TABLE_NAME
+"""
+cursor.execute(statement)
+print(cursor.fetchall())
+```
+```
+[('Address',), ('Customer',), ('CustomerAddress',), ('Product',), ('ProductCategory',), ('ProductDescription',), ('ProductModel',), ('ProductModelProductDescription',), ('SalesOrderDetail',), ('SalesOrderHeader',), ('vGetAllCategories',), ('vProductAndDescription',), ('vProductModelCatalogDescription',)]
+```
+
+
 
 
 
