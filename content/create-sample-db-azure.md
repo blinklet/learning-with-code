@@ -19,13 +19,13 @@ img
 }
 </style>
 
-The best way to start learning [Data science](https://en.wikipedia.org/wiki/Data_science) is to work on practical projects. There is a lot of information available online that will help you learn how to use Python to work with data and there are many data sets [available to the public](https://www.dropbase.io/post/top-11-open-and-public-data-sources) for practicing data analytics. Almost all public data sets are made available as [CSV files](https://fileinfo.com/extension/csv) or from an [API](https://www.ibm.com/topics/api).
+The best way to start learning [Data science](https://en.wikipedia.org/wiki/Data_science) is to work on practical projects. You can find a lot of information available online that will help you learn how to use Python to work with data and there are many [data sets available to the public](https://www.dropbase.io/post/top-11-open-and-public-data-sources) for practicing data analytics. Almost all public data sets are made available as [CSV files](https://fileinfo.com/extension/csv) or from an [API](https://www.ibm.com/topics/api).
 
 After reviewing data science books, courses, and online resources, I noticed one particular topic is not covered in enough practical detail: how to use Python to access data from an SQL database. If you do not have access to an existing database, and want to learn how to analyze data stored in a database, you have to create your own sample database, preferably pre-loaded with a [sample data set](https://learn.microsoft.com/en-us/sql/samples/sql-samples-where-are?view=sql-server-ver16).
 
-[^1]: Microsoft Azure offers a [free service tier](https://azure.microsoft.com/free/) that, in addition to offering $200 in services for free for 30 days, allows you to run small configurations of certain services, like a small SQL Server, for 12 months at no cost.
+This post will show you how to [create your own free database server](https://learn.microsoft.com/en-ca/azure/azure-sql/database/free-sql-db-free-account-how-to-deploy?view=azuresql) [^1] on Microsoft's Azure cloud, populate it with the [AdventureWorks sample database](https://learn.microsoft.com/en-us/sql/samples/adventureworks-install-configure?view=sql-server-ver16&tabs=ssms), and connect to the server. I will cover the details of exploring databases using various Python functions in future posts.
 
-This post will show you how to [create your own personal database server](https://learn.microsoft.com/en-ca/azure/azure-sql/database/free-sql-db-free-account-how-to-deploy?view=azuresql) on Microsoft's Azure cloud, populate it with the [AdventureWorks sample database](https://learn.microsoft.com/en-us/sql/samples/adventureworks-install-configure?view=sql-server-ver16&tabs=ssms), and connect to the server. I will cover the details of exploring databases using various Python functions in future posts.
+[^1]: Microsoft Azure offers a [free service tier](https://azure.microsoft.com/free/) that, in addition to offering $200 in services for free for 30 days, allows you to run small configurations of certain services, like a small SQL Server, for 12 months at no cost.
 
 ## How to configure services in Azure's free service tier
 
@@ -35,13 +35,13 @@ Microsoft Azure allows many different interfaces for configuring services. You m
 
 Azure CLI is easiest interface to include in a blog post where the reader may want to copy and paste steps. I will show you how to quickly create a sample database using Azure CLI and then show you how to connect to it using Python libraries. 
 
-If you want to use Azure Portal to create your sample database, follow the [instructions provided my Microsoft's Azure documentation](https://learn.microsoft.com/en-ca/azure/azure-sql/database/free-sql-db-free-account-how-to-deploy?view=azuresql) and then skip down to the end of this post to learn how to connect a Python program to the sample database.
+If, instead, you want to use Azure Portal to create your sample database, follow the [instructions in Microsoft's Azure documentation](https://learn.microsoft.com/en-ca/azure/azure-sql/database/free-sql-db-free-account-how-to-deploy?view=azuresql) and then skip down to the [rest of this post](#connect-your-python-program-to-the-azure-sql-server-database) to learn how to connect a Python program to the sample database.
 
 ### Create an Azure account
 
 If you do not already have an Azure account, [create one](https://learn.microsoft.com/en-us/dotnet/azure/create-azure-account). Go to [https://azure.com](https://azure.com) and click on the *Free account* button.
 
-![Azure sign up page]({static}images/create-sample-db-azure/create-account-01.png){width=90%}
+![Azure sign up page]({static}/images/create-sample-db-azure/create-account-01.png){width=90%}
 
 In the next few pages that appear, you agree to terms and conditions and enter your user information such as your e-mail address and password.
 
@@ -66,28 +66,9 @@ $ az login
 
 This starts login with interactive mode. A browser window will open up and ask you for your Azure account userid and password
 
-![Azure login window]({static}images/create-sample-db-azure/az_login-001.png){width=90%}
+![Azure login window]({static}/images/create-sample-db-azure/az_login-001.png){width=90%}
 
-Enter your Azure userid. Then, enter your password at the next screen. You should see a notification in the browser window indicating you successfully logged it and you should see your account information printed in the terminal window, similar to the account information below:
-
-```json
-[
-  {
-    "cloudName": "AzureCloud",
-    "homeTenantId": "bdface03-6fad-4ke4-8fa7-10dface34567",
-    "id": "e0caca48-577e-4322-a566-b7666607caca",
-    "isDefault": true,
-    "managedByTenants": [],
-    "name": "Azure subscription 1",
-    "state": "Enabled",
-    "tenantId": "bdface03-6fad-4ke4-8fa7-10dface34567",
-    "user": {
-      "name": "my.email.address@gmail.com",
-      "type": "user"
-    }
-  }
-]
-```
+Enter your Azure userid. Then, enter your password at the next screen. You should see a notification in the browser window indicating you successfully logged it and you should see your account information printed in the terminal window.
 
 #### Solving login problems
 
@@ -103,7 +84,7 @@ $ az login --use-device-code
 
 If you want to create a database that you can experiment with, you need to act like a database administrator and set up a database server and a database. 
 
-This section describes how to set up a free sample database for practice purposes and to gather the information you need to connect to it. I do not cover other SQL database administration topics like adding new database users, setting up user roles and permissions.
+This section describes how to set up a free sample database for practice purposes and to gather the information you need to connect to it. I do not cover other SQL database administration topics like adding new database users, setting up user roles, and permissions.
 
 ### Free service tier restrictions
 
@@ -119,7 +100,9 @@ Fortunately, these seem to be the default values for Azure SQL servers so you on
 
 Choose your database configuration information. You need to know the Azure location where you will deploy your services; pick one located close to you. Next, you need to decide what names you will assign to your resource group, server, and database. You will also have to choose your SQL database userid and password. 
 
-Assign your database server configuration information to environment variables that you can use in your Azure CLI commands and in your Python programs. The best way to do this is to create a file named *.env*, also known as a *dotenv file*. I wrote about [environment variables and dotenv files]({filename}use-environment-variables.md) in a previous post.
+Assign your database server configuration information to environment variables that you can use in your Azure CLI commands and in your Python programs. The best way to do this is to create a file named *.env*, also known as a *dotenv file* [^3]. I wrote about [environment variables and dotenv files]({filename}use-environment-variables.md) in a previous post.
+
+[^3]: [Sourcing](https://www.techrepublic.com/article/linux-101-what-does-sourcing-a-file-mean-in-linux/) the *.env* file only works on Linux and Mac OS. To load environment variables defined in the *.env* file in a Windows Powershell terminal, use the Powershell script described in [Stackoverflow answer #48607302](https://stackoverflow.com/questions/48607302/using-env-files-to-set-environment-variables-in-windows).
 
 First, create a directory for your project and navigate to it. You may name your project folder anything you wish. I named mine *data-science-folder*.
 
@@ -128,7 +111,7 @@ $ mkdir data-science-folder
 $ cd data-science-folder
 ```
 
-Open your favorite text editor and enter the environment variables you need. I show some example values below. You should use the same variable names but assign your own values to them. You are choosing the [Azure location](https://azure.microsoft.com/en-us/explore/global-infrastructure/geographies/#overview) where your server will be deployed. Then, you pick the names for your Azure resource group, SQL server, and SQL database. Finally, you pick your database userid and password.
+Open a new file in your favorite text editor and enter the environment variables you need. Look at the example values below. You should use the same variable names but assign your own values to them. You are choosing the [Azure location](https://azure.microsoft.com/en-us/explore/global-infrastructure/geographies/#overview) where your server will be deployed. Then, you pick the names for your Azure resource group, SQL server, and SQL database. Finally, you pick your database userid and password.
 
 ```bash
 location="eastus"
@@ -159,8 +142,6 @@ $ az group create \
     --location $location
 ```
 
-When the command completes, it will output the information about the newly-created resource group in JSON format.
-
 ### Create an SQL Server
 
 Create an SQL Server instance that will run in the free service tier.
@@ -174,9 +155,7 @@ $ az sql server create \
     --admin-password $password
 ```
 
-The server name needs to be unique to the Azure location.
-
-The command will take a few minutes to complete. When it is completed, it will output the server's information to the terminal in JSON format.
+The server name needs to be unique to the Azure location. The command will take a few minutes to complete. 
 
 ### Create an SQL database instance
 
@@ -193,38 +172,7 @@ $ az sql db create \
     --zone-redundant false
 ```
 
-After the command completes, it displays the database information in JSON format. It lists a lot of information. I list the output below but I remove most of the information so you can see the key settings we care about [^3].
-
-[^3]: Don't worry; I anonymized the identifying information in all my examples.
-
-```json
-{
-  "creationDate": "2023-06-22T00:24:52.130000+00:00",
-  "currentBackupStorageRedundancy": "Geo",
-  "currentServiceObjectiveName": "S0",
-  "currentSku": {
-    "capacity": 10,
-    "family": null,
-    "name": "Standard",
-    "size": null,
-    "tier": "Standard"
-  },
-  "databaseId": "0edfacee6-6785-723c-acdc-0faceac4fade",
-  "defaultSecondaryLocation": "westus",
-  "edition": "Standard",
-  "id": "/subscriptions/e0caca48-577e-4322-a566-b7666607caca/resourceGroups/new-resource-group-name/providers/Microsoft.Sql/servers/my-sql-server-name/databases/my-sql-database-name",
-  "kind": "v12.0,user",
-  "location": "eastus",
-  "maxSizeBytes": 268435456000,
-  "name": "my-sql-database-name",
-  "requestedServiceObjectiveName": "S0",
-  "resourceGroup": "new-resource-group-name",
-   "type": "Microsoft.Sql/servers/databases",
-  "zoneRedundant": false
-}
-```
-
-You can see that the configured database fits within the free tier because the *capacity* is `10`, the *edition* is `standard`, the *service objective* is `S0`, and the *maxSizeBytes* disk size is `268435456000` or 256 GigiBytes.
+After the command completes, it displays the database information in JSON format. It lists a lot of information. In the JSON output, you can see that the configured database fits within the free tier because the *capacity* is `10`, the *edition* is `standard`, the *service objective* is `S0`, and the *maxSizeBytes* disk size is `268435456000` or 256 GigaBytes.
 
 ### Enable access through database firewall
 
@@ -243,7 +191,7 @@ $ az sql server firewall-rule create \
     --end-ip-address 203.0.113.23
 ```
 
-Only users on the same address as your PC can access the server, and they still need to know all the server information and passwords to connect to it. This server is only for experimentation and we will delete it when we are done, so you do not need to learn the more advanced Azure database security options.
+Only users on the same address as your PC can access the server, and they still need to know all the server information and passwords to connect to it. This server is only for experimentation and you will delete it when you are done, so you do not need to learn the more advanced Azure database security options.
 
 Your database server is set up and ready to experiment with. If you recently started your free trial on Azure, you can use it for twelve months for free.
 
@@ -339,19 +287,19 @@ username = os.getenv('login') + '@' + os.getenv('server')
 password = os.getenv('password')
 
 connection_string = (
-  'Driver={ODBC Driver 18 for SQL Server}'+
-  ';Server='+server+
-  ';Database='+database+
-  ';Uid='+username+
-  ';Pwd='+password+
-  ';Encrypt=yes'+
+  'Driver={ODBC Driver 18 for SQL Server}' +
+  ';Server=' + server +
+  ';Database=' + database +
+  ';Uid=' + username +
+  ';Pwd=' + password +
+  ';Encrypt=yes' +
   ';TrustServerCertificate=no;'
 )
 
 print(connection_string)
 ```
 
-Save the file and run it with Python. I saved it as *test1.py*:
+Save the file and run it. I saved it as *test1.py*:
 
 ```
 (env) $ python test1.py
@@ -363,9 +311,9 @@ It should print out the connection string, incorporating the environment variabl
 Driver={ODBC Driver 18 for SQL Server};Server=tcp:my-sql-server-name.database.windows.net,1433;Database=my-sql-database-name;Uid=sqldb_userid@my-sql-server-name;Pwd=sqldb_passwd;Encrypt=yes;TrustServerCertificate=no;
 ```
 
-This is the same as the connection string provided by Azure, but with the driver version updates and your userid and password added. 
+This is the same as the connection string provided by Azure, but with the driver version updated and your userid and password added. 
 
-### Authenticating your Python program
+### Create a database connection
 
 Once you have the connection string, [connect to the Azure SQL Server database](https://learn.microsoft.com/en-us/sql/connect/python/pyodbc/step-3-proof-of-concept-connecting-to-sql-using-pyodbc?view=sql-server-ver16), using the [*pyodbc* library](https://github.com/mkleehammer/pyodbc/wiki/Getting-started#connect-to-a-database). Add the following code to the end of your Python program and run it again:
 
@@ -389,7 +337,7 @@ In my experience, the most common problem was that my public IP address had chan
 
 ### Reading data
 
-To read data from the database connection, create a database cursor object, or pointer, using the *conn* instance's *cursor()* method. 
+To read data from the database connection, create a database cursor object, or pointer, using the *conn* object's [*cursor()* method](https://www.mssqltips.com/sqlservertip/7293/pyodbc-open-source-access-odbc-databases/). 
 
 Execute an SQL statement using the cursor object's *execute()* method. It populates the cursor with database rows returned by the query. If you want to read just one row, use the cursor instance's *fetchone()* method. 
 
@@ -401,6 +349,7 @@ statement = "SELECT @@version;"
 cursor = conn.cursor()
 cursor.execute(statement) 
 print(cursor.fetchone())
+cursor.close()
 ```
 
 Save and run the program. You should see output similar to the following:
@@ -409,7 +358,7 @@ Save and run the program. You should see output similar to the following:
 ('Microsoft SQL Azure (RTM) - 12.0.2000.8 \n\tMay 22 2023 22:22:02 \n\tCopyright (C) 2022 Microsoft Corporation\n',)
 ```
 
-Or, to read the database schemas available in the database, add the following code to the end of your program:
+To read the database schemas available in the database, add the following code to the end of your program:
 
 ```python
 statement = """
@@ -419,11 +368,13 @@ FROM INFORMATION_SCHEMA.VIEWS
 ORDER BY TABLE_SCHEMA
 """
 
+cursor = conn.cursor()
 cursor.execute(statement) 
 print(cursor.fetchall())
+cursor.close()
 ```
 
-Note that you do not need to create a new cursor object. The cursor's *execute()* method resets the cursor to the first row of the returned results. Also, since we expect more than one row in the result, we use the *fethchall()* method, which will return all rows in a list.
+Since you expect more than one row in the result, use the [*fethchall()* method](https://pynative.com/python-cursor-fetchall-fetchmany-fetchone-to-read-rows-from-table/), which will return all rows in a list.
 
 The returned list shows the database schemas that you have permission to read.
 
@@ -431,7 +382,15 @@ The returned list shows the database schemas that you have permission to read.
 [('dbo',), ('SalesLT',), ('sys',)]
 ```
 
-This proves we have successfully created a database containing sample data.
+This proves you have successfully created a database containing sample data.
+
+## Delete Azure resources
+
+The database you created may be left running at no cost for twelve months so you do not need to delete it immediately. However, if you want to clean up the resources you created, the easiest way is to delete the resource group with the following command:
+
+```bash
+$ az group delete --name $resource_group
+```
 
 ## Conclusion
 
