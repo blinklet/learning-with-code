@@ -216,13 +216,13 @@ Import Flask's *render_template* function. Modify the first line of the *applica
 
 ```python
 from flask import Flask, render_template
-```python
+```
 
 Change the object returned by the *index* function. Change the last line of the *application.py* file as shown below
 
 ```python
     return render_template("index.html")
-```python
+```
 
 Instead if returning a simple string, it will now return the results of the *render_template* function, which takes the *index.html* file as an argument. Then Flask will display the result, which is simply the contents of the *index.html* file, in the browser.
 
@@ -287,6 +287,9 @@ In the browser, go to `localhost:5000`. Your web page should look similar to the
 could also be configured as follows so you don't need CSS at top of post
 
 ![screenshot]({attach}flask-001.png){width="90%", style="display: block; margin: 0 auto"}
+
+See:
+https://dev.to/bdavidxyz/markdown-center-image-39j1
 
 -->
 
