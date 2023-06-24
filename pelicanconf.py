@@ -8,7 +8,7 @@ LINKS = (('My other blog', 'https://brianlinkletter.com/'),)
 SOCIAL = (("github", "https://github.com/blinklet"), ('linkedin', 'https://www.linkedin.com/in/brianlinkletter/'), ('twitter', 'http://twitter.com/belinkletter'),)
 STATIC_PATHS = ['images','extras', 'drafts/images']
 PAGE_PATHS = ['pages']
-ARTICLE_PATHS = ['']
+ARTICLE_PATHS = ['articles']
 ARTICLE_EXCLUDES = ['extras', 'output', 'rough_drafts']
 SUMMARY_MAX_LENGTH = None
 TIMEZONE = 'America/Toronto'
@@ -36,7 +36,7 @@ FEED_RSS_URL = None
 FEED_DOMAIN = None
 
 # Flex theme settings
-SITELOGO = '/images/about/profile-001-128x128.JPG'
+SITELOGO = '/images/profile-001-128x128.JPG'
 FAVICON = ''
 SITETITLE = 'Learning with Code'
 SITESUBTITLE = 'Learning Python for work and for fun'

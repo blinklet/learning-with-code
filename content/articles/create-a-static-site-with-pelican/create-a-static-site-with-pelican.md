@@ -7,7 +7,7 @@ category: Blogging
 status: published
 
  
-I created this site using [Pelican](https://getpelican.com/), a static site generation tool based on the [Python programming language](https://www.python.org/) and [Jinja2 templates](https://palletsprojects.com/p/jinja/). This post describes how to install and configure Pelican, and how to use Pelican themes to make the web site to look the way you want. In a future post, I will describe how I [published the web site to a hosting provider]({filename}host-static-web-site.md).
+I created this site using [Pelican](https://getpelican.com/), a static site generation tool based on the [Python programming language](https://www.python.org/) and [Jinja2 templates](https://palletsprojects.com/p/jinja/). This post describes how to install and configure Pelican, and how to use Pelican themes to make the web site to look the way you want. In a future post, I will describe how I [published the web site to a hosting provider]({filename}/articles/host-static-web-site/host-static-web-site.md).
 
 ## Install Pelican
 
@@ -125,7 +125,7 @@ Test the web site by running the `pelican` command with the `--listen` option.
 
 The command output will display a URL you can use to test your web site in a web browser. Open a web browser and enter the URL. In my case, it is *http://127.0.0.1:8000*, which is TCP port 8000 on your's PC's local loopback address. The web site should look similar to the screenshot below:
 
-![pelican site]({static}images/create-a-static-site-with-pelican/pelican-site-001.png)
+![pelican site]({attach}pelican-site-001.png)
 
 Stop the server by entering the `CTRL-C` key combination in the terminal window.
 
@@ -322,7 +322,7 @@ Save the file. Then run pelican again
 
 When you open the URL *http://localhost:8000* in your web browser, you can see the theme has changed. 
 
-![pelican site]({static}images/create-a-static-site-with-pelican/pelican-site-002.png)
+![pelican site]({attach}pelican-site-002.png)
 
 ### Configure a new theme
 
@@ -369,7 +369,7 @@ Save the *pelicanconf.py* file and run the `pelican` command again.
 
 Then, open your web browser at the URL, *https://localhost:8000*. You will see how the theme-specific settings have changed the look of the web site:
 
-![pelican site]({static}images/create-a-static-site-with-pelican/pelican-site-003.png)
+![pelican site]({attach}pelican-site-003.png)
 
 Other themes and other add-ons, like plugins, may require more variables to be set up in the Pelican settings file. 
 
@@ -391,7 +391,7 @@ modified: 2023-06-09
 
 Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. 
 
-![Alt text](./images/image-test-post/image.png)
+![Alt text]({./images/image-test-post/}image.png)
 
 Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.
 
@@ -402,7 +402,7 @@ This was a test of images in a post
 
 After you re-run the `pelican` and `pelican --listen` commands, you should see that th enew post looks like the following screen shot.
 
-![pelican site]({static}images/create-a-static-site-with-pelican/pelican-site-004.png)
+![pelican site]({attach}pelican-site-004.png)
 
 The image is shown in-line with the rest of the post, just like you would expect. 
 
