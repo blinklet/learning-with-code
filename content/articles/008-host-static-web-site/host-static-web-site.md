@@ -310,5 +310,5 @@ Test your web site by entering its URL into your browser. In my case, I opened t
 
 Now, your static web site is set up and ready to serve.
 
-In a future post, I will discuss [how to set up a custom domain]({filename}add-custom-domain-to-cloudflare-pages.md) so you can use a domain name of your choice, instead of the domain *pages.dev*.
+In a future post, I will discuss [how to set up a custom domain]({filename}/articles/009-add-custom-domain-to-cloudflare-pages/add-custom-domain-to-cloudflare-pages.md) so you can use a domain name of your choice, instead of the domain *pages.dev*.
 

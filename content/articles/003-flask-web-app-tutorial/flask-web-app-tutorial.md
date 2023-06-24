@@ -23,7 +23,7 @@ Most network engineers don't need to create web sites but they may, like me, wan
 
 This tutorial covers a different type of use-case than is usually demonstrated in Flask tutorials aimed at beginners. It shows you how to create a web app that "wraps up" another Python program's functionality.
 
-![flask-120-1024p]({static}/images/flask-web-app-tutorial/flask-120-1024p.png)
+![flask-120-1024p]({attach}flask-120-1024p.png)
 
 I will show you how to use the Flask framework to build a web app that re-uses code from my [Usermapper program](https://github.com/blinklet/usermapper) and enables users to run it on a website, instead of installing and running it locally on their PC. You will create a "usermapper-as-a-service" application, served as a responsive web app that looks good on computer screens, tablets, and mobile phones.
 
@@ -39,7 +39,7 @@ I think it's helpful to think about Flask as a server that you may configure wit
 
 ### Prerequisite learning
 
-I previously wrote a blog post describing [*The Minimum You Need to Know About Python*]({filename}python-minimum-you-need-to-know.md) and created a [YouTube playlist about building *Usermapper*]({filename}python-learning-network-engineers.md), my first useful Python program.
+I previously wrote a blog post describing [*The Minimum You Need to Know About Python*]({filename}/articles/001-python-minimum-you-need-to-know/python-minimum-you-need-to-know.md) and created a [YouTube playlist about building *Usermapper*]({filename}/articles/002-python-learning-network-engineers/python-learning-network-engineers.md), my first useful Python program.
 
 Those efforts treated Python like a simple scripting language. They focused on Python syntax and basic logic, and built programs in a procedural way. To appreciate the Flask framework, you need to learn more about Python's object-oriented programming features and how they are used. In my case, I re-read the second half of the [*Learning Python* book](https://learning-python.com/) which covers both functional programming and object-oriented programming in Python, and covers Decorators.
 
@@ -73,14 +73,14 @@ Create a directory in which you will build the Flask app and, eventually, in whi
 
 In my case, I will put all my code in a directory named "~/Projects"
 
-```
+```bash
 $ mkdir ~/Projects
 $ cd ~/Projects
 ```
 
 Next, create a new folder for the Flask application in the ~/Projects directory. For example, I chose the directory name, *usermapper-web*.
 
-```
+```bash
 $ mkdir usermapper-web
 $ cd usermapper-web
 ```
@@ -91,7 +91,7 @@ In VScode, open the *usermapper-web* folder.
 
 Initialize a Git repository for the *usermapper-web* directory. 
 
-```
+```bash
 $ git init
 ```
 
@@ -101,14 +101,14 @@ Create a *.gitignore* file for the project [^1]. Copy the standard *.gitignore* 
 
 Commit the file to your local Git repository and push the change to GitHub.
 
-```
+```bash
 $ git add .
 $ git commit -m 'Added .gitignore file for Flask project'
 ```
 
 Then change the branch name to *main*.
 
-```
+```bash
 $ git branch -M main
 ```
 
@@ -118,7 +118,7 @@ Go to GitHub and create a new repository named *usermapper-web*. Get the URL of 
 
 Then, on the local machine, connect the local Git repository to the remote GitHub repository and push all the changes you made to the remote repository:
 
-```
+```bash
 $ git remote add origin https://github.com/blinklet/usermapper-web.git
 $ git push --set-upstream origin main
 ```
@@ -127,7 +127,7 @@ $ git push --set-upstream origin main
 
 Create and start a Python virtual environment in the *usermapper-web* directory:
 
-```
+```bash
 $ python3 -m venv env
 $ source env/bin/activate
 (env) $ pip install wheel
@@ -136,7 +136,7 @@ $ source env/bin/activate
 
 Now, install Flask in the *usermapper-web* virtual environment:
 
-```
+```bash
 (env) $ pip install flask
 ```
 
@@ -148,7 +148,7 @@ Test that Flask is working by pasting in the classic [Flask "Hello, World!" app]
 
 Create a file named *application.py* in the *usermapper-web* directory. Copy and paste the following code in the file, then save it.
 
-```
+```python
 from flask import Flask
 
 app = Flask(__name__)
@@ -166,13 +166,13 @@ Run the Flask app using the [Flask command-line interface](https://flask.pallets
 
 At a minimum, we need to tell Flask the application module name.
 
-```
+```bash
 (env) $ export FLASK_APP=application
 ```
 
 Then, run Flask:
 
-```
+```bash
 (env) $ flask run
 ```
 
@@ -186,7 +186,7 @@ Flask is not magic. You can't write a few lines of Python code and get a fully f
 
 By default, Flask expects to find Jinja templates in a directory named templates. Create a new folder named *templates*. Go to the new folder:
 
-```
+```bash
 (env) $ mkdir templates
 (env) $ cd templates
 ```
@@ -196,7 +196,7 @@ In the *templates* directory, create a new file named *index.html* with an `<H1>
 If you are using VScode, you can generate a simple HTML page snippet by pressing the *CTRL-space* key combination, then select "HTML".
 Delete the CSS and JS links from the snippet because we do not need them, yet. Add the web page title between the *title* tags and the web page content between the *body* tags.
 
-```
+```html
 <!DOCTYPE html>
 <html>
 <head>
@@ -214,21 +214,21 @@ Change the Flask application so it will render the HTML template you prepared, i
 
 Import Flask's *render_template* function. Modify the first line of the *application.py* file as shown below:
 
-```
+```python
 from flask import Flask, render_template
-```
+```python
 
 Change the object returned by the *index* function. Change the last line of the *application.py* file as shown below
 
-```
+```python
     return render_template("index.html")
-```
+```python
 
 Instead if returning a simple string, it will now return the results of the *render_template* function, which takes the *index.html* file as an argument. Then Flask will display the result, which is simply the contents of the *index.html* file, in the browser.
 
 The *application.py* file should now look like the code listing below:
 
-```
+```python
 from flask import Flask, render_template
 
 app = Flask(__name__)
@@ -248,7 +248,7 @@ This example is not very interesting because it just serves up a web page named 
 
 To avoid restarting Flask when you modify your application code, set another environment variable to tell Flask to operate in a *development environment*. Flask will then automatically reload any changed code and will give you helpful error debug traces in the browser window, instead of in the console.
 
-```
+```bash
 CTRL-C
 (env) $ export FLASK_ENV=development
 (env) $ flask run
@@ -260,7 +260,7 @@ Enough about the basics. Now, you may begin developing the real Flask applicatio
 
 To create a basic form in HTML, modify the *index.html* template as shown below and add an [HTML form](https://www.w3schools.com/html/html_forms.asp). Also, change the header and add paragraph text in the page so it starts to looks a bit like the application you want to create. The listing below shows my first attempt at creating a form that accepts a text string: 
 
-```
+```html
 <!DOCTYPE html>
 <html>
 <head>
@@ -281,7 +281,14 @@ To create a basic form in HTML, modify the *index.html* template as shown below 
 
 In the browser, go to `localhost:5000`. Your web page should look similar to the screenshot below.
 
-![screenshot]({static}/images/flask-web-app-tutorial/flask-001.png){width=90%}
+![screenshot]({attach}flask-001.png){width="99%"}
+
+<!--
+could also be configured as follows so you don't need CSS at top of post
+
+![screenshot]({attach}flask-001.png){width="90%", style="display: block; margin: 0 auto"}
+
+-->
 
 The form looks OK but it does not do anything. You need to change the code so the form submits data to the Flask application.
 
@@ -291,13 +298,13 @@ As always, it's best to use tools others have created to make your programming e
     
 Install *Flask-WTF*, which also installs *WTForms* for you: 
 
-```
+```bash
 (env) $ pip install Flask-WTF
 ```
 
 To get some experience with Flask forms, go to the [Flask-WTF Quickstart page](https://flask-wtf.readthedocs.io/en/stable/quickstart.html) and copy the example code. Replace the code in the *application.py* file with the sample code shown below:
 
-```
+```python
 from flask import Flask, render_template
 from flask_wtf import FlaskForm
 from wtforms import StringField
@@ -323,7 +330,7 @@ In the *index* view function, you created an instance of my *MyForm* class and n
 
 Now, add the *form* object to the index.html template. Again, use the [example code from the Flask-WTF Quickstart Guide](https://flask-wtf.readthedocs.io/en/stable/quickstart.html). Modify the *templates/index.html* file as follows:
 
-```
+```html
 <!DOCTYPE html>
 <html>
 <head>
@@ -346,7 +353,7 @@ In the *index.html* template, above, you used Jinja template syntax to indicate 
 
 Save the file and refresh the browser. Look at the page source code in the browser by pressing the *CTRL-U* key combination. You can see the HTML form code that Flask and WTForms created for you. It will be similar to the code snippet below:
 
-```
+```html
 <form method="POST">
     <input id="csrf_token" name="csrf_token" type="hidden" value="ImE5MmQ2YmE4YzIyYzIxM2NmNWYwODgyMTA2MzYwOTEyNWMzNWQyMDki.X9p5ow.Z_-HwhCD94kA1KR7Ui7BeHRiZYQ">
     <label for="filename">Filename: </label> <input id="filename" name="filename" size="20" type="text" value="">
@@ -360,20 +367,20 @@ Validate that the submitted form has data in it. Modify the application so it wi
 
 In the *application.py* file, import the validator classes you need from the [validators module](https://wtforms.readthedocs.io/en/2.3.x/validators/#module-wtforms.validators) in the WTFforms library:
 
-```
+```python
 from wtforms.validators import DataRequired
 ```
     
 Change the *form* object to use the validators:
 
-```
+```python
 class MyForm(FlaskForm):
     filename = StringField('Filename: ', validators=[DataRequired()])
 ```
 
 Add the following validation check to the *index* function. If the validation passes, get the submitted form data, which is in the *filename.data* attribute of the *form* instance. Pass the submitted data to the *index.html* template by adding an extra argument when you call the *render_template* function.
 
-```
+```python
 @app.route('/', methods=('GET','POST'))
 def index():
     data=None
@@ -385,7 +392,7 @@ def index():
 
 Then, modify the *templates/index.html* template so it will display the contents of the *data* variable after the form. Add the following after the *\<form\>\</form\>* stanza, before the closing *\</body\>* tag:
 
-```
+```html
         <p>{{ data }}</p>
 ```
 
@@ -395,7 +402,7 @@ Refresh the browser to see the results. The browser should display "None". Check
 
 Jinja templates can include [conditional statements](https://pythonise.com/series/learning-flask/jinja-template-design#conditionals-comparison-operators). Replace the *data* variable with the following Jinja statement:
 
-```
+```python
     {% if data != None %}
         <p>{{ data }}</p>
     {% endif %}
@@ -409,7 +416,7 @@ In *application.py*, import the *wtforms.SubmitField* class from the *flask_wtf*
 
 The new import lines in the *application.py* file will be:
 
-```
+```python
 from flask import Flask, render_template
 from flask_wtf import FlaskForm
 from flask_wtf.file import FileField, FileRequired, FileAllowed
@@ -421,7 +428,7 @@ from wtforms.validators import DataRequired
 
 Modify the *MyForm* class to handle a file upload form. Add a *submit* field to the class so that *wtforms* will handle creating the correct HTML for the submit button. It's better to let the framework do the work for you, where possible. 
 
-```
+```python
 class MyForm(FlaskForm):
     filename = FileField('Filename: ', 
         validators=[FileRequired(), FileAllowed(['yaml'])])
@@ -432,7 +439,7 @@ Notice how you are using the new validators and are only allowing files with the
 
 Change the *index* view function to save the file that is uploaded. 
 
-```
+```python
 @app.route("/", methods=('GET','POST'))
 def index():
     form = MyForm()
@@ -454,7 +461,7 @@ The *form submit* input type in *templates/index.html* will not work for file up
 
 Replace the text in *templates/index.html*:
 
-```
+```html
         <form method="POST">
             {{ form.csrf_token }}
             {{ form.filename.label }} {{ form.filename(size=20) }}
@@ -464,7 +471,7 @@ Replace the text in *templates/index.html*:
 
 with the following text:
 
-```
+```html
         <form method="POST" enctype="multipart/form-data">
             {{ form.csrf_token }}
             {{ form.filename.label }} {{ form.filename(size=20) }}
@@ -477,7 +484,7 @@ Notice you added an encoding type to the form. Since you are now using the *File
 
 If the form validation fails, you need to send an error message to the user. Insert the following code, which will display errors raised by the *form.filename* object, after the *{{ form.submit }}* Jinja placeholder:
 
-```
+```html
     {% for error in form.filename.errors %}
         <p style="color: red;">{{ error }}</p>
     {% endfor %}
@@ -485,7 +492,7 @@ If the form validation fails, you need to send an error message to the user. Ins
 
 You must create an *uploads* directory in the application's folder because you hard-coded your *index* view function in *application.py* to save files in folder named "uploads".
 
-```
+```bash
 (env) $ cd ~/Projects/usermapper-web
 (env) $ mkdir uploads
 ```
@@ -494,7 +501,7 @@ Refresh the browser. Notice that the form looks different. Now, it contains a Br
 
 Now, you can upload a YAML file using its original filename in the relative directory, *./uploads*. When you upload a file, the Flask app saves it in the *uploads* directory and displays the file's path on the screen. The application screen should look like the screenshot below:
 
-![screenshot]({static}/images/flask-web-app-tutorial/flask-010.png){width=90%}
+![screenshot]({attach}flask-010.png){width=99%}
 
 ### Saving temporary files
 
@@ -506,13 +513,13 @@ Solve this problem by creating unique temporary files in randomly-named director
 
 In the *application.py* file, import the tempfile module:
 
-```
+```python
 import os, tempfile
 ```
 
 Change the logic that defines the *filename* in the *index* view function. After the *basedir* variable is defined, add a line taht defines the *tempdir* variable and change the *filename* variable so it now incorporates the *tempdir* variable as part of its path:
 
-```
+```python
         tempdir = tempfile.mkdtemp(dir=basedir)
 
         filename = os.path.join( 
@@ -521,7 +528,7 @@ Change the logic that defines the *filename* in the *index* view function. After
 
 Save the file and refresh the browser. Upload a config file. Check the filesystem for the temporary directory name, then go to it. You should see a random directory name containing the file you uploaded. For example:
 
-```
+```bash
 (env) $ ls ./uploads/ 
 test.yaml  tmpcrlrrmwa  tmppe646x2r
 ```
@@ -534,7 +541,7 @@ I could not find a server-side function in Flask or Flask-WTF that lets you limi
 
 Instead, implement a basic workaround using [Flask environment variables](https://flask.palletsprojects.com/en/1.1.x/config/#MAX_CONTENT_LENGTH). In the *application.py* file, under the secret key, under the application instance, add a new configuration that limits file upload sizes to 1 MB. 
 
-```
+```python
 app.config['SECRET_KEY'] = 'fix this later'
 app.config['MAX_CONTENT_LENGTH'] = 1024 * 1024
 ```
@@ -547,7 +554,7 @@ The two files should now look like the two listings below:
 
 #### application.py
 
-```
+```python
 from flask import Flask, render_template
 from flask_wtf import FlaskForm
 from flask_wtf.file import FileField, FileRequired, FileAllowed
@@ -584,7 +591,7 @@ def index():
 
 #### templates/index.html
 
-```
+```html
 <!DOCTYPE html>
 <html>
 <head>
@@ -615,7 +622,7 @@ You will eventually want users to be able to download the XML file generated by 
 
 Modify the *application.py* file. Import the *send_from_directory* and *url_for* modules from the Flask package:
 
-```
+```python
 from flask import Flask, render_template, send_from_directory, url_for
 ```
 
@@ -625,13 +632,13 @@ The *download_url* should contain the route address, *download/*, and the relati
 
 Define the *download_url* variable near the start of the view function.
 
-```
+```python
     download_url = ""
 ```
 
 Replace the *return* statement at the end of the *index* view function with the following lines. The *download_url* creates a Dynamic URL comprised of the */download* route address, the name of the temporary folder that was created in the *uploads* folder in the filesystem, and the name of the file that was previously uploaded. Flask Dynamic URLs allow us to pass simple arguments from one view function to another view function.
 
-```
+```python
         tempfolder = os.path.split(tempdir)[1]
         download_url = os.path.join(
             '/download', tempfolder, secure_filename(f.filename))
@@ -643,7 +650,7 @@ Replace the *return* statement at the end of the *index* view function with the 
 
 Create a new route and view function for [downloading the file from the temporary directory](https://flask.palletsprojects.com/en/1.1.x/api/#flask.send_from_directory). The route address, *"/download/\<tempfolder\>/\<filename\>"*, in the example below uses [Flask's Dynamic URL](https://pythonise.com/series/learning-flask/generating-dynamic-urls-with-flask) feature to send information encoded in the route URL to the view function.
 
-```
+```python
 @app.route("/download/<tempfolder>/<filename>", methods=('GET','POST'))
 def download(tempfolder,filename):
     basedir = os.path.join(
@@ -657,7 +664,7 @@ Then, add a link to the *templates/index.html* template so the user can [downloa
 
 Replace the following text to *templates/index.html*, after the HTML form tags:
 
-```
+```html
     {% if data != None %}
         <p>{{ data }}</p>
     {% endif %}
@@ -665,7 +672,7 @@ Replace the following text to *templates/index.html*, after the HTML form tags:
 
 with the following text:
 
-```
+```html
     {% if data != None %}
         <p></p>
         <p><a href="{{ download_url }}">Download the file you recently uploaded</a></p>
@@ -680,7 +687,7 @@ Save the template file. Refresh the browser.
 
 Upload a file. Then, see the download link. Verify you can download the file when you click on the download link. After downloading the test file, your browser should look similar to the screenshot below:
 
-![screenshot]({static}/images/flask-web-app-tutorial/flask-020.png){width=90%}
+![screenshot]({attach}flask-020.png){width=99%}
 
 One issue is that the temporary folders do not get automatically cleaned up. That's a problem you will address later in this tutorial.
 
@@ -698,7 +705,7 @@ To "wrap" my Usermapper command-line program in a Flask web app, you need to imp
 
 Clone the Usermapper source code to the *~/Projects* folder.
 
-```
+```bash
 (env) $ cd ~/Projects
 (env) $ git clone https://github.com/blinklet/usermapper.git
 ```
@@ -707,7 +714,7 @@ This creates a folder named *usermapper* and downloads the package files into it
 
 Have a look at the source code. 
 
-```
+```bash
 (env) $ tree usermapper
 usermapper
 ├── config.yaml
@@ -729,7 +736,7 @@ The source code consists of some helper files and a package directory named *use
 
 Install the *usermapper* package in the *usermapper-web* virtual environment in *editable* mode, so any changes we make to the source code in the *~/Projects/usermapper/usermapper* package directory will automatically be appied to the installed instance in the *usermapper-web* virtual environment:
 
-```
+```bash
 (env) $ pip install --editable ~/Projects/usermapper
 ```
 
@@ -743,13 +750,13 @@ Import the usermapper package's functions into the *application.py* Flask progra
 
 Add *yaml* to the module imports line:
 
-```
+```python
 import os, tempfile, yaml
 ```
 
 Add functions from the *usermapper* package:
 
-```
+```python
 from usermapper.usermapper import xmlwriter
 from usermapper.mapperdata import get_users
 ```
@@ -760,14 +767,14 @@ Instead of saving the uploaded configuration file on the server's filesystem, pr
 
 Delete the uploads directory and create a new directory named "downloads".
 
-```
+```bash
 (env) $ rm -rf uploads
 (env) $ mkdir downloads
 ```
 
 In the *application.py* file, change the *index* view function to the following. Replace the following text near the end of the view function:
 
-```
+```python
         f = form.filename.data
         basedir = os.path.join(
             os.path.abspath(os.path.dirname(__file__)), 'uploads')
@@ -782,7 +789,7 @@ In the *application.py* file, change the *index* view function to the following.
 
 with the following new text:
 
-```
+```python
         f = form.filename.data
         basedir = os.path.join(
             os.path.relpath(os.path.dirname(__file__)), 'downloads')
@@ -803,7 +810,7 @@ You made a lot of changes in the *index* view function. You built the *basedir* 
 
 Also, change the *basedir* variable in the *download* view function so it also points to the the new *downloads* folder:
 
-```
+```python
 @app.route("/download/<tempfolder>/<filename>", methods=('GET','POST'))
 def download(tempfolder,filename):
     basedir = os.path.join(
@@ -825,7 +832,7 @@ To provide some feedback to the user so they know the file generation worked, ad
 
 Modify the *index* view function. Change the section starting with *configuration = yaml.safe_load(f.read())* to:
 
-```
+```python
         configuration = yaml.safe_load(f.read())
         structure = get_users(configuration)
         xmlwriter(structure,filename)
@@ -851,7 +858,7 @@ Change the *templates/index.html* template so it uses a [Jinja For loop](https:/
 
 In *templates/index.html*, change the *if* block from:
 
-```
+```html
     {% if data != None %}
         <p></p>
         <p><a href="{{ download_url }}">Download the file you recently uploaded</a></p>
@@ -864,7 +871,7 @@ In *templates/index.html*, change the *if* block from:
 
 to:
 
-```
+```html
     {% if data != None %}
         <p></p>
         <p><a href="{{ download_url }}">Download the <em>user-mapping.xml</em> file</a></p>
@@ -893,19 +900,19 @@ I think the easiest way is to run a [cron job that runs every twenty minutes](ht
 
 Create a crontab entry:
 
-```
+```bash
 $ crontab -e
 ```
 
 add the following line:
 
-```
+```bash
 */20 * * * * find /home/brian/Projects/usermapper-web/downloads/tmp* -maxdepth 0 -mmin +20 -exec rm -fr {} +;
 ```
 
 Check if it is working (after twenty minutes):
 
-```
+```bash
 $ grep CRON var/log/syslog
 ```
 
@@ -921,7 +928,7 @@ The solution to the refresh problem is to create a new route and view function t
 
 Create a new template named: *templates/download.html*. Copy of the *index.html* template and paste it into the new template, with the form removed. Add in a link back to the *index* view. Change the displayed text so the instructions are clear. The *templates/download.html* template should look like the following:
 
-```
+```html
 <!DOCTYPE html>
 <html>
 <head>
@@ -951,7 +958,7 @@ Create a new template named: *templates/download.html*. Copy of the *index.html*
 
 Then, change the *index.html* template and remove the download link and file preview, as shown below:
 
-```
+```html
 <!DOCTYPE html>
 <html>
 <head>
@@ -977,7 +984,7 @@ Modify *application.py* to support the separate *index* and *download* templates
 
 Add *redirect* to the list of imports from the Flask package, as shown below.
  
-```
+```python
 from flask import Flask, render_template, send_from_directory, url_for, redirect
 ```
 
@@ -985,13 +992,13 @@ The *index* view function now only needs to handle the configuration file upload
 
 Delete the initial *download_url* definition statement in the *index* view function. Delete the following text:
 
-```
+```python
     download_url = ""
 ```
 
 Also, delete code that reads the generated user-mapping.xml file. Delete the following text:
 
-```
+```python
         preview = open(filename, 'r')
         data = preview.readlines()
         preview.close()
@@ -999,26 +1006,26 @@ Also, delete code that reads the generated user-mapping.xml file. Delete the fol
 
 Delete the second *download_url* definition statement at the end of the *if form.validate_on_submit():* block in the *index* view function:
 
-```
+```python
         download_url = os.path.join('/download',temp_folder)
 ```
 
 Add a redirect statement at the end of the *if form.validate_on_submit():* block in the *index* view function so that, when the form is submitted and the *user-mapping.xml* file is generated, the web app redirects to the download page:
 
-```
+```python
         return redirect (url_for('download_page', temp_folder=temp_folder))
 ```
 
 Change the *configuration* dictionary 
 Delete the *data* and *download_url* variables from the index view function's return statement. The statement should now look like the line shown below:
 
-```
+```python
     return render_template('index.html', form=form)
 ```
 
 The *index* view function should now look like the source code below:
 
-```
+```python
 @app.route("/", methods=('GET','POST'))
 def index():
     form = MyForm()
@@ -1044,7 +1051,7 @@ def index():
 
 Create a new view function called *download_page*. It receives the temporary directory name in a dynamic URL. Add into it the preview file logic you deleted from the *index* view function. When adding back in the file preview code, change the file *open* statement to a *with* statement, which is more "Pythonic", results in fewer lines of code, and automatically closes the file when it is no longer needed.
 
-```
+```python
 @app.route('/download_page/<temp_folder>', methods=('GET','POST'))
 def download_page(temp_folder):
     filename = os.path.join(
@@ -1064,7 +1071,7 @@ def download_page(temp_folder):
 
 Refresh the browser to test the application. After uploading a configuration file, you should end up with a screen that looks like the screenshot below.
 
-![screenshot]({static}/images/flask-web-app-tutorial/flask-030.png){width=90%}
+![screenshot]({attach}flask-030.png){width=99%}
 
 You should see that, after you upload a file, you are redirected to a page that previews the generated XML file and provides a link to download it. Refreshing the browser no longer regenerates the download file.
 
@@ -1072,7 +1079,7 @@ You should see that, after you upload a file, you are redirected to a page that 
 
 Now your program is fully functional. Commit the new code to Git and push it to the remote repository.
 
-```
+```bash
 (env) $ cd ~/Projects/usermapper-web
 (env) $ git add .
 (env) $ git commit -m 'First Flask program'
@@ -1124,19 +1131,19 @@ To keep things simple, I will use the *[Bootstrap-Flask](https://bootstrap-flask
 
 Install Bootstrap-Flask in your environment:
 
-```
+```bash
 (env) $ pip install bootstrap-flask
 ```
 
 Modify the *application.py* program to include Bootstrap-Flask. Import the Bootstrap class to the program, as shown below:
 
-```
+```python
 from flask_bootstrap import Bootstrap
 ```
 
 Register The Bootstrap class with the application by creating an instance of the Bootstrap class, named *bootstrap*, that inherits all the functions and attributes of the original Flask application instance, named *app*:
 
-```
+```python
 app = Flask(__name__)
 bootstrap = Bootstrap(app)
 ```
@@ -1154,7 +1161,7 @@ Create a template file named *templates/base.html* and copy the [Bootstrap-Flask
 
 The *base.html* template will look like:
 
-```
+```html
 <!doctype html>
 <html lang="en">
 <head>
@@ -1186,7 +1193,7 @@ Then, change the *templates/index.html* and *templates/download.html* templates 
 
 The *index.html* template will look like:
 
-```
+```html
 {% extends "base.html" %}
 
 {% block title %}Guacamole User Mapper{% endblock %}
@@ -1207,7 +1214,7 @@ The *index.html* template will look like:
 
 The *download.html* template will look like:
 
-```
+```html
 {% extends "base.html" %}
 
 {% block title %}Guacamole User Mapper{% endblock %}
@@ -1245,13 +1252,13 @@ Replace all the Jinja form placeholders with just one line, which uses the [*ren
 
 You need to import the *render_form* macro into the template. Add the following line after the *extends* block at the top of the *index.html* file:
 
-```
+```html
 {% from 'bootstrap/form.html' import render_form, render_field %}
 ```
 
 Delete the following text from *index.html*:
 
-```
+```html
     <form method="POST" enctype="multipart/form-data">
         {{ form.csrf_token }}
         {{ form.filename.label }} {{ form.filename(size=20) }}
@@ -1264,13 +1271,13 @@ Delete the following text from *index.html*:
 
 and replace it with the following text:
 
-```
+```html
         {{ render_form(form) }}
 ```
 
 The *index.html* template now looks like:
 
-```
+```html
 {% extends "base.html" %}
 {% from 'bootstrap/form.html' import render_form, render_field %}
 
@@ -1293,7 +1300,7 @@ To make things look a bit better, modify the *application.py* file and add a mes
 
 The *MyForm* class in the *application.py* file should now look like:
 
-```
+```python
 class MyForm(FlaskForm):
     filename = FileField('Select configuration file: ', 
         validators=[FileRequired(), FileAllowed(['yaml'], 
@@ -1304,7 +1311,7 @@ class MyForm(FlaskForm):
 
 Save the file and refresh the browser. Your web page should now look similar to the below screenshot:
 
-![screenshot]({static}/images/flask-web-app-tutorial/flask-040.png){width=90%}
+![screenshot]({attach}flask-040.png){width=99%}
 
 ### Using the Bootstrap grid
 
@@ -1312,7 +1319,7 @@ Next, use [Bootstrap's grid system](https://getbootstrap.com/docs/4.0/layout/gri
 
 Add *div* tags with Bootstrap's *container*, *row*, and *column-size* classes to the *index.html* template. The content block in the *index.html* template should now look like:
 
-```
+```html
 {% block content %}
 
 <div class='container'>
@@ -1332,11 +1339,11 @@ Add *div* tags with Bootstrap's *container*, *row*, and *column-size* classes to
 
 Refresh the browser and see that the page is rendered in two columns and the layout is responsive. It should  look similar to the screenshot below:
 
-![screenshot]({static}/images/flask-web-app-tutorial/flask-050.png){width=90%}
+![screenshot]({attach}flask-050.png){width=99%}
 
 Similarly, add a grid layout to the *downloads.html* template. The content block in the *downloads.html* template should now look like:
 
-```
+```html
 {%block content %}
 
 <div class = 'container'>
@@ -1373,7 +1380,7 @@ Now that you've learned more about Jinja templates, you can code a better soluti
 
 In the *download.html* template, delete the preformatted text tags and use jinja filters to preserve the preview indenting. Replace the text:
 
-```
+```html
             <pre><code>
                 {%- for item in data -%}
                     {{ item }}
@@ -1383,7 +1390,7 @@ In the *download.html* template, delete the preformatted text tags and use jinja
 
 With the following text:
 
-```
+```html
         <p style="font-size: small; line-height: 1.25; font-family: 'Courier New', Courier, monospace;">
             {% for item in data %}
                 {{ item|replace(' ','&nbsp;'|safe )}}<br/>
@@ -1397,7 +1404,7 @@ As the for loop iterates through the *item* placeholder, the Jinja *replace* fil
 
 The final *download.html* template should look like:
 
-```
+```html
 {% extends "base.html" %}
 
 {% block title %}Guacamole User Mapper{% endblock %}
@@ -1432,7 +1439,7 @@ The final *download.html* template should look like:
 
 Save the file and refresh the browser. After you upload a configuration file, the download page will look similar to the screenshot below:
 
-![screenshot]({static}/images/flask-web-app-tutorial/flask-060.png){width=90%}
+![screenshot]({attach}flask-060.png){width=99%}
 
 ## More styling and content
 
@@ -1446,7 +1453,7 @@ I also added additional text that explains how to use the program.
 
 The final version of the *base.html* template is shown below:
 
-```
+```html
 <!doctype html>
 <html lang="en">
 <head>
@@ -1496,7 +1503,7 @@ The final version of the *base.html* template is shown below:
 
 The final version of the *index.html* template is shown below:
 
-```
+```html
 {% extends "base.html" %}
 {% from 'bootstrap/form.html' import render_form, render_field, render_form_row %}
 
@@ -1577,13 +1584,13 @@ The final version of the *index.html* template is shown below:
 
 Refresh the browser and see the results. The index page should look like the screenshot below:
 
-![screenshot]({static}/images/flask-web-app-tutorial/flask-070.png){width=90%}
+![screenshot]({attach}flask-070.png){width=99%}
 
 ### The download.html template
 
 The final version of the *download.html* template is shown below:
 
-```
+```html
 {% extends "base.html" %}
 
 {% block title %}Guacamole User Mapper{% endblock %}
@@ -1620,7 +1627,7 @@ The final version of the *download.html* template is shown below:
 
 Refresh the browser and see the results. After you upload a configuration file to the web site, the download page should look like the screenshot below:
 
-![screenshot]({static}/images/flask-web-app-tutorial/flask-080.png){width=90%}
+![screenshot]({attach}flask-080.png){width=99%}
 
 ## Preparing to deploy your Flask application
 
@@ -1638,7 +1645,7 @@ You need to store your [environment variables in a separate file](https://flask.
 
 You must especially protect the SECRET_KEY environment variable. Up until now, you've been using a dummy secret key. You need to [generate a secure secret key](https://flask.palletsprojects.com/en/1.1.x/quickstart/#sessions). Use the following Python command to generate a secret key you can use.
 
-```
+```bash
 $ python3 -c 'import secrets; print(secrets.token_urlsafe(32))'
 ```
 
@@ -1646,7 +1653,7 @@ Copy the output to the clipboard so you can paste it into the *.env* file.
 
 Create a new file named *.env* in the *usermapper-flask* directory. Define the following environment variables in the file:
 
-```
+```python
 FLASK_APP=application
 FLASK_ENV=development
 SECRET_KEY=b8rD0UJDkrr6MrdP8RQ1GpLPEA_SYsrrIfMuTjfw5AI
@@ -1658,7 +1665,7 @@ Many other environment variables affect both Flask and Bootstrap. You can modify
 
 To prevent yourself, from accidentally uploading the secret key to GitHub, add the *.env* file to *.gitignore*:
 
-```
+```bash
 (env) $ cd ~/Projects/usermapper-web
 (env) $ echo '.env' >> .gitignore
 ```
@@ -1671,7 +1678,7 @@ Other programmers who clone your project's GitHub repository will be missing the
 
 To enable Python programs to read the contents of the *.env* file, you must install the the [*python-dotenv* package](https://github.com/theskumar/python-dotenv#python-dotenv-----) in your Python virtual environment.
 
-```
+```bash
 (env) $ pip install python-dotenv
 ```
 
@@ -1679,20 +1686,20 @@ To enable Python programs to read the contents of the *.env* file, you must inst
 
 Edit the *application.py* file. Import the *load_dotenv* module from the *dotenv* package.
 
-```
+```python
 from dotenv import load_dotenv
 ```
 
 Delete the secret key and content length configuration lines in *application.py*:
 
-```
+```python
 app.config['SECRET_KEY'] = 'fix this later'
 app.config['MAX_CONTENT_LENGTH'] = 1024 * 1024
 ```
 
 And replace them with the following configuration, which first finds the *.env* file and then configures the Flask app using the variables defines in the *.env* file:
 
-```
+```python
 basedir = os.path.abspath(os.path.dirname(__file__))
 load_dotenv(os.path.join(basedir, '.env'))
 app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY')
@@ -1715,7 +1722,7 @@ Create a file named *requirements.txt* in the *usermapper-web* directory. You pr
 
 Add the following lines to the *requirements.txt* file.
 
-```
+```bash
 wheel
 flask
 Flask-WTF
@@ -1726,7 +1733,7 @@ git+https://github.com/blinklet/usermapper.git@v0.3#egg=usermapper
 
 Test the requirements.txt file by deactivating the current Python virtual environment and creating a new environment named *newenv* in the *usermapper-web* directory:
 
-```
+```bash
 (env) $ deactivate
 $ python3 -m venv newenv
 $ source newenv/bin/activate
@@ -1738,7 +1745,7 @@ Refresh the browser. The app should work as expected.
 
 Then delete the test environment and switch back to the original.
 
-```
+```bash
 (env) $ deactivate
 $ rm -rf newenv
 $ source env/bin/activate
@@ -1749,7 +1756,7 @@ $ source env/bin/activate
 
 The application.py source code should now look like the listing below:
 
-```
+```python
 from flask import Flask, render_template, send_from_directory, url_for, redirect
 from flask_wtf import FlaskForm
 from flask_wtf.file import FileField, FileRequired, FileAllowed
@@ -1829,7 +1836,7 @@ def download(tempfolder,filename):
 
 Commit these changes to git and push them to GitHub. 
 
-```
+```bash
 (env) $ git add .
 (env) $ git commit -m 'added envonment variables in env file'
 (env) $ git push
@@ -1858,13 +1865,13 @@ Follow the Azure quickstart documentation about deploying a Python web app. The 
 
 Install the [Azure command-line interface (CLI)](https://docs.microsoft.com/en-us/cli/azure/) on your Linux PC. Run the following command:
 
-```
+```bash
 (env) $ curl -sL https://aka.ms/InstallAzureCLIDeb | sudo bash
 ```
 
 Login to your Azure account:
 
-```
+```bash
 (env) $ az login
 ```
 
@@ -1876,7 +1883,7 @@ You already have a *usermapper-web* Git repository on your PC. Use the Azure CLI
 
 Deploy the *usermapper-web* web app with the command:
 
-```
+```bash
 (env) $ cd ~/Projects/usermapper-web
 (env) $ az webapp up --sku F1 --name usermapper 
 ```
@@ -1885,7 +1892,7 @@ The *F1* web app size is the free tier.
 
 Look at the output generated by the command, listed below. The Azure CLI automatically creates a lot of resources for you. 
 
-```
+```bash
 The webapp 'usermapper' doesn't exist
 Creating Resource group 'mail_rg_Linux_centralus' ...
 Resource group creation complete
@@ -1917,13 +1924,13 @@ See the web app information in the command's output. Go to the URL listed in the
 
 To investigate the error, look at web app logs in the Azure portal. Or, run the following Azure CLI command:
 
-```
+```bash
 (env) $ az webapp log tail --name usermapper
 ```
 
 If you see a lot of logs, and no obvious errors, you may need to search for the "error" keyword:
 
-```
+```bash
 (env) $ az webapp log tail --name usermapper | grep -i error
 2020-12-11T21:26:52.422108240Z     raise RuntimeError(message)
 2020-12-11T21:26:52.422113040Z RuntimeError: A secret key is required to use CSRF.
@@ -1937,7 +1944,7 @@ Quit the command with CTRL-C.
 
 The Azure Portal offers an intuitive user interface for changing the [Azure web application configuration settings](https://docs.microsoft.com/en-us/azure/app-service/configure-common) but it's easier to show the command-line-interface in a blog post like this so [use the Azure CLI to configure the web app](https://docs.microsoft.com/en-us/azure/app-service/configure-language-python). In your Linux PC's terminal window, enter the Azure CLI command shown below, except your resource group name and web app name will be different:
 
-```
+```bash
 (env) $ az webapp config appsettings set \
         --name usermapper \
         --resource-group mail_rg_Linux_centralus \
@@ -1960,19 +1967,19 @@ Azure offers an SSH console connection to the container running the web app. Log
 * Click on the "usermapper" web app
 * Click on "SSH"
 
-![screenshot]({static}/images/flask-web-app-tutorial/flask-090.png){width=90%}
+![screenshot]({attach}flask-090.png){width=99%}
 
 Finally, click on the "go" link in the SSH Panel. A new browser tab will open runnning an SSH session connected to the web app's container. 
 
 In the browser's SSH tab, run the following commands:
 
-```
+```bash
 # cd downloads
 # ls 
 tmphqspiosn  tmpnwjs1vmj
 ```
 
-![screenshot]({static}/images/flask-web-app-tutorial/flask-100.png){width=90%}
+![screenshot]({attach}flask-100.png){width=99%}
 
 See one or more temporary directories have already been created. Each one should contain a *user-mapping.xml* file.
 

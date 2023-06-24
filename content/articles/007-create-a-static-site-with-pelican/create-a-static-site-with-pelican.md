@@ -7,7 +7,7 @@ category: Blogging
 status: published
 
  
-I created this site using [Pelican](https://getpelican.com/), a static site generation tool based on the [Python programming language](https://www.python.org/) and [Jinja2 templates](https://palletsprojects.com/p/jinja/). This post describes how to install and configure Pelican, and how to use Pelican themes to make the web site to look the way you want. In a future post, I will describe how I [published the web site to a hosting provider]({filename}/articles/host-static-web-site/host-static-web-site.md).
+I created this site using [Pelican](https://getpelican.com/), a static site generation tool based on the [Python programming language](https://www.python.org/) and [Jinja2 templates](https://palletsprojects.com/p/jinja/). This post describes how to install and configure Pelican, and how to use Pelican themes to make the web site to look the way you want. In a future post, I will describe how I [published the web site to a hosting provider]({filename}/articles/008-host-static-web-site/host-static-web-site.md).
 
 ## Install Pelican
 

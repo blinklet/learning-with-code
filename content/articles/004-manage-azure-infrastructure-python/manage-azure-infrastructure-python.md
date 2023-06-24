@@ -8,7 +8,7 @@ status: published
 
 I wrote a new Python script called *azruntime*. It helps me manage my Azure VMs. The script is open-source and should work for anyone who also uses the Azure CLI. *azruntime* is available on my [azure-scripts GitHub repository](https://github.com/blinklet/azure-scripts).
 
-![splash image showing app in screens]({static}images/manage-azure-infrastructure-python/azruntime01.png)
+![splash image showing app in screens]({attach}azruntime01.png)
 
 
 I learned a lot about the Azure Python SDK while working on the *azruntime* project. In this post, I share what I learned and highlight the more interesting topics like how to find information faster in the Azure Python SDK documentation, Azure authorization, and sorting nested lists by key.

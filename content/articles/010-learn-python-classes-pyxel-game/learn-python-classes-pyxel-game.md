@@ -20,7 +20,7 @@ This tutorial demonstrates object-oriented programming and Python classes.
 
 I think that most people learn best when working on a practical project, so I will show readers how to build a simple game that they can share with their friends and family. While building the program, I demonstrate the types of problems solved by using Python classes and I use Python classes to build and manage multiple game elements.
 
-I assume the reader has already learned the [basics of Python programming]({filename}python-minimum-you-need-to-know.md).
+I assume the reader has already learned the [basics of Python programming]({filename}/articles/001-python-minimum-you-need-to-know/python-minimum-you-need-to-know.md).
 
 ## Python Classes
 
@@ -107,7 +107,7 @@ $ pyxel edit platformer.pyxres
 
 You should see a new window appear on your desktop that looks like the image below:
 
-![screenshot showing Pyxel Editor]({static}images/learn-python-classes-pyxel-game/pyxel_editor_2.png){width=90%}
+![screenshot showing Pyxel Editor]({attach}pyxel_editor_2.png){width=90%}
 
 This is the [Pyxel Editor](https://github.com/kitao/pyxel#how-to-create-resources). It is displaying the contents of the *platformer.pyxres* file. You may use it to view and create sprites, tiles, tile maps, sounds, and music for Pyxel games. 
 
@@ -176,7 +176,7 @@ def draw():
 
 If you save and run the program now, you will see a window similar to the one below:
 
-![The bird sprite]({static}images/learn-python-classes-pyxel-game/pyxel_bird_1.png){width=80%}
+![The bird sprite]({attach}pyxel_bird_1.png){width=80%}
 
 ### Sprite animation
 
@@ -253,7 +253,7 @@ Note that you had to assign a value to the *animation_index* variable in the mai
 
 After you save and run the program, the *sprite_u* variable iterates between 0, 8, 16, and back to 0 every ten frames, or third of a second.
 
-![Bird sprite animation]({static}images/learn-python-classes-pyxel-game/bird_animation_1.gif)
+![Bird sprite animation]({attach}bird_animation_1.gif)
 
 You will use this algorithm multiple times when you have different sprites moving at different speeds. You can imagine how complex it will get if you have to manage it with global variables.
 
@@ -381,7 +381,7 @@ App()
 
 Running the program shows twelve bird sprites in random locations around the screen, all flapping their wings independently and slowly moving around.
 
-![Many bird sprites]({static}images/learn-python-classes-pyxel-game/pyxel_birds_3.png){width=80%}
+![Many bird sprites]({attach}pyxel_birds_3.png){width=80%}
 
 The *Sprite* class can be modified to change the behavior of the bird sprites without changing the rest of the program code. For example, make the bird sprites move:
 
@@ -589,7 +589,7 @@ App()
 
 Python classes, and the concept of inheritance, enabled you to add a new sprite type with its own position data and its own animation and movement logic by adding just a few lines of code to your game program. 
 
-![Different sprite types]({static}images/learn-python-classes-pyxel-game/pyxel_birds_4.png){width=80%}
+![Different sprite types]({attach}pyxel_birds_4.png){width=80%}
 
 You did not need to ask the other programmer who maintains the *sprites.py* file to make any changes to their file. You can see how using classes can make reusing code easier and how classes support the concept of code re-use and customization, resulting in program simplification.
 

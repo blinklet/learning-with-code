@@ -19,7 +19,7 @@ img
 I recently added a status indicator to my [*azruntime* application](https://github.com/blinklet/azure-scripts/tree/main/azruntime). If users have a lot of VMs in their subscriptions, the *azruntime* application can take a long time to run. Users will appreciate seeing the status so they know the program is still running and is not hung up.
 
 <!--
-![splash image]({static}images/python-rich-status-indicator/rich-logo-transparent.png){width=60%}
+![splash image]({attach}rich-logo-transparent.png){width=60%}
 -->
 
 I used the [Rich library](https://github.com/willmcgugan/rich) to implement a status indicator. I had to learn more about Python context managers to understand how the Rich library's progress bar and status indicators work. The [Rich library's documentation](https://rich.readthedocs.io/en/stable/index.html) is aimed at intermediate-to-advanced programmers and the Rich tutorials I found on the web did not cover using the Rich library's status update features.
@@ -48,7 +48,7 @@ Another way to see how Rich can improve text output in your Python console appli
 
 This will output a sample screen, as shown below:
 
-![rich01]({static}images/python-rich-status-indicator/rich01.png){width=75%}
+![rich01]({attach}rich01.png){width=75%}
 
 ### Learning from Rich sample code
 
@@ -64,15 +64,15 @@ Run the sample code by running the module. For example, I was looking for a way 
 
 I saw that the output looks like the kind of status updates I wanted. See the output below: 
 
-![richgif01]({static}images/python-rich-status-indicator/richgif01.gif){width=90%}
+![richgif01]({attach}richgif01.gif){width=90%}
 
 The console displayed spinner icon next to some text that changes as the program runs. Next, I clicked on the [rich.status module](https://rich.readthedocs.io/en/latest/reference/status.html) on the Rich documentation's References page. I saw the module documentation. To see the examples in the source code, I clicked on the source code link, as shown below:
 
-![rich02]({static}images/python-rich-status-indicator/rich02.png){width=90%}
+![rich02]({attach}rich02.png){width=90%}
 
 In the module's source code, I scrolled to the bottom to find the test code in the *if \_\_name\_\_ == "\_\_main\_\_":* block. As shown below, I can compare the code with the results I saw when I previously ran the module.
 
-![rich03]({static}images/python-rich-status-indicator/rich03.png){width=85%}
+![rich03]({attach}rich03.png){width=85%}
 
 After looking at the *rich.status* module's output, it's reference page, and its source code, I now see how I can implement a "spinner"-style status indicator for my *azruntime* application.
 

@@ -31,7 +31,7 @@ This post will show you how to [create your own free database server](https://le
 
 Microsoft Azure allows many different interfaces for configuring services. You may use [Azure Portal](https://learn.microsoft.com/en-us/azure/azure-portal/), [Azure CLI](https://learn.microsoft.com/en-us/cli/azure/?view=azure-cli-latest), [Azure Resource Manager](https://learn.microsoft.com/en-us/azure/azure-resource-manager/management/overview), [Terraform](https://learn.microsoft.com/en-us/azure/developer/terraform/overview), Microsoft's [Python API](https://learn.microsoft.com/en-us/python/api/overview/azure/resources?view=azure-python) [^2], and more.
 
-[^2]: I cover Azure's Python API in my post about [creating the *azruntime* program]({filename}manage-azure-infrastructure-python.md).
+[^2]: I cover Azure's Python API in my post about [creating the *azruntime* program]({filename}/articles/004-manage-azure-infrastructure-python/manage-azure-infrastructure-python.md).
 
 Azure CLI is easiest interface to include in a blog post where the reader may want to copy and paste steps. I will show you how to quickly create a sample database using Azure CLI and then show you how to connect to it using Python libraries. 
 
@@ -41,7 +41,7 @@ If, instead, you want to use Azure Portal to create your sample database, follow
 
 If you do not already have an Azure account, [create one](https://learn.microsoft.com/en-us/dotnet/azure/create-azure-account). Go to [https://azure.com](https://azure.com) and click on the *Free account* button.
 
-![Azure sign up page]({static}/images/create-sample-db-azure/create-account-01.png){width=90%}
+![Azure sign up page]({attach}create-account-01.png){width=90%}
 
 In the next few pages that appear, you agree to terms and conditions and enter your user information such as your e-mail address and password.
 
@@ -66,7 +66,7 @@ $ az login
 
 This starts login with interactive mode. A browser window will open up and ask you for your Azure account userid and password
 
-![Azure login window]({static}/images/create-sample-db-azure/az_login-001.png){width=90%}
+![Azure login window]({attach}az_login-001.png){width=90%}
 
 Enter your Azure userid. Then, enter your password at the next screen. You should see a notification in the browser window indicating you successfully logged it and you should see your account information printed in the terminal window.
 
@@ -100,7 +100,7 @@ Fortunately, these seem to be the default values for Azure SQL servers so you on
 
 Choose your database configuration information. You need to know the Azure location where you will deploy your services; pick one located close to you. Next, you need to decide what names you will assign to your resource group, server, and database. You will also have to choose your SQL database userid and password. 
 
-Assign your database server configuration information to environment variables that you can use in your Azure CLI commands and in your Python programs. The best way to do this is to create a file named *.env*, also known as a *dotenv file* [^3]. I wrote about [environment variables and dotenv files]({filename}use-environment-variables.md) in a previous post.
+Assign your database server configuration information to environment variables that you can use in your Azure CLI commands and in your Python programs. The best way to do this is to create a file named *.env*, also known as a *dotenv file* [^3]. I wrote about [environment variables and dotenv files]({filename}/articles/011-use-environment-variables/use-environment-variables.md) in a previous post.
 
 [^3]: [Sourcing](https://www.techrepublic.com/article/linux-101-what-does-sourcing-a-file-mean-in-linux/) the *.env* file only works on Linux and Mac OS. To load environment variables defined in the *.env* file in a Windows Powershell terminal, use the Powershell script described in [Stackoverflow answer #48607302](https://stackoverflow.com/questions/48607302/using-env-files-to-set-environment-variables-in-windows).
 

@@ -10,7 +10,7 @@ When you work on a post for your Pelican-based blog, you probably don't want the
 
 this is a test of a draft image
 
-![test image in draft]({static}images/image-draft-post/image-draft.png)
+![test image in draft]({attach}image-draft.png)
 
 There are, of course, many ways to accomplish the same goal. Here are some of the ways you can ensure your work in progress does not get accidentally published to your blog.
 
@@ -46,17 +46,13 @@ There are other ways to work with a draft post that you can keep inside your blo
 
 ### Images in draft posts
 
-Create images subdirectory in drafts directory
+Create images in draft post's directory
 
-Add draft images subfolder to STATIC_PATHS setting in *pelicanconf.py*:
 
-```python
-STATIC_PATHS = ['images','extras', 'drafts/images']
-```
-Use the {static} for images and store them in the *images* directory
+Use the {attach} for images and store them in the same directory
 
 ```python
-![test image in draft]({static}images/image-draft-post/image-draft.png)
+![test image in draft]({attach}image-draft.png)
 ```
 
 Pelican will find the image when you test the draft and when you move both the post to your *content* directory and your images directory to *content/images*, Pelican will find the image when you rebuild the site.

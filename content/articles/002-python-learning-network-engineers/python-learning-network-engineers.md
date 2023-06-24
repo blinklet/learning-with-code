@@ -30,7 +30,7 @@ I learned some programming during my Electrical Engineering degree program many 
 
 <iframe width="560" height="315" src="https://www.youtube.com/embed/q7SmsE44cIo" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
 
-These videos do not cover the basics of Python. I strongly suggest you read a book about Python, or watch some video training (see suggestions below) before you start working through these videos. Before I started recording this first video, I read the O'Reilly book, *Learning Python*, and wrote a [blog post]({filename}python-minimum-you-need-to-know.md) about what I learned in the first part of the book.
+These videos do not cover the basics of Python. I strongly suggest you read a book about Python, or watch some video training (see suggestions below) before you start working through these videos. Before I started recording this first video, I read the O'Reilly book, *Learning Python*, and wrote a [blog post]({filename}/articles/001-python-minimum-you-need-to-know/python-minimum-you-need-to-know.md) about what I learned in the first part of the book.
 
 This video refers to the following resources:
 
