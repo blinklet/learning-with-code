@@ -899,7 +899,7 @@ Delete temporary files after the user has downloaded them so they do not eventua
 
 You should give the users at least a few minutes to download their files after they are generated. The temporary file should persist for, maybe, 20 minutes and then be deleted.
 
-I think the easiest way is to run a [cron job that runs every twenty minutes](https://superuser.com/questions/430914/how-to-delete-directories-older-than-one-hour-cron-job) and deletes temporary files older than twenty minutes.
+I think the easiest way is to run a [*cron* job that runs every twenty minutes](https://superuser.com/questions/430914/how-to-delete-directories-older-than-one-hour-cron-job) and deletes temporary files older than twenty minutes.
 
 Create a crontab entry:
 
@@ -1990,7 +1990,7 @@ See one or more temporary directories have already been created. Each one should
 
 Unfortunately, you cannot delete these temporary files on a scheduled basis using the same method you used when you were developing the web app.
 
-On your local PC, you used a cron job to delete temporary files every 20 minutes. I tried installing *cron* in the web app container and editing the crontab file, the same way I did when I was testing on my local PC. Installation and configuration worked OK. However, the web app container pauses itself when it is not being actively used so, given that it is very rarely used right now, it is almost always paused. Unless the container is actively running when its system clock ticks past a 20-minute mark on its clock, the cron service will not delete any temporary files.
+On your local PC, you used a *cron* job to delete temporary files every 20 minutes. I tried installing *cron* in the web app container and editing the crontab file, the same way I did when I was testing on my local PC. Installation and configuration worked OK. However, the web app container pauses itself when it is not being actively used so, given that it is very rarely used right now, it is almost always paused. Unless the container is actively running when its system clock ticks past a 20-minute mark on its clock, the *cron* service will not delete any temporary files.
 
 This is a case where using a database would solve the problem because a managed database service can be configured to delete old data. 
 
@@ -2014,4 +2014,4 @@ If you want to keep costs low, purchase a cheap virtual private server (VPS) fro
 
 This tutorial showed you how to convert an existing Python command-line program into a web app so users can more easily access it. You learned how to use Flask to upload and download files, how to get user input using HTML forms, and how to use Bootstrap to make your application look professional while learning just the minimum you need to know about HTML and CSS. You also learned how to deploy a web app to a Python platform-as-a-service that costs nothing.
 
-While working on this tutorial, I found a [web app that helps developers create cron expressions](https://www.freeformatter.com/cron-expression-generator-quartz.html), based on information they enter in the user interface. This is both a great tool and a good example of how the tools you develop may be made available to others.
+While working on this tutorial, I found a [web app that helps developers create *cron* expressions](https://www.freeformatter.com/cron-expression-generator-quartz.html), based on information they enter in the user interface. This is both a great tool and a good example of how the tools you develop may be made available to others.

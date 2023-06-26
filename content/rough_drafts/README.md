@@ -4,10 +4,10 @@ Post follow this set of topics
 
 Series of posts getting data from Northwind database. See notes at top of *Azure-python-big-database.md* file. I think the *Azure-python-big-database.md* file is a good template to split up into the topics below. Also remember that the two other completed files: *Pandas-data-from-database.md* and *Sqlalchemy-minimum.md* can be used as well.
 
-* Create a Northwind sample database using MS Azure and SQL Server
+* Create a Northwind sample database using MS Azure and SQL Server (done)
 * Create a Northwind sample database using SQLite
 * Create a Northwind sample database using Docker and PostgreSQL
-* Environment variables help with creating db connect strings
+* Environment variables help with creating db connect strings  (done)
 * Use a Python program to read data from a database
   * database connection strings and ODBC driver
 * Use SQLAlchemy to read data from a database
@@ -50,7 +50,7 @@ Pandas-data-from-database.md
 * Does not cover how to get scheme information -- basic disucssion of available scheme-reading tools
 * Covers using Pandast read-sql-table and read-sql-query functions. Avoids SQLAlchemy queries
 Sqlalchemy-minimum.md
-* THis is a subset of "data-science-environment.md" with a lot of extras removed
+* This is a subset of "data-science-environment.md" with a lot of extras removed
 * Does not cover how to get scheme information
 * SQLite example with Chinook DB
 
