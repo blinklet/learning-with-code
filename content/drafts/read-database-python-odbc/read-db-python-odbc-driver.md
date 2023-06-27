@@ -1,183 +1,137 @@
-% SQL and Python access to the database
+title: Read SQL databases from Python programs
+slug: read-db-python-odbc-driver
+summary: Write Python programs that model a SQL database schema and read data from it, using the *pyodbc* driver
+date: 2023-06-14
+modified: 2023-06-14
+category: Databases
+<!--status: published-->
+
+<!--
+A bit of extra CSS code to center all images in the post
+-->
+<style>
+img
+{
+    display:block; 
+    float:none; 
+    margin-left:auto;
+    margin-right:auto;
+}
+</style>
 
 
-https://databudd.com/blog/tableau-data-analysis-bootcamp-master-data-visualization
-https://www.sqlservercentral.com/articles/connecting-to-adventureworks-on-azure
+This document will show you how to model a SQL database schema and read data from it, using the *pyodbc* driver.  
 
+## Prerequisites
 
+This post builds on top of a series of posts I have written, or you may already have the knowledge you need. To get the most out of this post, you need to have the following:
 
+* [Necessary prerequisite knowledge]({filename}#prerequisite-knowledge)
+  * Basic familiarity with relational databases like SQL databases
+  * Basic Python skills
+* Have a [suitable program environment]({filename}#set-up-your-program-environment) 
+  * Already have access to a relational database
 
-This document will show you how to use simple SQL queries to read data from the Database, using either  
+### Prerequisite knowledge
 
-# Important information
+You need to know a little bit about the basics of Python and the principles upon which [relational databases](https://www.oracle.com/ca-en/database/what-is-a-relational-database/) are based. If you do not already have some basic Python skills, I suggest you read my post, *[Python: the Minimum You Need to Know]({filename}articles/001-python-minimum-you-need-to-know/python-minimum-you-need-to-know.md)*, or a similar tutorial. 
 
-Before you get started using Python to access data in the Database, there are a few points you should know. These will help you determine if you should proceed with reading this document, or if you should find an alternative path to achieve your goals.
+### Set up your program environment
 
-## Prerequisite knowledge
+You need to create a Python virtual environment, and install the necessary drivers and packages. In this example, we will use the SQL Server we created on the Azure cloud service, which is loaded with the Adventureworks-LT sample database. Please see my post about [creating a sample database]({filename}articles/012-create-sample-db-azure/create-sample-db-azure.md) for more information about creating the server and the program environment.
 
-We do not cover the basics of Python or SQL in this document. You need to know a little bit about the basics of Python and the principles upon which [relational databases](https://www.oracle.com/ca-en/database/what-is-a-relational-database/) are based. If you do not already have some basic Python skills, I suggest you read my document, *Python: the Minimum You Need to Know*, or a similar tutorial. 
+After following those instructions, you will have completed the following steps and be ready to start this tutorial:
 
-Also, you need to have already requested and received access to the Database. See the *Analytics Documentation* for information about how to access the database, and to learn about the standard views available in THE DATABASE.
+1. [Install Azure CLI and use it to create a database server with a sample database]({filename}/articles/012-create-sample-db-azure#create-an-sql-server-on-azure)
+2. [Define the necessary environment variables in a *dotenv* file]({filename}/articles/012-create-sample-db-azure#create-a-dotenv-file)
+3. [Install the Microsoft SQL Server driver on your Linux PC]({filename}/articles/012-create-sample-db-azure#install-microsoft-odbc-driver-for-sql-server)
+4. [Install the *pyodbc* driver and the *python-dotenv* package]({filename}/articles/012-create-sample-db-azure#install-the-pyodbc-library)
 
-## Limited to PC 
-
-This document assumes the reader is using a Windows PC. It shows you how to use your Microsoft ID to connect to THE DATABASE from your Windows PC. So, Python can only access THE DATABASE when running on your own laptop.
-
-If you plan to write applications that run on a server, you will need to create an application key and ask the database team to set up authentication for the application. This document does not cover how to authenticate an application running on a server. You will also need to work with IT to ensure your application is secure and uses corporate data appropriately.
-
-## Data handling
-
-THE DATABASE may contain sensitive data. To reduce security risks, access only the specific data elements that you need and do not save any data to disk. Keep all your data in Python objects in memory so the data disappears when your program is finished.
-
-## Relevance
-
-The topics covered in this document may not be relevant to most data scientists because it ends where most will start: with data already retrieved from a database and stored in data frames. 
-
-If you work in Microsoft Azure, your IT team will have created a system for you that maintains one or more DataBricks data frames and keeps them in sync with your Database. Then, you will mostly work with the DataBricks PySpark API to transform and analyze the data. 
-
-However, knowing how the Database may be accessed from a Python program may help some programmers at some point. 
-
-
-
-
-
-## Install Microsoft ODBC driver for SQL Server
-
-Download and install the [Microsoft ODBC Driver for SQL Server on Windows](https://learn.microsoft.com/en-us/sql/connect/odbc/windows/microsoft-odbc-driver-for-sql-server-on-windows?view=sql-server-ver16). Microsoft ODBC Driver 18 for SQL Server supports Azure Active Directory integrated authentication.
-
-Download the installer file *msodbcsql.msi* from the SQL driver's [downloads page](https://learn.microsoft.com/en-us/sql/connect/odbc/download-odbc-driver-for-sql-server?view=sql-server-ver16) and save it. Then double-click on the installer file and follow the install wizard to compete installation.
-
-![Microsoft ODBC Driver for SQL Server installer](./Images/odbc-driver-003.png){width=60%}
-
-
-## Create a Python virtual environment
-
-To create a Python virtual environment, run the following commands:
-
-```bash
-$ mkdir data-science-folder
-$ cd data-science-folder
-$ python3 -Xfrozen_modules=off -m venv env
-```
-
-Then, activate the virtual environment.
-
-```
-> .\env\Scripts\activate
-(env) > 
-```
-
-## Install Jupyterlab
+### Install Jupyterlab
 
 This document uses a [Jupyter notebook](https://jupyter.org/) as an advanced [REPL](https://codewith.mu/en/tutorials/1.0/repl) that makes it easier to demonstrate Python code samples. If you prefer to use a simple text editor or another REPL, you can still follow along with this tutorial.
 
+I assume you already created a project directory. In my case, I named it *data-science-folder*. I also assume you created a Python virtual environment in that directory. In my case, I called my virtual environment *.venv*. 
+
+If it is not already active, activate the virtual environment.
+
+```bash
+$ cd data-science-folder
+$ source ./.venv/bin/activate
+(.venv) $ 
+```
+
 To install Jupyterlab, run the following command:
 
-```powershell
-(env) > pip install jupyterlab
+```bash
+(.venv) $ pip install jupyterlab
 ```
 
 Create a new Jupyter notebook and start it using the commands below:
 
-```powershell
-(env) > create-notebook my_notebook
-(env) > jupyter notebook my_notebook.ipynb
+```bash
+(.venv) $ create-notebook my_notebook
+(.venv) $ jupyter notebook my_notebook.ipynb
 ```
 
 A new Jupyter notebook will open in a browser window.
 
-![An example of the Jupyter Notebook user interface](./Images/Jupyter-Notebook.png){width=80%}
+![An example of the Jupyter Notebook user interface](./Images/Jupyter-Notebook.png){width=99%}
 
-When using a Jupyter notebook, create new cells in its user interface and then write Python code into the cell. Run the code by running the cell. The objects you create in each cell persist in memory and can be used in the next cell. 
+When using a Jupyter notebook to follow this tutorial, create new cells in its user interface and then write Python code into the cell. Run the code by running the cell. The objects you create in each cell persist in memory and can be used in the next cell. 
 
-## Install Python database drivers
+### Check the .env file
 
-Next, install [*pyodbc*](https://mkleehammer.github.io/pyodbc/), the open-source Python ODBC driver for SQL Server. This provides the Python interface to the Windows ODBC driver. 
+You should already have the information needed to create a database connection string. Either you followed the instructions in the previous post about setting up a sample database({filename}articles/012-create-sample-db-azure#get-the-connection-string) and got the connection string from Azure, or you asked your database administrator for the valid connection string.
 
-```powershell
-(env) > pip install pyodbc 
-```
+Use the information in the connection string to set up the [environment variables](https://analyzingalpha.com/jupyter-notebook-environment-variables-tutorial) you need for database access. I assume you are using your SQL Server administrative password to access the database.
 
-
-
-
-## Install dotenv
-
-```bash
-(env) $ pip install python-dotenv
-```
-
-## Create the .env file
-
-https://analyzingalpha.com/jupyter-notebook-environment-variables-tutorial
-
-need variables for
+Also, see my post about [using dotenv files]({filename}/articles/011-use-environment-variables/use-environment-variables.md). In my case, I created a file named *.env* which contained the following variables:
 
 ```python
-DB_SERVER=server.name.com
+DB_SERVER=server_name.database.windows.net
 DB_NAME=database_name
 DB_UID=username
 DB_PWD=password
 ```
 
-See my post about [using dotenv files]({filename}/articles/011-use-environment-variables/use-environment-variables.md).
-
-# Python ODBC driver and T-SQL
-
-You can use the *pyodbc* Python library to connect to and read data from an SQL Server database. Create a connection object by passing the necessary database and user information to the pyodbc driver's *connect()* function. You will create T-SQL statements and pass them to the connection object's  driver. 
-
-## Environment variables
-
-
-
-```python
-
-```
 ## Connect to Database
+
+You can use the *pyodbc* Python library to connect to and read data from an SQL Server database. Create a connection object by passing the necessary database and user information to the pyodbc driver's *connect()* function. 
 
 Import the *pyodbc* module and create a database connection string that you can pass into the driver's *connect()* function. 
 
 ```python
-import os
 import pyodbc
+import os
+from dotenv import load_dotenv
 
-userid = os.environ.get('DB_UID')
-password = os.environ.get('DB_PWD')
-db_server_name = os.environ.get('DB_SERVER')
-db_name = os.environ.get('DB_NAME')
+load_dotenv('.env', override=True)
+server =  'tcp:' + os.getenv('DB_SERVER') + ',1433'
+database = os.getenv('DB_NAME')
+username = os.getenv('DB_UID')
+password = os.getenv('DB_PWD')
 
 connection_string = (
-    "Driver={ODBC Driver 18 for SQL Server};"+
-    "Server=tcp:"+db_server_name+",1433;"+
-    "Database="+db_name+";"+
-    "Uid="+userid+";"+
-    "Pwd="+password+";"+
-    "Encrypt=yes;"+
-    "TrustServerCertificate=no;"+
-    "Connection Timeout=30;"
+  'Driver={ODBC Driver 18 for SQL Server}' +
+  ';Server=' + server +
+  ';Database=' + database +
+  ';Uid=' + username +
+  ';Pwd=' + password +
+  ';Encrypt=yes' +
+  ';TrustServerCertificate=no;'
 )
 
 conn = pyodbc.connect(connection_string)
 print(conn)
 ```
 
-The example above, when run, opens an interactive login session in a new web browser window. Enter your Microsoft password into the password prompt in the browser window.
-
-
-### Check that the connection is successful
-
-A quick way to check that the connection is working is to get the database server;s version information. Create a simple T-SQL statement using the [T-SQL *@@VERSION* function](https://learn.microsoft.com/en-us/sql/t-sql/functions/version-transact-sql-configuration-functions?view=sql-server-ver16).
+You should see the connection information in the output. It should look like the following:
 
 ```python
-statement = "SELECT @@version;"
-
-cursor = conn.cursor()
-cursor.execute(statement) 
-
-print(cursor.fetchone())
+<pyodbc.Connection object at 0x0000014F5D0C1CA0>
 ```
 
-This should print the version of SQL Server software running on the database. 
 
 ## Read database information
 
@@ -668,3 +622,12 @@ connection_string = (
 conn = pyodbc.connect(connection_string)
 ```
 
+
+
+# Information_Schema 
+
+The schema named [INFORMATION_SCHEMA](https://en.wikipedia.org/wiki/Information_schema) is a standard for SQL servers but it is not necessarily supported in every SQL database. For example, SQLite databases do not have an INFORMATION_SCHEME schema.
+
+https://stackoverflow.com/questions/4381765/information-schema-vs-sysobjects
+
+https://dba.stackexchange.com/questions/257377/how-to-get-all-the-table-existing-in-a-database

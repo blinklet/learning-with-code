@@ -2,7 +2,7 @@ title: Create a sample database on Azure cloud
 slug: create-sample-db-azure
 summary: For the purpose of practicing data analytics programming, create your own personal database server on Microsoft's Azure cloud, populate it with sample data, and run the server on Azure's free service tier
 date: 2023-05-30
-modified: 2023-05-30
+modified: 2023-06-26
 category: Databases
 status: published
 
@@ -23,9 +23,29 @@ The best way to start learning [Data science](https://en.wikipedia.org/wiki/Data
 
 After reviewing data science books, courses, and online resources, I noticed one particular topic is not covered in enough practical detail: how to use Python to access data from an SQL database. If you do not have access to an existing database, and want to learn how to analyze data stored in a database, you have to create your own sample database, preferably pre-loaded with a [sample data set](https://learn.microsoft.com/en-us/sql/samples/sql-samples-where-are?view=sql-server-ver16).
 
-This post will show you how to [create your own free database server](https://learn.microsoft.com/en-ca/azure/azure-sql/database/free-sql-db-free-account-how-to-deploy?view=azuresql) [^1] on Microsoft's Azure cloud, populate it with the [AdventureWorks sample database](https://learn.microsoft.com/en-us/sql/samples/adventureworks-install-configure?view=sql-server-ver16&tabs=ssms), and connect to the server. I will cover the details of exploring databases using various Python functions in future posts.
+This post will show you how to [create your own free database server](https://learn.microsoft.com/en-ca/azure/azure-sql/database/free-sql-db-free-account-how-to-deploy?view=azuresql) [^1] on Microsoft's Azure cloud, populate it with the [AdventureWorks sample database](https://learn.microsoft.com/en-us/sql/samples/adventureworks-install-configure), and connect to the server. I will cover the details of exploring databases using various Python functions in future posts.
 
 [^1]: Microsoft Azure offers a [free service tier](https://azure.microsoft.com/free/) that, in addition to offering $200 in services for free for 30 days, allows you to run small configurations of certain services, like a small SQL Server, for 12 months at no cost.
+
+## The Adventureworks Database
+
+Microsoft created [sample databases](https://learn.microsoft.com/en-us/sql/samples/sql-samples-where-are) so that users can experiment with their SQL Server and other data products. The Adventureworks database emulates the data needs of a fictional bicycle manufacturing company and has complex, realistic relationships defined between data tables. 
+
+Adventureworks database comes in [three versions](https://learn.microsoft.com/en-us/sql/samples/adventureworks-install-configure?view=sql-server-ver16&tabs=data-studio#download-backup-files):
+
+* The OLTP version is for most typical online transaction processing workloads (50 MB)
+* The Data Warehouse (DW) version is for data warehousing workloads (900 MB)
+* The Lightweight (LT) version is a lightweight and pared down version of the OLTP sample (7 MB)
+
+When you select the sample data set available on the Azure SQL Database service, Azure will deploy the Lightweight (LT) version of the Adventureworks dataset, also known as [AdventureworksLT](https://improveandrepeat.com/2019/02/use-the-adventureworks-sample-database-for-your-examples/). This is suitable for the tutorial in this post. The other versions can be [installed manually](https://learn.microsoft.com/en-us/sql/samples/adventureworks-install-configure?view=sql-server-ver16&tabs=data-studio#creation-scripts) and would be used to learn [advanced topics about database and data warehouse technology](https://www.kimballgroup.com/data-warehouse-business-intelligence-resources/books/).
+
+### Public Adventureworks Server
+
+The Lightweight version of the [Adventureworks database is available on a public server](https://www.sqlservercentral.com/articles/sqlservercentral-hosts-adventureworks-on-azure). If you do not want to create your own database server on Azure, you might choose to use the public server. However, the public server only allows you to read database tables and does not allow you to read the database views. Database views are an important topic for data analysts because, for security and policy reasons, they often access data using database views defined by an administrator. 
+
+Since it is so easy to create your own Adventureworks database on an Azure SQL Server, and since you get additional functionality on your own server compared to the public server, I suggest you build you own server so you can experiment with data analytics.
+
+
 
 ## How to configure services in Azure's free service tier
 
@@ -116,7 +136,7 @@ Open a new file in your favorite text editor and enter the environment variables
 ```bash
 location="eastus"
 resource_group="new-resource-group-name"
-server="my-sql-server-name"
+server="my-sql-server-name.database.windows.net"
 database="my-sql-database-name"
 login="sqldb_userid"
 password="sqldb_passwd"
@@ -281,7 +301,7 @@ import os
 from dotenv import load_dotenv
 load_dotenv()
 
-server =  'tcp:' + os.getenv('server') + '.database.windows.net,1433'
+server =  'tcp:' + os.getenv('server') + ',1433'
 database = os.getenv('database')
 username = os.getenv('login') + '@' + os.getenv('server')
 password = os.getenv('password')
@@ -398,7 +418,28 @@ After you create your Azure free trial account and install Azure CLI, you can cr
 
 Once you have a connection established, you can start practicing using Python to explore the database tables and to read and analyze the data. I will cover various ways to explore the database schema and to read and transform data in future posts. 
 
+## Appendix A: Using the Adventureworks public database server
 
+At the start of this post, I mentioned that you might want to use the [Adventureworks public database server](https://www.sqlservercentral.com/articles/sqlservercentral-hosts-adventureworks-on-azure). I think it is still useful as a way of showing how permissions are handled when you are exploring a database schema because you do not have permission to get data from the Adventureworks database views.
+
+If you choose to experiment with the data on the public server, you can re-use all of your code from the above tutorial. Just create a new *dotenv* file and change one line in your program to get data from that file instead of the default file.
+
+Create a new file named *.env.public* and save it in your project directory. The contents of the file should be:
+
+```bash
+server="sqlservercentralpublic"
+database="AdventureWorks"
+login="sqlfamily"
+password="sqlf@m1ly"
+```
+
+Then, change the line in your program where you call the *load_dotenv()* function and add the new file to its paramaters, and set the override parameter to *True* so it will overwrite existing environment variables.
+
+```
+load_dotenv('.env.public', override=True)
+```
+
+Now, when you connect to the database, you will connect to the public Adventureworks database.
 
 
 

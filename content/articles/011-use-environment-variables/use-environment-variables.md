@@ -3,6 +3,7 @@ slug: use-environment-variables-python
 summary: How Python programmers can set and use environment variables to improve their programs' flexibility and security
 date: 2023-04-07
 modified: 2023-04-07
+category: Python
 status: published
 
 Environment variables are key-value pairs that are are set outside of a Python program but may be accessed by the program during its execution. They are part of the operating system environment in which a Python program runs and are usually used to store information that is unique to a system, such as paths to important directories, credentials, API keys, or database connection strings.
