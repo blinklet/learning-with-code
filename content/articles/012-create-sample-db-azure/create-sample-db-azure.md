@@ -37,11 +37,13 @@ Adventureworks database comes in [three versions](https://learn.microsoft.com/en
 * The Data Warehouse (DW) version is for data warehousing workloads (900 MB)
 * The Lightweight (LT) version is a lightweight and pared down version of the OLTP sample (7 MB)
 
-When you select the sample data set available on the Azure SQL Database service, Azure will deploy the Lightweight (LT) version of the Adventureworks dataset, also known as [AdventureworksLT](https://improveandrepeat.com/2019/02/use-the-adventureworks-sample-database-for-your-examples/). This is suitable for the tutorial in this post. The other versions can be [installed manually](https://learn.microsoft.com/en-us/sql/samples/adventureworks-install-configure?view=sql-server-ver16&tabs=data-studio#creation-scripts) and would be used to learn [advanced topics about database and data warehouse technology](https://www.kimballgroup.com/data-warehouse-business-intelligence-resources/books/).
+When you select the sample data set available on the Azure SQL Database service, Azure will deploy the Lightweight (LT) version of the Adventureworks dataset, also known as [AdventureworksLT](https://improveandrepeat.com/2019/02/use-the-adventureworks-sample-database-for-your-examples/). This is suitable for the tutorial in this post. The other versions can be [installed manually](https://learn.microsoft.com/en-us/sql/samples/adventureworks-install-configure?view=sql-server-ver16&tabs=data-studio#creation-scripts) and would be used to learn advanced topics such as [data warehouse technology](https://www.kimballgroup.com/data-warehouse-business-intelligence-resources/books/).
 
 ### Public Adventureworks Server
 
-The Lightweight version of the [Adventureworks database is available on a public server](https://www.sqlservercentral.com/articles/sqlservercentral-hosts-adventureworks-on-azure). If you do not want to create your own database server on Azure, you might choose to use the public server. However, the public server only allows you to read database tables and does not allow you to read the database views. Database views are an important topic for data analysts because, for security and policy reasons, they often access data using database views defined by an administrator. 
+The Lightweight version of the [Adventureworks database is available on a public server](https://www.sqlservercentral.com/articles/sqlservercentral-hosts-adventureworks-on-azure). If you do not want to create your own database server on Azure, you might choose to use the public server. 
+
+However, the public server only allows you to read database tables and does not allow you to read the database views. Database views are an important topic for data analysts because, for security and policy reasons, they often access data using database views defined by an administrator. 
 
 Since it is so easy to create your own Adventureworks database on an Azure SQL Server, and since you get additional functionality on your own server compared to the public server, I suggest you build you own server so you can experiment with data analytics.
 
