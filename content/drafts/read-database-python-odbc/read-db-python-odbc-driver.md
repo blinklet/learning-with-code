@@ -1,4 +1,4 @@
-title: Read SQL databases from Python programs
+title: Explore SQL database schema with Python
 slug: read-db-python-odbc-driver
 summary: Write Python programs that model a SQL database schema and read data from it, using the *pyodbc* driver
 date: 2023-06-14
@@ -20,22 +20,24 @@ img
 </style>
 
 
-This document will show you how to model a SQL database schema and read data from it, using the *pyodbc* driver.  
+
+This post will show you how to explore your SQL database schema using SQL and the Python *pyodbc* driver.  The examples use Microsoft's SQL Server but the procedures should be usable on any SQL database system.
 
 ## First steps
 
-This post builds on top of a series of posts I have written, or you may already have the knowledge you need. To get the most out of this post, you need to have the following:
+This post builds on top of a series of posts I have written. To get the most out of this post, you need to have the following knowledge:
 
-* [Necessary prerequisite knowledge]({filename}#prerequisite-knowledge)
-  * Basic familiarity with [relational databases](https://www.oracle.com/ca-en/database/what-is-a-relational-database/) like SQL databases
-  * [Basic Python skills]({filename}/articles/001-python-minimum-you-need-to-know/python-minimum-you-need-to-know.md)
-* Have a [suitable program environment]({filename}#set-up-your-program-environment) 
-  * [Install Azure CLI and use it to create a database server with a sample database]({filename}/articles/012-create-sample-db-azure#create-an-sql-server-on-azure)
-  * [Define the necessary environment variables in a *dotenv* file]({filename}/articles/012-create-sample-db-azure#create-a-dotenv-file)
-  * [Install the Microsoft SQL Server driver on your Linux PC]({filename}/articles/012-create-sample-db-azure#install-microsoft-odbc-driver-for-sql-server)
-  * [Install the *pyodbc* driver and the *python-dotenv* package]({filename}/articles/012-create-sample-db-azure#install-the-pyodbc-library)
+* Basic familiarity with [relational databases](https://www.oracle.com/ca-en/database/what-is-a-relational-database/) like SQL databases
+* [Basic Python skills]({filename}/articles/001-python-minimum-you-need-to-know/python-minimum-you-need-to-know.md)
 
-After following those instructions, you will have completed the following steps and be ready to start this tutorial.
+You also need to have already prepared a suitable program environment by following the steps outlined in my blog post about [creating a sample database server]({filename}/articles/012-create-sample-db-azure/create-sample-db-azure.md).
+
+* Install Azure CLI and use it to create a database server with a sample database
+* Define the necessary environment variables in a *dotenv* file
+* Install the Microsoft SQL Server driver on your Linux PC
+* Install the *pyodbc* driver and the *python-dotenv* package
+
+After following those instructions, you are ready to start this tutorial.
 
 ### Install Jupyterlab
 
@@ -57,18 +59,17 @@ To install Jupyterlab in the virtual environment, run the following command:
 (.venv) $ pip install jupyterlab
 ```
 
-Create a new Jupyter notebook and start it using the commands below:
+Create a new Jupyter notebook using the command, below:
 
 ```bash
-(.venv) $ create-notebook my_notebook
-(.venv) $ jupyter notebook my_notebook.ipynb
+(.venv) $ jupyter-lab
 ```
 
-A new JupyterLab notebook will open in a browser window.
+A new JupyterLab session will open in a browser window.
 
 ![An example of the Jupyter Notebook user interface](./Images/Jupyter-Notebook.png){width=99%}
 
-To use a Jupyter notebook to follow this tutorial, create a new cell in its user interface and then write Python code into the cell. Run the code by running the cell, and view the output. To run the next code example, create another cell. The objects you create in each cell persist in memory and can be used in the next cell. 
+To use a Jupyter notebook to follow this tutorial, create a new cell in its user interface and then write Python code in the cell. Run the code by running the cell, and view the output. To run the next code example, create a new cell. The objects you create in each cell persist in memory and can be used in the next cell. 
 
 If you need more information about using Jupyter Notebooks, read the [JupyterLab documentation](https://jupyterlab.readthedocs.io/en/stable/user/notebook.html)
 
@@ -82,7 +83,7 @@ For convenience, use the *tabulate* package to format some of your output during
 
 ### Check the *.env* file
 
-You should already have the information needed to create a database connection string. Either you followed the instructions in the previous post about [setting up a sample database]({filename}articles/012-create-sample-db-azure#get-the-connection-string) and got the connection string from Azure, or you asked your database administrator for the valid connection string.
+You should already have the information needed to create a database connection string. Either you followed the instructions in the previous post about [setting up a sample database]({filename}/articles/012-create-sample-db-azure/create-sample-db-azure.md) and got the connection string from Azure, or you asked your database administrator for the valid connection string.
 
 Use the information in the connection string to set up the [environment variables](https://analyzingalpha.com/jupyter-notebook-environment-variables-tutorial) you need for database access. I assume you are using your SQL Server administrator userid and password to access the database.
 
@@ -165,15 +166,18 @@ Most SQL servers keep their database system information in a schema named [INFOR
 
 > **NOTE:** You also can get a lot of database information using the *cursor* object. I will discuss using the *cursor* object, and other database information gathering methods, in *Appendix A* at the end of this post.
 
-You are using a database running on Microsoft SQL Server so read the [Microsoft T-SQL documentation](https://learn.microsoft.com/en-us/sql/relational-databases/system-information-schema-views/system-information-schema-views-transact-sql?view=sql-server-ver16) to learn how the Microsoft SQL Server implements the INFORMATION_SCHEMA [^2]schema and how to write T-SQL statements that get information from it. 
+Microsoft's SQL Server documentation states that the more reliable way to gather information is to query the *sys.objects* catalog view because the *INFORMATION_SCHEMA* schema contains only a subset of database information. But, I found the *INFORMATION_SCHEMA* tables to be [simpler to use](https://stackoverflow.com/questions/4381765/information-schema-vs-sysobjects) [^1] and to contain all the information I needed for this tutorial. 
 
-[^2]: Microsoft's SQL Server documentation states that the more reliable way to gather information is to query the *sys.objects* catalog view because the *INFORMATION_SCHEMA* schema contains only a subset of database information. But, I found the *INFORMATION_SCHEMA* tables to be [simpler to use](https://stackoverflow.com/questions/4381765/information-schema-vs-sysobjects) and to contain all the information needed for this use case. 
+[^1]: See Stackoverflow answer reference# 4381765: [*INFORMATION_SCHEMA vs sysobjects*](https://stackoverflow.com/questions/4381765/information-schema-vs-sysobjects)
+
+You are using a database running on Microsoft SQL Server so read the [Microsoft T-SQL documentation](https://learn.microsoft.com/en-us/sql/relational-databases/system-information-schema-views/system-information-schema-views-transact-sql?view=sql-server-ver16) to learn how the Microsoft SQL Server implements the INFORMATION_SCHEMA schema and how to write T-SQL statements that get information from it. 
+
 
 ### Get schema names 
 
-Create a [Microsoft Transact-SQL (T-SQL)](https://learn.microsoft.com/en-us/sql/t-sql/queries/select-transact-sql) [^1] statement that selects the TABLE_SCHEMA column in the TABLES table in the INFORMATION_SCHEMA schema, and sorts the returned data alphabetically:
+Create a [Microsoft Transact-SQL (T-SQL)](https://learn.microsoft.com/en-us/sql/t-sql/queries/select-transact-sql) [^2] statement that selects the TABLE_SCHEMA column in the TABLES table in the INFORMATION_SCHEMA schema, and sorts the returned data alphabetically:
 
-[^1]: Microsoft Transact-SQL, also known as T-SQL, is Microsoft SQL Server's version of the [SQL language](https://en.wikipedia.org/wiki/SQL).
+[^2]: Microsoft Transact-SQL, also known as T-SQL, is Microsoft SQL Server's version of the [SQL language](https://en.wikipedia.org/wiki/SQL).
 
 Execute the statement using the cursor's *execute()* function. This places the data results in the cursor. You can get all the results at once using the cursor object's *fetchall()* method.
 
@@ -258,8 +262,8 @@ def table_info(table, schema='SalesLT'):
     statement = (
         f"SELECT COLUMN_NAME, DATA_TYPE, CHARACTER_MAXIMUM_LENGTH\n"
         f"FROM INFORMATION_SCHEMA.COLUMNS\n"
-        f"WHERE TABLE_SCHEMA = '{str(schema)}'\n"
-        f"AND TABLE_NAME = '{str(table)}'"
+        f"WHERE TABLE_SCHEMA = '{schema}'\n"
+        f"AND TABLE_NAME = '{table}'"
     )
 
     with conn.cursor() as cursor:
@@ -444,60 +448,32 @@ FROM [SalesLT].[Product] p
 
 ### Map the database relationships
 
-Use the information you have gathered to draw a database diagram. Foreign keys in each table should point to primary keys in other tables. The AdventureWorksLT database diagram will look like the following:
+Use the information you have gathered to draw a database diagram. Foreign keys in each table should point to primary keys in other tables. The AdventureWorksLT database diagram will look like the following [^3]:
 
-http://shaneryan81.blogspot.com/2015/08/adventureworks-2012-lt-schema.html
-
-![AdventureWorksLT database diagram]({attach}articles/read-database-python-odbc/read-db-python-odbc-driver.md)
+[^3]: Diagram from [http://shaneryan81.blogspot.com/2015/08/adventureworks-2012-lt-schema.html](http://shaneryan81.blogspot.com/2015/08/adventureworks-2012-lt-schema.html)
 
 
-## Read data from selected columns in a table
+![AdventureWorksLT database diagram]({attach}AdventureWorksLT-diagram-2.png){width=99%}
 
-Now that you have found the schemas, tables, and columns that contain the data you are interested in, you can read data using T-SQL statements and the pyodbc driver's *cursor.execute()* method.
-
-For example, to gather a little bit of data about five randomly-selected rows, run the following code:
-
-```python
-statement = """
-SELECT TOP 5 "Column One", "Column Zero", "Column Two", "Column Three"
-FROM sample_schema."Sample View Name"
-ORDER BY NEWID()
-"""
-
-cursor.execute(statement)
-
-headers = [h[0] for h in cursor.description]
-print(*headers, sep=", ")
-
-data_list = cursor.fetchall()
-for row in data_list:
-    print(*row, sep=", ")
-```
-
-The output lists the selected data.
-
-```
-Column One, Column Zero, Column Two, Column Three
-xxxxx
-```
 
 ## Conclusion
 
+You used Python functions to read the schema information of the Microsoft AdventureWorks database on an SQL Server. You used the *INFORMATION_SCHEMA* scheme to get the database information so hopefully the functions we wrote can also be used on other SQL database servers.
+
+You are now ready to start reading data from the database and analyzing it. I'll explore that topic in a future post.
+
 ## Appendix A: Alternative ways to get database schema information
 
-There are multiple ways to get database schema information in a Python program. In the main body of this document, we covered one method for the *pyodbc* driver and one the is native th the *SQLAlchemy ORM*. This appendix covers other methods that also get database information:
+There are multiple ways to get database schema information in a Python program. In the main body of this document, we covered the most universal method. This appendix covers other methods that also get database information:
 
-* pyodbc driver
-  * Read database information from the *cursor* instance created by the pyodbc connection's *cursor()* method.
-  * query the SQL Server database's *sys.objects* catalog view
+* Read database information from the *cursor* instance created by the pyodbc connection's *cursor()* method.
+* query the SQL Server database's *sys.objects* catalog view
 
+### Read database information from the *cursor*
 
+A *cursor* object is instantiated when you call the pyodbc connection's *cursor()* method. You do not need to know how to write SQL statements when using the *cursor* object and it offers [many methods and attributes](https://code.google.com/archive/p/pyodbc/wikis/Cursor.wiki) that describe the database details. But, the cursor object lists all database elements, even those that you do not have permission to access. 
 
-## Read database information from the *cursor*
-
-A *cursor* object is instantiated is when you call the pyodbc connection's *cursor()* method. You do not need to know how to write SQL statements when using the *cursor* object and it offers [many methods and attributes](https://code.google.com/archive/p/pyodbc/wikis/Cursor.wiki) that describe the database details. But, the cursor object lists all database elements, even those that you do not have permission to access. 
-
-### Schema names
+#### Schema names
 
 Create an instance of the [pyodbc cursor](https://github.com/mkleehammer/pyodbc/wiki/Cursor). Then, iterate through all tables in the object returned by the cursor's *tables()* method.
 
@@ -547,7 +523,7 @@ This outputs a set of the available schema:
 {'INFORMATION_SCHEMA', 'dbo', 'SalesLT', 'sys'}
 ```
 
-### Table and views names in a schema
+#### Table and views names in a schema
 
 To list table and views names in a schema, use the cursor object's *tables()* method again but pass it a schema parameter so it lists only tables and views from the schema you are interested in exploring. In this example, you will generate a list of views in the *SalesLT* schema.
 
@@ -581,7 +557,7 @@ data-science-test  SalesLT        vProductAndDescription           VIEW
 data-science-test  SalesLT        vProductModelCatalogDescription  VIEW
 ```
 
-### Column names in a table
+#### Column names in a table
 
 Use the *cursor.columns()* method to get a list of table information and pass it a table or view name and a schema name.
 
@@ -623,11 +599,11 @@ rowguid        uniqueidentifier             36
 ModifiedDate   datetime                     23
 ```
 
-### Table constraints
+#### Table constraints
 
 Normally, database tables are defined with constraints such as a primary key and foreign keys.
 
-Use the cursor object's *primaryKeys()* and *foreignKeys()* methods to determine if any columns in the table are primary keys or foreign keys:
+Create functions that use the cursor object's *primaryKeys()* and *foreignKeys()* methods to determine if any columns in the table are primary keys or foreign keys.
 
 ```python
 def constraint_info(table, schema='SalesLT'):
@@ -635,15 +611,15 @@ def constraint_info(table, schema='SalesLT'):
     fk_list = []
     pk_headers = []
     fk_headers = []
-    pk_indexes = (2, 3, 4, 5)
-    fk_indexes= (2, 3, 6, 7, 11)
+    pk_indexes = (3, )
+    fk_indexes= (3, 6, 7)
     
     with conn.cursor() as cursor:
+        
         for row in cursor.primaryKeys(table=table, schema=schema):
             data = [row[x] for x in pk_indexes]
             pk_list.append(data)
         pk_headers = [cursor.description[x][0] for x in pk_indexes]
-
         
         for row in cursor.foreignKeys(table=table, schema=schema):
             data = [row[x] for x in fk_indexes]
@@ -652,47 +628,63 @@ def constraint_info(table, schema='SalesLT'):
 
     return pk_list, pk_headers, fk_list, fk_headers
 
-pk_list, pk_headers, fk_list, fk_headers = constraint_info('Address')
+def display_constraints(table, schema='SalesLT'):
+    
+    pk_list, pk_headers, fk_list, fk_headers = constraint_info(table)
+    
+    output = ''
+    
+    output += f'TABLE = {schema}.{table}\n'
+    output += '=========================\n'
+    output += '\n'
+    
+    output += 'Primary Keys\n'
+    output += tabulate(pk_list, headers=pk_headers) + '\n'
+    output += '\n'
 
-print('Primary Keys\n============')
-print(tabulate(pk_list, headers=pk_headers))
-print()
+    output += 'Foreign Keys\n'
+    output += tabulate(fk_list, headers=fk_headers)
 
-print('Foreign Keys\n============')
-print(tabulate(fk_list, headers=fk_headers))
-print()
+    return output
+```
+
+Use the functions to get constrain information about each table. 
+
+```python
+table = 'Address'
+print(display_constraints(table))
 ```
 
 You will see that primary and foreign keys associated with the *Address* table 
 
 ```
+TABLE = SalesLT.Address
+=========================
+
 Primary Keys
-============
-table_name    column_name      key_seq  pk_name
-------------  -------------  ---------  --------------------
-Address       AddressID              1  PK_Address_AddressID
+column_name
+-------------
+AddressID
 
 Foreign Keys
-============
-pktable_name    pkcolumn_name    fktable_name      fkcolumn_name    fk_name
---------------  ---------------  ----------------  ---------------  --------------------------------------------
-Address         AddressID        CustomerAddress   AddressID        FK_CustomerAddress_Address_AddressID
-Address         AddressID        SalesOrderHeader  BillToAddressID  FK_SalesOrderHeader_Address_BillTo_AddressID
-Address         AddressID        SalesOrderHeader  ShipToAddressID  FK_SalesOrderHeader_Address_ShipTo_AddressID
+pkcolumn_name    fktable_name      fkcolumn_name
+---------------  ----------------  ---------------
+AddressID        CustomerAddress   AddressID
+AddressID        SalesOrderHeader  BillToAddressID
+AddressID        SalesOrderHeader  ShipToAddressID
 ```
  
+### Get data from the *sys.objects* view
 
+Another way to get database information is to query the [*sys.objects*](https://learn.microsoft.com/en-us/sql/relational-databases/system-catalog-views/sys-objects-transact-sql?view=sql-server-ver16) catalog view in the Microsoft SQL Server database. The *sys.objects* table is not a standard and may have different columns in different database systems.
 
+While Microsoft recommends using it, I find the *sys* tables hard to use for SQL beginners. Getting the information you need from the *sys* tables requires a deep knowledge of T-SQL and SQL Server. Otherwise, you will end up like me, trolling through [StackOverflow](https://stackoverflow.com/) for T-SQL recipes. 
 
-## Get data from the *sys.objects* view
+#### Schema names
 
-Another way to get database information is to query the [sys.objects](https://learn.microsoft.com/en-us/sql/relational-databases/system-catalog-views/sys-objects-transact-sql?view=sql-server-ver16) catalog view in the SQL Server database. 
+The T-SQL statement below [^4] finds all the schema IDs in the *sys.objects* view and then finds their schema names in the *sys.schema* table by joining on the schema ID.
 
-### Schema names
-
-The T-SQL statement below [^2] finds all the schema IDs in the *sys.objects* view and then finds their schema names in the *sys.schema* table by joining on the schema ID.
-
-[^2]: Statement copied from StackOverflow post *[SQL Server - Return SCHEMA for sysobjects](https://stackoverflow.com/a/917431)* (917431)
+[^4]: T-SQL statement from StackOverflow answer reference# 917431: *[SQL Server - Return SCHEMA for sysobjects](https://stackoverflow.com/a/917431)* (917431)
 
 ```python
 statement = """
@@ -702,18 +694,20 @@ INNER JOIN sys.schemas ON sys.objects.schema_id = sys.schemas.schema_id
 ORDER BY schema_name
 """
 
-cursor.execute(statement)
-schema_list = cursor.fetchall()
+with conn.cursor() as cursor:
+    cursor.execute(statement)
+    schema_list = cursor.fetchall()
+    
 print(schema_list)
 ```
 
 The schema information is the same as was gathered from the *INFORMATION_SCHEMA.VIEWS* table.
 
 ```
-[('compensation_and_performance',), ('employment_details',), ('global_mobility',), ('ot_recruitment',), ('personal',), ('recognition',), ('s4u_arp',), ('s4u_arp_short_term_incentives',), ('s4u_perf_annual_development_review',), ('s4u_perf_goal_setting',), ('s4u_perf_performance_improvement_plan',), ('s4u_succ_employee_career_flags',), ('s4u_succ_position_mdf',), ('s4u_succ_track_record_and_experiences',), ('s4u_succession',), ('sales_incentive',), ('supplemental',)]
+[('dbo',), ('SalesLT',), ('sys',)]
 ```
 
-### Table and views names in a schema
+#### Table and views names in a schema
 
 To get the table name information from the *sys.objects* catalog view, create the following SQL statement and then execute it.
 
@@ -722,104 +716,207 @@ statement = """
 SELECT sys.objects.name AS table_name
 FROM sys.objects 
 INNER JOIN sys.schemas ON sys.objects.schema_id = sys.schemas.schema_id
-WHERE sys.schemas.name = 'employment_details'
+WHERE sys.schemas.name = 'SalesLT'
+AND sys.objects.type = 'U' OR sys.objects.type = 'V'
 """
 
-cursor.execute(statement)
-for row in cursor.fetchall():
-    print(*row)
+with conn.cursor() as cursor:
+    cursor.execute(statement)
+    for row in cursor.fetchall():
+        print(*row)
 ```
 
 The output contains table and view names in the *employment_details* schema.
 
 ```
-Basic Employment Details All
-Basic Employment Details Current
-Externals
-Flexible Working
-Global_Mobility_AssigDetail
-Monitoring of Tasks
-New Line Managers
-Organizational Data All
-Organizational Data Current
-Other IDs
-Snapshot Non P24 Headcount
-Snapshot Non P24 Last Close
-Snapshot P24 Employee Master
-Snapshot P24 Last Close
-Snapshot P24 Organizational Data
-Snapshot P24 Workforce Delta
-Snapshot P24 Workforce Delta mapping view
+database_firewall_rules
+Customer
+ProductModel
+vProductModelCatalogDescription
+ProductDescription
+Product
+ProductModelProductDescription
+vProductAndDescription
+ProductCategory
+vGetAllCategories
+Address
+CustomerAddress
+SalesOrderDetail
+SalesOrderHeader
 ```
 
-### Column names in a table
+#### Column names in a table
 
-To get the column name information from the *sys.objects* catalog view, create the following SQL statement and then execute it.
+To get the column name information from the *sys.objects* catalog view, create the following function [^7].
+
+[^7]: T-SQL statement from Stackoverflow answer reference# 9179990:[*Where do I find Sql Server metadata for column datatypes?*](https://stackoverflow.com/questions/9179990/where-do-i-find-sql-server-metadata-for-column-datatypes)
 
 ```python
-statement = """
-SELECT 
-   sys.columns.name AS column_name, 
-   sys.types.name AS column_type, 
-   sys.columns.max_length AS length
-FROM sys.objects 
-INNER JOIN sys.columns ON sys.objects.object_id = sys.columns.object_id
-INNER JOIN sys.types ON sys.types.system_type_id = sys.columns.system_type_id
-WHERE sys.objects.name = 'Snapshot P24 Last Close'
-AND sys.types.name != 'sysname'
-"""
+def columns_info(table, schema='SalesLT'):
+    
+    statement = f"""
+    SELECT 
+        sys.columns.name as column_name, 
+        sys.types.name as type, 
+        sys.columns.max_length as max_length
+    FROM sys.objects
+    JOIN sys.columns 
+        ON sys.objects.object_id = sys.columns.object_id
+    INNER JOIN sys.types
+        ON sys.types.user_type_id = sys.columns.user_type_id
+    INNER JOIN sys.schemas 
+        ON sys.objects.schema_id = sys.schemas.schema_id
+    WHERE sys.objects.name = '{table}'
+    AND sys.schemas.name = '{schema}'
+    """
 
-cursor.execute(statement)
-for row in cursor.fetchall():
-    print(f"{row[0]:24}{row[1]:10}{row[2]:10}")
+    with conn.cursor() as cursor:
+        cursor.execute(statement)
+        headers = [h[0] for h in cursor.description]
+        results = cursor.fetchall()
+
+    return results, headers
 ```
 
-The output contains name, type, and length of each column in the *Snapshot P24 Last Close* view. It will print out all 313 columns so we show only a subset below.
-
-```
-Employee ID             varchar           10
-Period                  datetime           8
-Pers No                 varchar            8
-HC RLS Group            varchar           24
-Country Legal           varchar            2
-Country Legal Name      varchar           80
-HC driver               varchar           20
-Nokia ID                varchar           20
-UPI                     varchar           30
-Last Name               nvarchar          80
-First Name              nvarchar          80
-...
-```
-
-### Table constraints
-
-To get information about constraints such as a primary key, query tables in the *sys* schema with the following code. [^7] The example below asks for constraint information in the view named *Snapshot P24 Last Close*.
-
-[^7]: From [Stack Overflow answer: reference# 18622200](https://stackoverflow.com/questions/18622200/how-do-i-get-constraints-on-a-sql-server-table-column)
+Then get the columns from the *Address* table:
 
 ```python
-statement = """
-SELECT
-    chk.definition
-FROM sys.check_constraints chk
-INNER JOIN sys.columns col
-    ON chk.parent_object_id = col.object_id
-INNER JOIN sys.tables st
-    ON chk.parent_object_id = st.object_id
-WHERE st.name = 'Snapshot P24 Last Close'
-AND col.column_id = chk.parent_column_id
-"""
-
-cursor.execute(statement)
-print(cursor.fetchall())
+results, headers = columns_info('Address')
+print(tabulate(results, headers=headers))
 ```
 
-This outputs only an empty list, which indicates there are no constraints in the view so we now know there is no primary key in the view named *Snapshot P24 Last Close*.
+The output contains name, type, and length of each column in the *Address* table. 
+
+```python
+column_name    type                max_length
+-------------  ----------------  ------------
+AddressID      int                          4
+AddressLine1   nvarchar                   120
+AddressLine2   nvarchar                   120
+City           nvarchar                    60
+StateProvince  Name                       100
+CountryRegion  Name                       100
+PostalCode     nvarchar                    30
+rowguid        uniqueidentifier            16
+ModifiedDate   datetime                     8
+```
+
+
+#### Table primary keys
+
+To get information about constraints such as a primary key, query tables in the *sys* schema with the [following code](https://stackoverflow.com/questions/95967/how-do-you-list-the-primary-key-of-a-sql-server-table). [^5] The example below asks for constraint information in the table named *Address*.
+
+[^5]: T-SQL statement from Stackoverflow answer reference# 95967: [*How do you list the primary key of a SQL Server table?*](https://stackoverflow.com/questions/95967/how-do-you-list-the-primary-key-of-a-sql-server-table)
 
 
 
+```python
+def pk_info(table, schema='SalesLT'):
+    
+    statement = f"""
+    SELECT
+        sys.columns.name AS column_name,
+        sys.indexes.name AS index_name,
+        sys.columns.is_identity
+    FROM sys.indexes
+        inner join sys.index_columns  
+            ON sys.indexes.object_id = sys.index_columns.object_id 
+            AND sys.indexes.index_id = sys.index_columns.index_id
+        inner join sys.columns 
+            ON sys.index_columns.object_id = sys.columns.object_id 
+            AND sys.columns.column_id = sys.index_columns.column_id
+    WHERE sys.indexes.is_primary_key = 1
+        and sys.indexes.object_ID = OBJECT_ID('{schema}.{table}');
+    """
 
+    with conn.cursor() as cursor:
+        cursor.execute(statement)
+        headers = [h[0] for h in cursor.description]
+        results = cursor.fetchall()
 
+    return results, headers
 
+results, headers = pk_info('Address')
+print(tabulate(results, headers=headers))
+```
+
+This outputs shows all the primary keys for the table *Address*.
+
+```
+column_name    index_name            is_identity
+-------------  --------------------  -------------
+AddressID      PK_Address_AddressID  True
+```
+
+You can repeat this for every table. For example, get the Primary keys from the *CustomerAddress* table:
+
+```python
+results, headers = pk_info('CustomerAddress')
+print(tabulate(results, headers=headers))
+```
+
+You can see in the results below that the *CustomerAddress* table is probably an association tabl that supports a [many-to-many relationship](https://medium.com/@BryanFajardo/how-to-use-associative-entities-in-relational-databases-4456a2c71cda) between other tables, because the primary keys are not identifier and, when we look at foreign keys we will probably see that both primary keys are also foreign keys.
+
+```
+column_name    index_name                               is_identity
+-------------  ---------------------------------------  -------------
+CustomerID     PK_CustomerAddress_CustomerID_AddressID  False
+AddressID      PK_CustomerAddress_CustomerID_AddressID  False
+```
+
+#### Table foreign keys
+
+Write the following function [^6] to get the foreign keys from any table:
+
+[^6]: T-SQL statement taken from StackOverflow answer reference# 483193: [How can I list all foreign keys referencing a given table in SQL Server?](https://stackoverflow.com/questions/483193/how-can-i-list-all-foreign-keys-referencing-a-given-table-in-sql-server)
+
+```python
+def fk_info(table, schema='SalesLT'):
+    
+    statement = f"""
+    SELECT
+        tab1.name AS table_name,
+        col1.name AS column_name,
+        tab2.name AS referenced_table,
+        col2.name AS referenced_column
+    FROM sys.foreign_key_columns fkc
+    INNER JOIN sys.objects obj
+        ON obj.object_id = fkc.constraint_object_id
+    INNER JOIN sys.tables tab1
+        ON tab1.object_id = fkc.parent_object_id
+    INNER JOIN sys.schemas sch
+        ON tab1.schema_id = sch.schema_id
+    INNER JOIN sys.columns col1
+        ON col1.column_id = parent_column_id AND col1.object_id = tab1.object_id
+    INNER JOIN sys.tables tab2
+        ON tab2.object_id = fkc.referenced_object_id
+    INNER JOIN sys.columns col2
+        ON col2.column_id = referenced_column_id AND col2.object_id = tab2.object_id
+    WHERE sch.name = '{schema}' AND tab1.name = '{table}'
+    """
+
+    with conn.cursor() as cursor:
+        cursor.execute(statement)
+        headers = [h[0] for h in cursor.description]
+        results = cursor.fetchall()
+
+    return results, headers
+```
+
+Use the function to get the foreign keys from the *CustomerAddress* table:
+
+```python
+results, headers = fk_info('CustomerAddress')
+print(tabulate(results, headers=headers))
+```
+
+The output shows that the foreign keys in the *CustomerAddress* table are the same as its primary keys. Which means this table is probably an association table.
+
+```
+table_name       column_name    referenced_table    referenced_column
+---------------  -------------  ------------------  -------------------
+CustomerAddress  CustomerID     Customer            CustomerID
+CustomerAddress  AddressID      Address             AddressID
+```
 
 
