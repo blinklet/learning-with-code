@@ -36,7 +36,7 @@ FEED_RSS_URL = None
 FEED_DOMAIN = None
 
 # Flex theme settings
-SITELOGO = '/images/profile-001-128x128.JPG'
+SITELOGO = '/images/school_clock_small.PNG'
 FAVICON = ''
 SITETITLE = 'Learning with Code'
 SITESUBTITLE = 'Learning Python for work and for fun'
