@@ -1,4 +1,4 @@
-title: Explore SQL database schema with Python
+title: Explore SQL database schemas with Python
 slug: read-db-python-odbc-driver
 summary: Write Python programs that model a SQL database schema and read data from it, using the *pyodbc* driver
 date: 2023-06-14
@@ -67,7 +67,7 @@ Create a new Jupyter notebook using the command, below:
 
 A new JupyterLab session will open in a browser window.
 
-![An example of the Jupyter Notebook user interface](./Images/Jupyter-Notebook.png){width=99%}
+![An example of the Jupyter Notebook user interface]({attach}jupyter-labs-001.png){width=99%}
 
 To use a Jupyter notebook to follow this tutorial, create a new cell in its user interface and then write Python code in the cell. Run the code by running the cell, and view the output. To run the next code example, create a new cell. The objects you create in each cell persist in memory and can be used in the next cell. 
 
@@ -92,7 +92,7 @@ Also, see my post about [using dotenv files]({filename}/articles/011-use-environ
 For this example, I created a file named *.env* which assigns the connection string to an environment variable. I pasted in the connection string I got from Azure.
 
 ```python
-CONN_STRING="Driver={ODBC Driver 13 for SQL Server};Server=tcp:my-sql-server-name.database.windows.net,1433;Database=my-sql-database-name;Uid=my_userid@my-sql-server-name;Pwd=my)password;Encrypt=yes;TrustServerCertificate=no;"
+CONN_STRING="Driver={ODBC Driver 13 for SQL Server};Server=tcp:my-sql-server-name.database.windows.net,1433;Database=my-sql-database-name;Uid=my_userid@my-sql-server-name;Pwd=my_password;Encrypt=yes;TrustServerCertificate=no;"
 ```
 
 This is different than the variables I used in my previous posts, where I had separate variables for the server, database, userid, and password, and then wrote a Python statement that creates a connection string from those variables. 
@@ -153,7 +153,7 @@ cursor.close()
 
 The code you ran will print out the following output:
 
-```
+```bash
 Schema Name
 -----------
 SalesLT
@@ -162,7 +162,7 @@ INFORMATION_SCHEMA
 sys
 ```
 
-Most SQL servers keep their database system information in a schema named [INFORMATION_SCHEMA](https://en.wikipedia.org/wiki/Information_schema). This is a standard for SQL servers but it is not supported in every SQL database. For example, SQLite databases do not support it.
+Most SQL servers keep their database system information in a schema named [*INFORMATION_SCHEMA*](https://en.wikipedia.org/wiki/Information_schema). This is a standard for SQL servers but it is not supported in every SQL database. For example, SQLite databases do not support it.
 
 > **NOTE:** You also can get a lot of database information using the *cursor* object. I will discuss using the *cursor* object, and other database information gathering methods, in *Appendix A* at the end of this post.
 
@@ -318,17 +318,22 @@ Description    nvarchar                            400
 
 ### Table constraints
 
-Normally, database tables are defined with constraints such as a primary key and foreign keys. The primary key, foreign keys, and other constrains define relationships between tables in a relational database. Create a function that gets constrain data for a table:
+Normally, database tables are defined with constraints such as a primary key and foreign keys. The primary key, foreign keys, and other constrains define relationships between tables in a relational database. Create a function that gets constraint data for a table:
+
 
 ```python
 def constraint_info(table, schema='SalesLT'):
 
-    statement = (
-        f"SELECT TABLE_NAME, CONSTRAINT_NAME, CONSTRAINT_TYPE\n"
-        f"FROM INFORMATION_SCHEMA.TABLE_CONSTRAINTS\n"
-        f"WHERE TABLE_SCHEMA = '{str(schema)}'\n"
-        f"AND TABLE_NAME = '{str(table)}'"
-    )
+    statement = f"""
+        SELECT TABLE_NAME, 
+               CONSTRAINT_NAME, 
+               CONSTRAINT_TYPE
+        FROM INFORMATION_SCHEMA.TABLE_CONSTRAINTS
+        WHERE TABLE_SCHEMA = '{schema}' AND
+              TABLE_NAME = '{table}' AND
+              (CONSTRAINT_TYPE = 'FOREIGN KEY' OR
+               CONSTRAINT_TYPE = 'PRIMARY KEY')
+    """
 
     with conn.cursor() as cursor:
         cursor.execute(statement)
@@ -338,7 +343,9 @@ def constraint_info(table, schema='SalesLT'):
     return constraint_rows, headers
 ```
 
-Get the *Address* view's constraints with the following code:
+For the purpose of joining tables so we can read data, we are interested in the primary keys and foreign keys. Other types of keys are important if we plan to write or delete data in the database but I am only discussing how we read data in this post.
+
+Get the *Address* view's primary and foreign key constraints with the following code:
 
 ```python
 table, head = constraint_info('Address')
@@ -351,10 +358,9 @@ The constraints defined for the *Address* table are output below:
 TABLE_NAME    CONSTRAINT_NAME       CONSTRAINT_TYPE
 ------------  --------------------  -----------------
 Address       PK_Address_AddressID  PRIMARY KEY
-Address       AK_Address_rowguid    UNIQUE
 ```
 
-Release the process for each table until all constrains are recorded. For example, get the *Product* table's constraints:
+Repeat the process for each table until all constrains are recorded. For example, get the *Product* table's constraints:
 
 ```python
 table, head = constraint_info('Product')
@@ -365,32 +371,68 @@ The *Product* table's contraints are:
 
 ```
 TABLE_NAME    CONSTRAINT_NAME                               CONSTRAINT_TYPE
-------------  --------------------------------------------  ---------------
+------------  --------------------------------------------  -----------------
 Product       FK_Product_ProductCategory_ProductCategoryID  FOREIGN KEY
 Product       FK_Product_ProductModel_ProductModelID        FOREIGN KEY
-Product       CK_Product_ListPrice                          CHECK
-Product       CK_Product_SellEndDate                        CHECK
-Product       CK_Product_StandardCost                       CHECK
-Product       CK_Product_Weight                             CHECK
 Product       PK_Product_ProductID                          PRIMARY KEY
-Product       AK_Product_Name                               UNIQUE
-Product       AK_Product_ProductNumber                      UNIQUE
-Product       AK_Product_rowguid                            UNIQUE
 ```
 
-For the purpose of joining tables so we can read data, we are interested in the primary keys and foreign keys. Other types of keys are important if we plan to write or delete data in the database but I am only discussing how we read data in this post.
+You can see the foreign keys but you do not know to which table and column they point. Another, more complex T-SQL query can [tell us all the foreign keys]((https://learn.microsoft.com/en-us/previous-versions/sql/legacy/aa175805(v=sql.80)?redirectedfrom=MSDN)) [^8] in the database and to which table the foreign keys point:
 
-You will notice that the database views do not have constraints. This is normal for views, which act like "saved queries" and are not typically joined with other tables to create data. For example, the *vProductAndDescription* view:
+[^8]: The T-SQL statement was taken from [https://learn.microsoft.com/en-us/previous-versions/sql/legacy/aa175805(v=sql.80)](https://learn.microsoft.com/en-us/previous-versions/sql/legacy/aa175805(v=sql.80))
 
 ```python
-table, head = constraint_info('vProductAndDescription')
-print(table)
+def pk_fk_info():
+
+    statement = f"""
+        SELECT 
+            KCU1.TABLE_NAME AS 'FK_TABLE_NAME',
+            KCU1.COLUMN_NAME AS 'FK_COLUMN_NAME',
+            KCU2.TABLE_NAME AS 'UQ_TABLE_NAME',
+            KCU2.COLUMN_NAME AS 'UQ_COLUMN_NAME'
+        FROM INFORMATION_SCHEMA.REFERENTIAL_CONSTRAINTS RC
+        JOIN INFORMATION_SCHEMA.KEY_COLUMN_USAGE KCU1
+        ON KCU1.CONSTRAINT_CATALOG = RC.CONSTRAINT_CATALOG 
+            AND KCU1.CONSTRAINT_SCHEMA = RC.CONSTRAINT_SCHEMA
+            AND KCU1.CONSTRAINT_NAME = RC.CONSTRAINT_NAME
+        JOIN INFORMATION_SCHEMA.KEY_COLUMN_USAGE KCU2
+        ON KCU2.CONSTRAINT_CATALOG = 
+        RC.UNIQUE_CONSTRAINT_CATALOG 
+            AND KCU2.CONSTRAINT_SCHEMA = 
+        RC.UNIQUE_CONSTRAINT_SCHEMA
+            AND KCU2.CONSTRAINT_NAME = 
+        RC.UNIQUE_CONSTRAINT_NAME
+            AND KCU2.ORDINAL_POSITION = KCU1.ORDINAL_POSITION
+        ORDER BY FK_TABLE_NAME
+    """
+
+    with conn.cursor() as cursor:
+        cursor.execute(statement)
+        headers = [h[0] for h in cursor.description]
+        constraint_rows = cursor.fetchall()
+        
+    return constraint_rows, headers
+
+table, head = pk_fk_info()
+print(tabulate(table, headers=head))
 ```
 
-Outputs an empty list:
+The output shows all foreign keys in each table and the keys to which they point:
 
-```
-[]
+```bash
+FK_TABLE_NAME    FK_COLUMN_NAME          UQ_TABLE_NAME    UQ_COLUMN_NAME
+---------------  ----------------------- ---------------- -----------------
+CustomerAddress  AddressID               Address          AddressID
+CustomerAddress  CustomerID              Customer         CustomerID
+Product          ProductCategoryID       ProductCategory  ProductCategoryID
+Product          ProductModelID          ProductModel     ProductModelID
+ProductCategory  ParentProductCategoryID ProductCategory  ProductCategoryID
+...
+SalesOrderDetail ProductID               Product          ProductID
+SalsOrderDetail  SalesOrderID            SalesOrderHeader SalesOrderID
+SalsOrderHeader  BillToAddressID         Address          AddressID
+SalsOrderHeader  ShipToAddressID         Address          AddressID
+SalsOrderHeader  CustomerID              Customer         CustomerID
 ```
 
 ### Get view definitions
@@ -424,7 +466,7 @@ Then, print the view definition for each view in the database. For example, the 
 print(view_def('vProductAndDescription'))
 ```
 
-This will display the view definition for the *vProductAndDescription* view, which is the T-SQL statement that would generate the same data in the view:
+This will display the view definition for the *vProductAndDescription* view, which is the T-SQL statement that would generate the same data in the view. For example, the *vProductAndDescription* view definition is shown below: 
 
 ```
 CREATE VIEW [SalesLT].[vProductAndDescription]
@@ -444,6 +486,19 @@ FROM [SalesLT].[Product] p
     ON pm.[ProductModelID] = pmx.[ProductModelID]
     INNER JOIN [SalesLT].[ProductDescription] pd
     ON pmx.[ProductDescriptionID] = pd.[ProductDescriptionID];
+```
+
+If you look for constraints in one of the views, will notice that the database views do not have constraints. This is normal for views, which act like "saved queries" and are not typically joined with other tables to create data. For example, the *vProductAndDescription* view:
+
+```python
+table, head = constraint_info('vProductAndDescription')
+print(table)
+```
+
+Outputs an empty list:
+
+```
+[]
 ```
 
 ### Map the database relationships
