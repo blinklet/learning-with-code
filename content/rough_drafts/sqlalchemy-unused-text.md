@@ -1156,9 +1156,3 @@ Joined Table: Track
 
 
 
-connection_string = (Driver={{ODBC Driver 18 for SQL Server}};Server='hraap-euw-prod-asq01.database.windows.net';Database='hraap-euw-db01';Authentication=ActiveDirectoryInteractive;UID='blinklet';PWD='Uu1Np9Be6i7!')
-
-engine = create_engine(f"mssql+pyodbc:///?odbc_connect={connection_string}")
-sqlacodegen mysql+oursql://user:password@localhost/dbname
-
-sqlacodegen mssql+pyodbc://blinklet:Uu1Np9Be6i7@hraap-euw-prod-asq01.database.windows.net/hraap-euw-db01?driver=ODBC+Driver+17+for+SQL+Server

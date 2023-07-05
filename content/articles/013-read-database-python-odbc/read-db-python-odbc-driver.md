@@ -90,7 +90,7 @@ Use the information in the connection string to set up the environment variables
 For this example, I created a file named *.env* which assigns the connection string to an environment variable. I pasted in the connection string I got from Azure.
 
 ```python
-CONN_STRING="Driver={ODBC Driver 13 for SQL Server};Server=tcp:my-sql-server-name.database.windows.net,1433;Database=my-sql-database-name;Uid=my_userid@my-sql-server-name;Pwd=my_password;Encrypt=yes;TrustServerCertificate=no;"
+CONN_STRING="Driver={ODBC Driver 18 for SQL Server};Server=tcp:my-sql-server-name.database.windows.net,1433;Database=my-sql-database-name;Uid=my_userid@my-sql-server-name;Pwd=my_password;Encrypt=yes;TrustServerCertificate=no;"
 ```
 
 Remember to except your *.env* file from being tracked in your source control system, if you use one.
@@ -125,7 +125,7 @@ Tou need information about the data model configured in the database. For exampl
 
 Normally, you get this information from the database documentation. If no documentation is available, you can analyze the database with an SQL discovery tool like [*SchemaSpy*](https://schemaspy.org/), [*SchemaCrawler*](https://www.schemacrawler.com/). You can also write a Python program to analyze the database schema information, which is what we will do in this post. 
 
-## Get database information
+### Get database information
 
 The first thing you need to know is what database schemas exist on the server. To get a list of all schema supported in the database, use the *cursor.tables()* method and filter the results for distinct schema names. 
 
@@ -505,18 +505,18 @@ Use the information you have gathered to draw a database diagram. Foreign keys i
 
 ## Conclusion
 
-You used Python functions to read the schema information of the Microsoft AdventureWorks database on an SQL Server. You used the *INFORMATION_SCHEMA* scheme to get the database information so hopefully the functions we wrote can also be used on other SQL database servers.
+You used Python functions to read the schema information of the Microsoft AdventureWorks database on an SQL Server. You used the *INFORMATION_SCHEMA* schema to get the database information so hopefully the functions we wrote can also be used on other SQL database servers.
 
 You are now ready to start reading data from the database and analyzing it. I'll explore that topic in a future post.
 
 ## Appendix A: Alternative ways to get database schema information
 
-There are multiple ways to get database schema information in a Python program. In the main body of this document, we covered the most universal method. This appendix covers other methods that also get database information:
+There are multiple ways to get database schema information in a Python program. In the main body of this document, we covered the most universal method. 
 
-* Read database information from the *cursor* instance created by the *pyodbc* connection's *cursor()* method.
-* query the SQL Server database's *sys.objects* catalog view
+I found that the reading from *cursor* methods was easy and felt more "Pythonic" but you cannot query data from the database using just the *cursor* methods, so it is probably best to learn how to use SQL Query statements to get the database schema information so you get more practice using SQL. For your information, I cover using *cursor* methods in this appendix. I also provide an example of querying the database system tables to get database schema information.
 
-### Read database information from the *cursor*
+
+### Read database information from the *cursor* instance
 
 A *cursor* object is instantiated when you call the *pyodbc* connection's *cursor()* method. You do not need to know how to write SQL statements when using the *cursor* object and it offers [many methods and attributes](https://code.google.com/archive/p/pyodbc/wikis/Cursor.wiki) that describe the database details. But, the cursor object lists all database elements, even those that you do not have permission to access. 
 
@@ -552,7 +552,7 @@ This lists all tables and views in a database. You see 519 rows listed. The avai
 ...
 ```
 
-A more elegant way to list just the available scheme names is to filter using a set, as shown below:
+A more elegant way to list just the available schema names is to filter using a set, as shown below:
 
 ```python
 schema_set = set()
@@ -721,7 +721,7 @@ AddressID        SalesOrderHeader  BillToAddressID
 AddressID        SalesOrderHeader  ShipToAddressID
 ```
  
-### Get data from the *sys.objects* view
+### Get data from the system tables
 
 Another way to get database information is to query the [*sys.objects*](https://learn.microsoft.com/en-us/sql/relational-databases/system-catalog-views/sys-objects-transact-sql?view=sql-server-ver16) catalog view in the Microsoft SQL Server database. The *sys.objects* table is not a standard and may have different columns in different database systems.
 

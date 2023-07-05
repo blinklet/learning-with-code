@@ -477,7 +477,7 @@ We see zero customers have a null, or "NaN", value in their *SupportRepId* colum
 
 ## Available public databases
 
-If you cannot get access to HRDP when you start experimenting with data science tools like Python and SQLAlchemy, use another available database for practice. There is lots of data [available to the public](https://www.dropbase.io/post/top-11-open-and-public-data-sources) that you may want to analyze as you learn more about data science. We want to learn how to analyze data stored in a database so we need data available in that format.
+If you cannot get access to DATABASE when you start experimenting with data science tools like Python and SQLAlchemy, use another available database for practice. There is lots of data [available to the public](https://www.dropbase.io/post/top-11-open-and-public-data-sources) that you may want to analyze as you learn more about data science. We want to learn how to analyze data stored in a database so we need data available in that format.
 
 The best solution is to install an SQL database engine like [SQLite](https://www.sqlite.org/index.html) on your PC and download a database backup from a public repository. [Kaggle](https://www.kaggle.com/) offers many [database files that are suitable for learning data science](https://www.kaggle.com/datasets?search=SQL) but many databases offered by Kaggle are poorly designed and cause errors when SQLAlchemy performs database reflection. Experts may be able to work around these problems but they can frustrate beginners. Other, properly-designed databases like the [Northwind database](https://github.com/jpwhite3/northwind-SQLite3), or the [Chinook database](https://github.com/lerocha/chinook-database), may also be more suitable.
 
@@ -491,7 +491,7 @@ server like [Microsoft Access](https://www.microsoft.com/en-us/microsoft-365/acc
 
 ## Microsoft Access
 
-You already have access to Microsoft Access via Nokia's Office 365 corporate license. Install Access if you do not already have it.
+You already have access to Microsoft Access via Office 365 corporate license. Install Access if you do not already have it.
 
 Start Microsoft Access. Then, get the [Northwind sample database for Microsoft Access](https://learn.microsoft.com/en-us/dotnet/framework/data/adonet/sql/linq/downloading-sample-databases#northwind_access). 
 
