@@ -21,6 +21,12 @@ img
 
 Introduction paragraph
 
+This post covers the tasks a junior data scientist might need to do when reading data from databases. Most of the time, you will only need to read data. In fact, if you work with data provided by other teams, they almost always will restrict your database access privileges to read-only [^2].
+
+[^2]: You will likely receive access to a *database view* prepared by the other team's database administrator. The view will be read-only and will contain only the columns you requested when you met with the team to disuss your data needs.
+
+The database code demonstrated below covers only the simpler case of reading data.  If you write to a database, you need to ensure your program gracefully handles errors that may occur, so you avoid corrupting your database. Writing or changing data is a more complex topic and I do not cover it in this post.
+
 ## Set up your Python environment
 
 Before you start working through this tutorial, you need to set up your Python virtual environment and install the necessary packages on your computer. The details of these steps are covered in my previous posts about [using dotenv files]({filename}/articles/011-use-environment-variables/use-environment-variables.md), [creating a sample database]({filename}/articles/012-create-sample-db-azure/create-sample-db-azure.md) and [reading database schema]({filename}/articles/013-read-database-python-odbc/read-db-python-odbc-driver.md). I summarize the steps, below.  
@@ -43,9 +49,9 @@ I suggest you install Jupyterlab so you can follow the steps in this tutorial mo
 (.venv) $ pip install jupyterlab
 ```
 
-This tutorial uses the Microsoft AdventureWorks LT database running on Microsoft Azure. Follow my previous post about [creating a sample database on MZ Azure's free service tier]() to create a similar sample database you can use.
+This tutorial uses the [Microsoft AdventureWorks LT sample database](https://learn.microsoft.com/en-us/sql/samples/adventureworks-install-configure) running on Microsoft Azure. Follow my previous post about [creating a sample database on MZ Azure's free service tier]({filename}/articles/014-read-data-from-database-with-python/python-program-read-database-data.md) to create a similar sample database you can use to follow along with the steps in this post.
 
-Then, install the [*pyodbc*](https://mkleehammer.github.io/pyodbc/) library and the Microsoft SQL Server Driver.
+Then, install the [Microsoft ODBC Driver for SQL Server](https://learn.microsoft.com/en-us/sql/connect/odbc/microsoft-odbc-driver-for-sql-server?view=sql-server-ver16) on your PC: 
 
 ```bash
 (.venv) $ sudo su
@@ -54,6 +60,11 @@ Then, install the [*pyodbc*](https://mkleehammer.github.io/pyodbc/) library and 
 (.venv) $ exit
 (.venv) $ sudo apt-get update
 (.venv) $ sudo ACCEPT_EULA=Y apt-get install -y msodbcsql18
+```
+
+Install the [*pyodbc*](https://mkleehammer.github.io/pyodbc/) library in your Python virtual environment.
+
+```bash
 (.venv) $ pip install pyodbc
 (.venv) $ sudo apt install unixodbc
 ```
@@ -64,7 +75,7 @@ Install the *[python-dotenv](https://pypi.org/project/python-dotenv/)* package:
 (.venv) $ pip install python-dotenv
 ```
 
-Install the *tabulate* package so you may more easily format your output during this tutorial.
+Install the *[tabulate](https://github.com/gregbanks/python-tabulate)* package so you may more easily format your output during this tutorial.
 
 ```bash
 (.venv) $ pip install tabulate
@@ -112,11 +123,32 @@ From reading the database documentation, or from exploring the database schema, 
 
 ![AdventureWorksLT database diagram]({attach}adventureworks-lt-diagram.png){width=99%}
 
-## Basic cursor methods
+## Using cursor methods
 
-Not covering the methods used to discover the schema of a database. This can be done using SQL commands and is also already covered in the Appendix of my previous blog post about [exploring SQL database schemas]({filename}/articles/014-read-data-from-database-with-python/python-program-read-database-data.md).
+In this post, I show you how to use the *cursor* instance's *execute()* method to load SQL statements into the cursor so that they can be executed by the *fetchall()*, *fetchmany()*, *fetchone()*, or *fetchval()* method.
 
-Also, we are focusing on read-only actions. 
+Other *cursor* instance methods, such as the methods used to discover the schema of a database, are not covered in this post. Those methods were already covered in the appendix of my previous blog post about [exploring SQL database schemas]({filename}/articles/014-read-data-from-database-with-python/python-program-read-database-data.md).
+
+Also, since we are focusing on read-only actions, the methods related to writing data are not covered in this post. 
+
+### SQL statements
+
+To read data from an SQL database, you need to execute an SQL *SELECT* statement on the database server. The *pyodbc* driver requires that you create a string that contains the SQL statement and pass it as a parameter of the *execute()* method. You need to learn enough about the flavour of SQL supported by your server to select that data you need from one or more database tables.
+
+Consult your database server's documentation for information about how to select data using SQL statements. Microsoft's SQL Server's version of SQL is called [Transact-SQL, or T-SQL](https://learn.microsoft.com/en-us/sql/t-sql/queries/select-transact-sql). I cover a few T-SQL examples below so I can demonstrate how to use the *cursor* instance's methods. You can create very powerful operations using SQL and you will learn more about it as your data extraction and transformation needs become more advanced. 
+
+I cover some basic SQL examples later, in the *Examples* section. So I can demonstrate how the *cursor* instance's methods work I create an SQL statement below. I create a string that contains an SQL statement that reads all the rows from one of the views in the *AdventureWorks LT* database. I assign the string to a Python variable so I can use it later in the *execute()* method.
+
+
+```python
+statement = """
+SELECT *
+FROM SalesLT.vGetAllCategories
+"""
+```
+
+The *vGetAllCategories* view will display the list of product categories in the database with their parent categories and sorts the results by parent catergory. If you want to see the SQL statement that created the view, read my previous post about [reading the database schema]({filename}/articles/013-read-database-python-odbc/read-db-python-odbc-driver.md).
+
 
 ### execute()
 
@@ -124,7 +156,7 @@ https://github.com/mkleehammer/pyodbc/wiki/Cursor#executesql-parameters
 
 SQL statements
 
-Microsoft's SQL Server's version of SQL is called [Transact-SQL, or T-SQL](https://learn.microsoft.com/en-us/sql/t-sql/queries/select-transact-sql). 
+ 
 
 ### Creating cursor with a contect manager
 
