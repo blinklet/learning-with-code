@@ -131,13 +131,27 @@ Other *cursor* instance methods, such as the methods used to discover the schema
 
 Also, since we are focusing on read-only actions, the methods related to writing data are not covered in this post. 
 
+### Create a *cursor* instance
+
+Create a new database cursor using the connection instance, named *conn*. Add the following code in a new Jupyter Notebook cell or just add it to your Python program and run it.
+
+```python
+cursor = conn.cursor()
+```
+
+Now you have a database cursor instance named *cursor* that comes with attributes and methods you can use to query data from the database.
+
+#### Managing the cursor instance
+
+When you are done using the cursor, you may close it using the *close()* method by running the statement, `cursor.close()`.
+
+Alternatively, you can [create the cursor in a *context manager*](https://github.com/mkleehammer/pyodbc/wiki/Cursor#context-manager) using the Python *with* statement. Then the cursor will automatically get closed when the *with* block ends. You will see examples using the context manager later in this post.
+
 ### SQL statements
 
-To read data from an SQL database, you need to execute an SQL *SELECT* statement on the database server. The *pyodbc* driver requires that you create a string that contains the SQL statement and pass it as a parameter of the *execute()* method. You need to learn enough about the flavour of SQL supported by your server to select that data you need from one or more database tables.
+If all you need to do is get data from a database so you can use other tools like *[pandas](https://pandas.pydata.org/)* or *[spark](https://spark.apache.org/)* to transform and analyze it, then you need to learn only about the most basic SQL topics, like the SQL *SELECT* statement. You can create very powerful operations using SQL statements and you will [learn more about SQL](https://james-sr.github.io/BI-Notes/querying-data-with-transact-sql.html#introduction-to-transact-sql) as your data extraction and transformation needs become more advanced. I cover some useful, but simple, [T-SQL]((https://learn.microsoft.com/en-us/sql/t-sql/queries/select-transact-sql)) examples later, in the *Examples* section. 
 
-Consult your database server's documentation for information about how to select data using SQL statements. Microsoft's SQL Server's version of SQL is called [Transact-SQL, or T-SQL](https://learn.microsoft.com/en-us/sql/t-sql/queries/select-transact-sql). I cover a few T-SQL examples below so I can demonstrate how to use the *cursor* instance's methods. You can create very powerful operations using SQL and you will learn more about it as your data extraction and transformation needs become more advanced. 
-
-I cover some basic SQL examples later, in the *Examples* section. So I can demonstrate how the *cursor* instance's methods work I create an SQL statement below. I create a string that contains an SQL statement that reads all the rows from one of the views in the *AdventureWorks LT* database. I assign the string to a Python variable so I can use it later in the *execute()* method.
+To execute SQL statements on the SQL server, the *pyodbc* driver requires that you create a string that contains the SQL statement and pass it as a parameter of the *cursor* instance's *execute()* method. The example below assigns to a variable named *statement* a string that contains an SQL statement that reads all the rows from one of the views in the *AdventureWorks LT* database.
 
 
 ```python
@@ -147,55 +161,187 @@ FROM SalesLT.vGetAllCategories
 """
 ```
 
-The *vGetAllCategories* view will display the list of product categories in the database with their parent categories and sorts the results by parent catergory. If you want to see the SQL statement that created the view, read my previous post about [reading the database schema]({filename}/articles/013-read-database-python-odbc/read-db-python-odbc-driver.md).
+The *vGetAllCategories* view was pre-defined in the AdventureWorks LT sample database. It will display the list of product categories in the database with their parent categories. If you want to see the SQL statement that created the view, read my previous post about [reading the database schema]({filename}/articles/013-read-database-python-odbc/read-db-python-odbc-driver.md).
 
 
-### execute()
+### Executing SQL statements
 
-https://github.com/mkleehammer/pyodbc/wiki/Cursor#executesql-parameters
-
-SQL statements
-
- 
-
-### Creating cursor with a contect manager
-
-https://github.com/mkleehammer/pyodbc/wiki/Cursor#context-manager
-
-test if cusrsor is still open after contect block
+Use the [*execute()* method](https://github.com/mkleehammer/pyodbc/wiki/Cursor#executesql-parameters) to create a *database results* object that will contain the results of the query. 
 
 ```python
-with ...
-    cursor.fetchone()
-    ....
-
-cursor.fetchone()
+cursor.execute(statement)
 ```
 
-### fetchall()
+You just pass the SQL statement string to the *execute()* method and it then loads the query results into the *cursor* instance where they can be fetched using one of the other methods. The results object does not actuall contain data yet. The data is pulled from the database when you use one of the *fetch* methods so you can control how much data you retrieve.
+ 
+### Cursor attributes
 
-https://github.com/mkleehammer/pyodbc/wiki/Cursor#fetchall
+After executing an SQL *SELECT* statement, the *cursor* instance will contain some information about the results, in addition to the actual data results. One attribute that you may find useful is the *description* attribute.
 
-### fetchmany()
+The [*description* attribute](https://github.com/mkleehammer/pyodbc/wiki/Cursor#description) returns a tuple containing nested tuples that describe each column that will be returned by one of the cursor's *fetch* methods. For example:
 
-https://github.com/mkleehammer/pyodbc/wiki/Cursor#fetchmanysizecursorarraysize
+```python
+from pprint import pprint
 
-### fetchone()
+with conn.cursor() as cursor:
+    cursor.execute(statement)
+    pprint(cursor.description)
+```
 
-(example: find one random row)
+The Python statement above returns the following object:
 
-https://github.com/mkleehammer/pyodbc/wiki/Cursor#fetchone
+```python
+(('ParentProductCategoryName', <class 'str'>, None, 50, 50, 0, False),
+ ('ProductCategoryName', <class 'str'>, None, 50, 50, 0, True),
+ ('ProductCategoryID', <class 'int'>, None, 10, 10, 0, True))
+```
 
-### fetchval()
+You can see that the column name is the first item in each nested tuple. This will be useful for building a list of column headers that we can use later as a parameter to the *tabulate* function. You can run a list comprehension statement to build a *headers* list:
 
-https://github.com/mkleehammer/pyodbc/wiki/Cursor#fetchval
+```python
+with conn.cursor() as cursor:
+    cursor.execute(statement)
+    headers = [h[0] for h in cursor.description]
+```
 
-### description()
+### Getting all results returned by the SQL *SELECT* statement
 
-To get headers
+The [*fetchall()* method](https://github.com/mkleehammer/pyodbc/wiki/Cursor#fetchall) returns all rows that would be returned by the SQL statement you executed. This could be millions of rows. 
 
-https://github.com/mkleehammer/pyodbc/wiki/Cursor#description
+```python
+with conn.cursor() as cursor:
+    cursor.execute(statement)
+    headers = [h[0] for h in cursor.description]
+    rows = cursor.fetchall()
 
+print(tabulate(rows, headers=headers))
+```
+
+In the example we are using, the database view contains only a few dozen rows, as seen below:
+
+```
+ParentProductCategoryName    ProductCategoryName      ProductCategoryID
+---------------------------  ---------------------  -------------------
+Accessories                  Bike Racks                              30
+Accessories                  Bike Stands                             31
+Accessories                  Bottles and Cages                       32
+Accessories                  Cleaners                                33
+Accessories                  Fenders                                 34
+Accessories                  Helmets                                 35
+Accessories                  Hydration Packs                         36
+Accessories                  Lights                                  37
+Accessories                  Locks                                   38
+Accessories                  Panniers                                39
+Accessories                  Pumps                                   40
+Accessories                  Tires and Tubes                         41
+Clothing                     Bib-Shorts                              22
+Clothing                     Caps                                    23
+Clothing                     Gloves                                  24
+Clothing                     Jerseys                                 25
+Clothing                     Shorts                                  26
+Clothing                     Socks                                   27
+Clothing                     Tights                                  28
+Clothing                     Vests                                   29
+Components                   Handlebars                               8
+Components                   Bottom Brackets                          9
+Components                   Brakes                                  10
+Components                   Chains                                  11
+Components                   Cranksets                               12
+Components                   Derailleurs                             13
+Components                   Forks                                   14
+Components                   Headsets                                15
+Components                   Mountain Frames                         16
+Components                   Pedals                                  17
+Components                   Road Frames                             18
+Components                   Saddles                                 19
+Components                   Touring Frames                          20
+Components                   Wheels                                  21
+Bikes                        Mountain Bikes                           5
+Bikes                        Road Bikes                               6
+Bikes                        Touring Bikes                            7
+```
+
+### Read database results in smaller batches
+
+The [*fetchmany* method](https://github.com/mkleehammer/pyodbc/wiki/Cursor#fetchmanysizecursorarraysize) returns a list containing the number of rows specified by the parameter you pass to it. For example, to get the first four rows available from the SQL query results:
+
+```python
+cursor = conn.cursor()
+cursor.execute(statement)
+
+headers = [h[0] for h in cursor.description]
+rows = cursor.fetchmany(4)
+
+print(tabulate(rows, headers=headers))
+```
+
+The code above prints out the first four rows of the view.
+
+```
+ParentProductCategoryName    ProductCategoryName      ProductCategoryID
+---------------------------  ---------------------  -------------------
+Accessories                  Bike Racks                              30
+Accessories                  Bike Stands                             31
+Accessories                  Bottles and Cages                       32
+Accessories                  Cleaners                                33
+```
+
+Because you did not use a *with* block in the code above, the database cursor represented by teh *cursor* instance is still open. You can get the next set of row from the database simply by running the *fethchmany()* method again. For example, if you run the following code:
+
+```python
+rows = cursor.fetchmany(3)
+
+print(tabulate(rows, headers=headers))
+```
+
+You see a new table printed that shows the next three rows in the database:
+
+```
+ParentProductCategoryName    ProductCategoryName      ProductCategoryID
+---------------------------  ---------------------  -------------------
+Accessories                  Fenders                                 34
+Accessories                  Helmets                                 35
+Accessories                  Hydration Packs                         36
+```
+
+If you keep reading data in batches, you will eventually get to the end of the results. If there are no more results to get, the *fetchmany()* method returns an empty list.
+
+You may close the cursor now, if you wish:
+
+```python
+cursor.close()
+```
+
+### Read one row at a time, or get just one row
+
+the [*fetchone() method*](https://github.com/mkleehammer/pyodbc/wiki/Cursor#fetchone) works the same as if you used the *fetchmany()* method and passed it a size parameter of `1`. It returns the first row of the database or, if you run it after using the cursor for other *fetch* operations, it returns the next row in the database.
+
+You might use this method along with the *skip()* method to pick a specific row in the SQL query results. For example, to get the fourth row in the results:
+
+```python
+with conn.cursor() as cursor:
+    cursor.execute(statement)
+    cursor.skip(3)
+    print(cursor.fetchone())
+```
+
+This code returns the tuple containing the data from the fourth row in the SQL query results:
+
+```
+('Accessories', 'Cleaners', 33)
+```
+
+You might also use the *fetchone()* method in a loop, to perform some additional processing on each row returned by the SQL query.
+
+### read one scalar value at a time, or get just one value
+
+The [*fetchval* method](https://github.com/mkleehammer/pyodbc/wiki/Cursor#fetchval) will return the value in the first column of the next row available to the cursor. It returns the first value from the first row of the database or, if you run it after using the cursor for other *fetch* operations, it returns the first value of next row in the database.
+
+For example use the *fetchval()* method to read results from the SQL query statement we executed earlier, as shown below:
+
+```python
+
+```
 
 
 
