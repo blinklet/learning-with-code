@@ -1,10 +1,10 @@
-title: Write a Python program that reads data from a database
+title: Use Python to read data from a database
 slug: python-program-read-database-data
-summary: Combine SQL queries with Python's *pyodbc* library to read data from a database
+summary: Leverage Python and the *pyodbc* library to efficiently read data from an SQL database
 date: 2023-06-30
 modified: 2023-06-30
 category: Databases
-<!-- status: published -->
+status: published
 
 <!--
 A bit of extra CSS code to center all images in the post
@@ -19,13 +19,15 @@ img
 }
 </style>
 
-Introduction paragraph
+In today's data-driven world, businesses realize that the ability to extract insights from vast amounts of information is crucial to success. Python has emerged as a popular language for data analysis and manipulation. Python's extensive library ecosystem offers powerful tools that help streamline the process of working with structured data stored in SQL databases. 
 
-This post covers the tasks a junior data scientist might need to do when reading data from databases. Most of the time, you will only need to read data. In fact, if you work with data provided by other teams, they almost always will restrict your database access privileges to read-only [^2].
+In this blog post, we will explore how to leverage Python and the *pyodbc* library to read data from a SQL database, empowering you to unlock valuable insights and drive data-informed decision-making.
 
-[^2]: You will likely receive access to a *database view* prepared by the other team's database administrator. The view will be read-only and will contain only the columns you requested when you met with the team to disuss your data needs.
+## Read-only
 
-The database code demonstrated below covers only the simpler case of reading data.  If you write to a database, you need to ensure your program gracefully handles errors that may occur, so you avoid corrupting your database. Writing or changing data is a more complex topic and I do not cover it in this post.
+When working as a data analyst or data scientist, you often read data from a database but you usually do not need to write data to a database. In fact, if you work with data provided by other teams, they almost always will restrict your database access privileges to read-only. The other team's database administrator may give you access to a database view that is read-only and contains only the table columns you requested when you discussed your data needs.
+
+The SQL and Python code shown in this post covers the simple case of reading data. Writing or changing data in a database is a more complex topic and I do not cover it in this post. 
 
 ## Set up your Python environment
 
@@ -42,14 +44,13 @@ $ source ./.venv/bin/activate
 (.venv) $ 
 ```
 
-
 I suggest you install Jupyterlab so you can follow the steps in this tutorial more easily. If you do not use Jupyterlab, then you may use any text editor or the Python REPL.
 
 ```bash
 (.venv) $ pip install jupyterlab
 ```
 
-This tutorial uses the [Microsoft AdventureWorks LT sample database](https://learn.microsoft.com/en-us/sql/samples/adventureworks-install-configure) running on Microsoft Azure. Follow my previous post about [creating a sample database on MZ Azure's free service tier]({filename}/articles/014-read-data-from-database-with-python/python-program-read-database-data.md) to create a similar sample database you can use to follow along with the steps in this post.
+This tutorial uses the [Microsoft AdventureWorks LT sample database](https://learn.microsoft.com/en-us/sql/samples/adventureworks-install-configure) running on Microsoft Azure. Follow my previous post about [creating a sample database on MZ Azure's free service tier]({filename}/articles/012-create-sample-db-azure/create-sample-db-azure.md) to create a similar sample database you can use to follow along with the steps in this post.
 
 Then, install the [Microsoft ODBC Driver for SQL Server](https://learn.microsoft.com/en-us/sql/connect/odbc/microsoft-odbc-driver-for-sql-server?view=sql-server-ver16) on your PC: 
 
@@ -83,7 +84,7 @@ Install the *[tabulate](https://github.com/gregbanks/python-tabulate)* package s
 
 ## Connect to the database
 
-Create a *dotenv* file and add the database connection string to it. If you are using an example database on Azure, the string will look similar to the one below. Use your own values for server name, database name, user name, and password.
+Create a *dotenv* file and add the database connection string to it. If you are using an example database on Azure, the string will look similar to the one below. 
 
 ```bash
 (.venv) $ echo 'CONN_STRING="Driver={ODBC Driver 18 for SQL Server};'\
@@ -91,6 +92,10 @@ Create a *dotenv* file and add the database connection string to it. If you are 
 'Database=AdventureWorks;Uid=sqlfamily;Pwd=sqlf@m1ly;Encrypt=yes;'\
 'TrustServerCertificate=no;"' > .env
 ```
+
+Use your own values for server name, database name, user name, and password.
+
+> **IMPORTANT:** If you are using a source control service like *GitHub*, ensure that you except the *.env* file from being tracked so you do not place database credentials in a public repository.
 
 Open a new Jupyterlab notebook (or use the Python REPL) and run the following Python code to connect to the database.
 
@@ -117,7 +122,7 @@ In the rest of this tutorial, you will use the database connection instance, *co
 
 ## Database schema
 
-From reading the database documentation, or from exploring the database schema, you should already know the tables in the database and the columns in each table, and the data relationships defined by the primary and foreign key constraints. There is no official documentation for the AdventureWorks LT database, but the AdventureWorks LT database diagram is shown below [^1]:
+If you read my [previous post]({filename}/articles/013-read-database-python-odbc/read-db-python-odbc-driver.md), you should already know the tables in the AdventureWorks LT database and the columns in each table, and the data relationships defined by the primary and foreign key constraints. You can usually get database schema information from the database documentation but here is no official documentation for the AdventureWorks LT database. The database diagram is shown below [^1]:
 
 [^1]: Diagram from *Microsoft Learning Transact-SQL Exercises and Demonstrations* website at [https://microsoftlearning.github.io/dp-080-Transact-SQL/](https://microsoftlearning.github.io/dp-080-Transact-SQL/)
 
@@ -127,13 +132,13 @@ From reading the database documentation, or from exploring the database schema, 
 
 In this post, I show you how to use the *cursor* instance's *execute()* method to load SQL statements into the cursor so that they can be executed by the *fetchall()*, *fetchmany()*, *fetchone()*, or *fetchval()* method.
 
-Other *cursor* instance methods, such as the methods used to discover the schema of a database, are not covered in this post. Those methods were already covered in the appendix of my previous blog post about [exploring SQL database schemas]({filename}/articles/014-read-data-from-database-with-python/python-program-read-database-data.md).
+Other *cursor* instance methods, such as the methods used to discover the schema of a database, are not covered in this post. Those methods were already covered in the appendix of my previous blog post about [exploring SQL database schemas]({filename}/articles/013-read-database-python-odbc/read-db-python-odbc-driver.md).
 
 Also, since we are focusing on read-only actions, the methods related to writing data are not covered in this post. 
 
 ### Create a *cursor* instance
 
-Create a new database cursor using the connection instance, named *conn*. Add the following code in a new Jupyter Notebook cell or just add it to your Python program and run it.
+Create a new [database cursor](https://peps.python.org/pep-0249/#cursor-objects) using the connection instance, named *conn*. Add the following code in a new Jupyter Notebook cell or just add it to your Python program and run it.
 
 ```python
 cursor = conn.cursor()
@@ -149,9 +154,13 @@ Alternatively, you can [create the cursor in a *context manager*](https://github
 
 ### SQL statements
 
-If all you need to do is get data from a database so you can use other tools like *[pandas](https://pandas.pydata.org/)* or *[spark](https://spark.apache.org/)* to transform and analyze it, then you need to learn only about the most basic SQL topics, like the SQL *SELECT* statement. You can create very powerful operations using SQL statements and you will [learn more about SQL](https://james-sr.github.io/BI-Notes/querying-data-with-transact-sql.html#introduction-to-transact-sql) as your data extraction and transformation needs become more advanced. I cover some useful, but simple, [T-SQL]((https://learn.microsoft.com/en-us/sql/t-sql/queries/select-transact-sql)) examples later, in the *Examples* section. 
+SQL (Structured Query Language) serves as a universal method for interacting with relational databases. It empowers you to query and retrieve data by crafting specific commands that match your data needs.
 
-To execute SQL statements on the SQL server, the *pyodbc* driver requires that you create a string that contains the SQL statement and pass it as a parameter of the *cursor* instance's *execute()* method. The example below assigns to a variable named *statement* a string that contains an SQL statement that reads all the rows from one of the views in the *AdventureWorks LT* database.
+If all you need to do is get data from a database so you can use other tools like *[pandas](https://pandas.pydata.org/)* or *[spark](https://spark.apache.org/)* to transform and analyze it, then you need to learn only about the most basic SQL topics, like the SQL *SELECT* statement. 
+
+As your data extraction and transformation needs become more advanced, you will [learn more about SQL](https://james-sr.github.io/BI-Notes/querying-data-with-transact-sql.html#introduction-to-transact-sql) so you can create powerful operations using SQL statements. I cover some useful, but simple, [T-SQL]((https://learn.microsoft.com/en-us/sql/t-sql/queries/select-transact-sql)) examples later, in the *Examples* section. 
+
+To execute SQL statements on the SQL server, the *pyodbc* driver requires that you create a string that contains an SQL statement and pass it as a parameter of the *cursor* instance's *execute()* method. The example below assigns a string to a variable named *statement*. The string contains an SQL statement that reads all the data contained in one of the views in the *AdventureWorks LT* database.
 
 
 ```python
@@ -161,18 +170,18 @@ FROM SalesLT.vGetAllCategories
 """
 ```
 
-The *vGetAllCategories* view was pre-defined in the AdventureWorks LT sample database. It will display the list of product categories in the database with their parent categories. If you want to see the SQL statement that created the view, read my previous post about [reading the database schema]({filename}/articles/013-read-database-python-odbc/read-db-python-odbc-driver.md).
+The *vGetAllCategories* view was pre-defined in the AdventureWorks LT sample database. It will display the list of product categories in the database with their parent categories. If you want to use the command that will display SQL statement that created the view, read my previous post about [reading the database schema]({filename}/articles/013-read-database-python-odbc/read-db-python-odbc-driver.md).
 
 
 ### Executing SQL statements
 
-Use the [*execute()* method](https://github.com/mkleehammer/pyodbc/wiki/Cursor#executesql-parameters) to create a *database results* object that will contain the results of the query. 
+Use the *cursor* instance's [*execute()* method](https://github.com/mkleehammer/pyodbc/wiki/Cursor#executesql-parameters) to point the cursor to the start of the results returned by running the SQL statement on the SQL server.  
 
 ```python
 cursor.execute(statement)
 ```
 
-You just pass the SQL statement string to the *execute()* method and it then loads the query results into the *cursor* instance where they can be fetched using one of the other methods. The results object does not actuall contain data yet. The data is pulled from the database when you use one of the *fetch* methods so you can control how much data you retrieve.
+At this point the results of the SQL query are cached on the server and have not been downloaded into memory on your computer. The cursor instance does not actually contain data. The data is pulled from the database when you use one of the cursor's *fetch* methods so you can control how much data you retrieve across the network.
  
 ### Cursor attributes
 
@@ -196,17 +205,114 @@ The Python statement above returns the following object:
  ('ProductCategoryID', <class 'int'>, None, 10, 10, 0, True))
 ```
 
-You can see that the column name is the first item in each nested tuple. This will be useful for building a list of column headers that we can use later as a parameter to the *tabulate* function. You can run a list comprehension statement to build a *headers* list:
+The column name is the first item in each nested tuple. This will be useful for building a list of column headers that we can use later as a parameter to the *tabulate* function. You can run a list comprehension statement to build a *headers* list:
 
 ```python
 with conn.cursor() as cursor:
     cursor.execute(statement)
     headers = [h[0] for h in cursor.description]
+
+print(headers)
 ```
 
-### Getting all results returned by the SQL *SELECT* statement
+The table's column headers are now available in a list:
 
-The [*fetchall()* method](https://github.com/mkleehammer/pyodbc/wiki/Cursor#fetchall) returns all rows that would be returned by the SQL statement you executed. This could be millions of rows. 
+```
+['ParentProductCategoryName', 'ProductCategoryName', 'ProductCategoryID']
+```
+
+### Getting all query results
+
+The [*fetchall()* method](https://github.com/mkleehammer/pyodbc/wiki/Cursor#fetchall) returns  a list containing all rows that would be returned by the SQL *SELECT* statement you executed. Each [row instance](https://github.com/mkleehammer/pyodbc/wiki/Row) in the list is a mutable [^2], tuple-like object that contains one item for each column selected from the table. See the example below, in which you get all rows from the database.
+
+[^2]: Yes, the Row class instantiates objects that look like [named tuples](https://realpython.com/python-namedtuple/) but are *[mutable](https://realpython.com/python-mutable-vs-immutable-types/)*. So, keep that in mind when you are using the row instance's attributes in your program.
+
+```python
+from pprint import pprint
+
+with conn.cursor() as cursor:
+    cursor.execute(statement)
+    headers = [h[0] for h in cursor.description]
+    rows = cursor.fetchall()
+
+pprint(headers)
+pprint(rows)
+```
+
+You would probably not do this in a normal database, which might have thousands or millions of rows. In the AdventureWorks LT sample database that we are using, the *vGetAllCategories* view contains only a few dozen rows, as seen below:
+
+```python
+['ParentProductCategoryName', 'ProductCategoryName', 'ProductCategoryID']
+[('Accessories', 'Bike Racks', 30),
+ ('Accessories', 'Bike Stands', 31),
+ ('Accessories', 'Bottles and Cages', 32),
+ ('Accessories', 'Cleaners', 33),
+ ('Accessories', 'Fenders', 34),
+ ('Accessories', 'Helmets', 35),
+ ('Accessories', 'Hydration Packs', 36),
+ ('Accessories', 'Lights', 37),
+ ('Accessories', 'Locks', 38),
+ ('Accessories', 'Panniers', 39),
+ ('Accessories', 'Pumps', 40),
+ ('Accessories', 'Tires and Tubes', 41),
+ ('Clothing', 'Bib-Shorts', 22),
+ ('Clothing', 'Caps', 23),
+ ('Clothing', 'Gloves', 24),
+ ('Clothing', 'Jerseys', 25),
+ ('Clothing', 'Shorts', 26),
+ ('Clothing', 'Socks', 27),
+ ('Clothing', 'Tights', 28),
+ ('Clothing', 'Vests', 29),
+ ('Components', 'Handlebars', 8),
+ ('Components', 'Bottom Brackets', 9),
+ ('Components', 'Brakes', 10),
+ ('Components', 'Chains', 11),
+ ('Components', 'Cranksets', 12),
+ ('Components', 'Derailleurs', 13),
+ ('Components', 'Forks', 14),
+ ('Components', 'Headsets', 15),
+ ('Components', 'Mountain Frames', 16),
+ ('Components', 'Pedals', 17),
+ ('Components', 'Road Frames', 18),
+ ('Components', 'Saddles', 19),
+ ('Components', 'Touring Frames', 20),
+ ('Components', 'Wheels', 21),
+ ('Bikes', 'Mountain Bikes', 5),
+ ('Bikes', 'Road Bikes', 6),
+ ('Bikes', 'Touring Bikes', 7)]
+```
+
+You can [iterate through the returned list](https://parabollus.medium.com/pyodbc-sql-crud-read-examples-with-mysql-752db0eb308b). Also, each row instance contained in the returned list is like a named tuple, so you can index the returned rows by column name.
+
+For example, to print out only the *ParentProductCategoryName* and *ProductCategoryName* columns from the first five rows in the table:
+
+```python
+with conn.cursor() as cursor:
+    cursor.execute(statement)
+    headers = [h[0] for h in cursor.description]
+    rows = cursor.fetchall()
+    
+print(f'{headers[0]:<27}{headers[1]}')
+print('-'*25+'  '+'-'*20)
+for row in rows[0:5]:
+    print(f'{row.ParentProductCategoryName:<27}{row.ProductCategoryName}')
+```
+
+The results are shown below:
+
+```
+ParentProductCategoryName  ProductCategoryName
+-------------------------  --------------------
+Accessories                Bike Racks
+Accessories                Bike Stands
+Accessories                Bottles and Cages
+Accessories                Cleaners
+Accessories                Fenders
+```
+
+It is convenient to display returned results in a table format. Use the *tabulate* Python package to display results. You pass it the list of row results and the list containing the column names and it will print out a well-formatted table.
+
+To see all results returned by calling the *execute* and *fetchall()* methods, run the following code:
 
 ```python
 with conn.cursor() as cursor:
@@ -217,7 +323,7 @@ with conn.cursor() as cursor:
 print(tabulate(rows, headers=headers))
 ```
 
-In the example we are using, the database view contains only a few dozen rows, as seen below:
+The formatted table is output as shown below:
 
 ```
 ParentProductCategoryName    ProductCategoryName      ProductCategoryID
@@ -261,7 +367,8 @@ Bikes                        Road Bikes                               6
 Bikes                        Touring Bikes                            7
 ```
 
-### Read database results in smaller batches
+
+### Read query results in smaller batches
 
 The [*fetchmany* method](https://github.com/mkleehammer/pyodbc/wiki/Cursor#fetchmanysizecursorarraysize) returns a list containing the number of rows specified by the parameter you pass to it. For example, to get the first four rows available from the SQL query results:
 
@@ -286,7 +393,7 @@ Accessories                  Bottles and Cages                       32
 Accessories                  Cleaners                                33
 ```
 
-Because you did not use a *with* block in the code above, the database cursor represented by teh *cursor* instance is still open. You can get the next set of row from the database simply by running the *fethchmany()* method again. For example, if you run the following code:
+Because you did not use a *with* block in the code above, the database cursor represented by the *cursor* instance is still open. You can get the next set of rows from the database simply by running the *fethchmany()* method again. For example, if you run the following code:
 
 ```python
 rows = cursor.fetchmany(3)
@@ -312,9 +419,11 @@ You may close the cursor now, if you wish:
 cursor.close()
 ```
 
-### Read one row at a time, or get just one row
+And, as shown in the above section about the *fetchmany()* method, the results of each *fetchmany()* call are returned as a list of named tuples over which you can iterate.
 
-the [*fetchone() method*](https://github.com/mkleehammer/pyodbc/wiki/Cursor#fetchone) works the same as if you used the *fetchmany()* method and passed it a size parameter of `1`. It returns the first row of the database or, if you run it after using the cursor for other *fetch* operations, it returns the next row in the database.
+### Read query results one row at a time, or get just one row
+
+The [*fetchone() method*](https://github.com/mkleehammer/pyodbc/wiki/Cursor#fetchone) works the similarly as if you used the *fetchmany()* method and passed it a size parameter of `1`. It returns the first row of the database or, if you run it after using the cursor for other *fetch* operations, it returns the next row in the database. But, since it only reads one row, it returns the row instance by itself and does not store it in a list. 
 
 You might use this method along with the *skip()* method to pick a specific row in the SQL query results. For example, to get the fourth row in the results:
 
@@ -331,23 +440,60 @@ This code returns the tuple containing the data from the fourth row in the SQL q
 ('Accessories', 'Cleaners', 33)
 ```
 
-You might also use the *fetchone()* method in a loop, to perform some additional processing on each row returned by the SQL query.
+Note that the single row instance returned by the *fetchone()* method is not compatible with the *tabulate* module because it is not iterable.If you want to use it with *tabulate*, append it to an empty list and then pass the list to *tabulate*.
 
-### read one scalar value at a time, or get just one value
+You might also use the *fetchone()* method in a loop, to perform some additional processing on each row returned by the SQL query. For example, another way to print only the rows that meet a certain condition from the *vGetAllCategories* view is:
+
+```python
+with conn.cursor() as cursor:
+    
+    cursor.execute("SELECT COUNT (*) FROM SalesLT.vGetAllCategories")
+    rowcount = cursor.fetchone()[0]
+        
+    cursor.execute(statement)
+    for x in range(rowcount):
+        row = cursor.fetchone()
+        if row.ParentProductCategoryName == 'Bikes':
+            print(row.ProductCategoryName)
+```
+
+The above code is just a toy example to show how the *fetchone()* method might be used in a loop. You would not use code like that in a real program and would, instead, create an SQL statement that filters the *ParentProductCategoryName* column for the *Bikes* value and then iterate over the returned rows. The output from running the code above is:
+
+```
+Mountain Bikes
+Road Bikes
+Touring Bikes
+```
+
+### Read one scalar value at a time, or get just one value
 
 The [*fetchval* method](https://github.com/mkleehammer/pyodbc/wiki/Cursor#fetchval) will return the value in the first column of the next row available to the cursor. It returns the first value from the first row of the database or, if you run it after using the cursor for other *fetch* operations, it returns the first value of next row in the database.
 
-For example use the *fetchval()* method to read results from the SQL query statement we executed earlier, as shown below:
+Use the *fetchval()* method when you expect a single scalar result to be returned when you execute your SQL statement. For example, the result of the SQL *COUNT* function should be a single integer so, instead of using the *fetchone()* method which returns a tuple-like row object and then getting the result by index as seen in the *fetchone()* example above, use the *fetchval()* method as shown below:
 
 ```python
-
+with conn.cursor() as cursor:
+    cursor.execute("SELECT COUNT (*) FROM SalesLT.vGetAllCategories")
+    rowcount = cursor.fetchval()
+    
+print(rowcount)
 ```
 
+The output is:
 
+```
+37
+```
 
-## Examples
+## SQL Examples
+
+The SQL language is a topic deserving its own study. It is almost as rich and varied in its use as Python. I won't be able to do it justice in a few blog posts so you should consider other resources to learn the details about SQL.
+
+The following examples show some basic SQL statements that you may use to get the data you need from a relational database. 
 
 ### Get all data in a table
+
+The following SQL statement, when executed, should return all columns from all rows in the *Product* table from the *AdventureWorks LT* sample database.
 
 ```python
 statement = """
@@ -364,13 +510,14 @@ with conn.cursor() as cursor:
 
 This outputs all the columns and rows in the table named *Product* in the schema named *SalesLT*. It outputs almost a hundred rows because you used the *fetchall()* method, which outputs all results available in the *cursor* instance. 
 
-> **NOTE:** In Jupyter Notebook, the output may exceed the "IOPub data rate" and results in an error. If that happens, stop Jupyterlab and then restart it with an additional setting that sets the IOPub data rate to a higher level, as shown below:
+While there are only about three hundred rows in the *Product* table, the data output is very large because there it has so many columns and one of the columns contains an image file. 
+
+> **NOTE:** When a table has large amounts of data and you run the code displayed above in a Jupyter Notebook, the output may exceed the "IOPub data rate" and result in an error. If that happens, stop Jupyterlab and then restart it with an additional setting that sets the IOPub data rate to a higher level, as shown below:
 >
 >```
 >(.venv) $ jupyter-lab --ServerApp.iopub_data_rate_limit 1000000000
 >```
 
-The data output is very large because there are so many columns and one of the columns contains an image file.
 
 ### Select columns
 
@@ -396,7 +543,7 @@ with conn.cursor() as cursor:
     print(tabulate(rows, headers=headers))
 ```
 
-The output looks better but it still displays almost a hundred rows:
+The output looks better but it still displays almost three hundred rows:
 
 ```
   ProductID  Name                              ProdNum       CatID    ModID
@@ -414,11 +561,9 @@ The output looks better but it still displays almost a hundred rows:
 ...(many more rows)...        
 ```
 
-### Limit the number of rows
+### Limit the number of rows with the *top* statement
 
-You can limit the number of rows output by your program two different ways: you can use the *LIMIT* T-SQL statement to limit the number of rows that will be available in the *cursor*, or you can use the cursor's *fetchmany()* method, which will return a specified number of rows from the results available in the cursor.
-
-#### The *TOP* statement
+In some cases, you may want to limit the size of the data selected by your SQL query. You can use the *LIMIT* T-SQL statement to limit the number of rows that will be available in the *cursor* instance. 
 
 If you use the *TOP* statement and set the limit to four rows (most other SQL databases use the *LIMIT* statement), the cursor will return the first four rows of data in the table. 
 
@@ -451,72 +596,13 @@ In the output, you see that the *cursor* instance only contains the first four r
         708  Sport-100 Helmet, Black    HL-U509          35       33
 ```
 
-#### The *fetchmany()* method
+### Combine data from other tables with *join* statements
 
-If you do not limit the rows selected by the query statement and, instead, use the cursor's *fetchmany()* method and set its size to `4`, all rows in the database are made available in the *cursor* instance but you are choosing to read only the first four. 
+You can select data from multiple columns in different tables where there is a relationship between tables. For example, the *Product* table a column that defines the product category ID, which is an integer, of each product in the table. The *ProductCategory* table lists the category name that corresponds to each Product Category ID. Similarly, the *Product* table lists the product model ID for each product and the *ProductModel* table lists the product model name that corresponds to each product model ID.
 
-```python
-statement = """
-SELECT
-    ProductID,
-    Name,
-    ProductNumber AS ProdNum,
-    ProductCategoryID AS CatID,
-    ProductModelID AS ModID
-FROM SalesLT.Product
-"""
+If you want the SQL database to return a table containing product information along with the product category name and the product model name, you need to [join](https://learn.microsoft.com/en-us/sql/relational-databases/performance/joins) the *Product*, *ProductCategory*, and *ProductModel* tables and select the columns you need from each.
 
-with conn.cursor() as cursor:
-    cursor.execute(statement)
-    headers = [h[0] for h in cursor.description]
-    rows = cursor.fetchmany(4)
-    print(tabulate(rows, headers=headers))
-```
-
-The output looks the same as the case where we used the *TOP* statement but there is a key difference. If you run the *fetchmany()* instance again before you close the cursor, you will read the next four rows from the *cursor* instance. Essentially, you did not limit the total number of results available to you, but you process the results in batches. For example the code below runs the *fetchmany()* method twice on teh same *cursor* instance:
-
-```python
-with conn.cursor() as cursor:
-    cursor.execute(statement)
-    headers = [h[0] for h in cursor.description]
-    rows = cursor.fetchmany(4)
-    print(tabulate(rows, headers=headers))
-    print()
-    rows_next = cursor.fetchmany(4)
-    print(tabulate(rows_next, headers=headers))
-```
-
-The output shows two separate tables. the first table shows the first four rows in the table. The second table shows the next four rows.
-
-```
-  ProductID  Name                       ProdNum       CatID    ModID
------------  -------------------------  ----------  -------  -------
-        680  HL Road Frame - Black, 58  FR-R92B-58       18        6
-        706  HL Road Frame - Red, 58    FR-R92R-58       18        6
-        707  Sport-100 Helmet, Red      HL-U509-R        35       33
-        708  Sport-100 Helmet, Black    HL-U509          35       33
-
-  ProductID  Name                    ProdNum      CatID    ModID
------------  ----------------------  ---------  -------  -------
-        709  Mountain Bike Socks, M  SO-B909-M       27       18
-        710  Mountain Bike Socks, L  SO-B909-L       27       18
-        711  Sport-100 Helmet, Blue  HL-U509-B       35       33
-        712  AWC Logo Cap            CA-1098         23        2
-```
-
-Note that each time you create a new *cursor* instance, it starts at the top of the table so if you want to read data from the table in chunks you need to keep the *cursor* instance open. In the example above, you would keep your code indented under the *with* statement block as long as you wanted to work with the same *cursor* instance.
-
-
-
-## Combine data from other tables with *join* statements
-
-Select only the rows you need
-
-https://learnsql.com/blog/how-to-join-tables-sql/
-
-https://learn.microsoft.com/en-us/sql/relational-databases/performance/joins
-
-https://learnsql.com/blog/sql-joins-types-explained/
+The following SQL statement will join the tables and select the columns you want:
 
 ```python
 statement = """
@@ -539,6 +625,8 @@ with conn.cursor() as cursor:
     rows = cursor.fetchmany(4)
     print(tabulate(rows, headers=headers))
 ```
+
+The output is shown below:
 
 ```
 ProductID  Name                       ProdNum     Category     Model
@@ -549,9 +637,12 @@ ProductID  Name                       ProdNum     Category     Model
       708  Sport-100 Helmet, Black    HL-U509     Helmets      Sport-100
 ```
 
-## Filtering database results
+There are [multiple types of joins](https://learnsql.com/blog/how-to-join-tables-sql/) that determine how rows are selected. The default join is the *inner join*, which selects only rows where there is a corresponding match. [Other types of joins](https://learnsql.com/blog/sql-joins-types-explained/) are available in cases where you want to also receive rows that do not match on one side of the join or the other.
 
-Filter database results using the *WHERE* statement
+
+### Filtering database results
+
+Filter database results using the *WHERE* statement, which will select rows that match a defined condition. The example below will use the statement we created above, in the *join* section, then add a filter for rows that have the category name 'Tires and Tubes':
 
 ```python
 statement = """
@@ -576,6 +667,8 @@ with conn.cursor() as cursor:
     print(tabulate(rows, headers=headers))
 ```
 
+The output shows only rows that have the matched category name.
+
 ```
   ProductID  Name                 ProdNum    Category         Model
 -----------  -------------------  ---------  ---------------  ------------------
@@ -592,6 +685,8 @@ with conn.cursor() as cursor:
         934  Touring Tire         TI-T723    Tires and Tubes  Touring Tire
 ```
 
+You may add operators to the *WHERE* statement, such as *OR* and *AND* and *NOT*. For example, if you want data related to the categories 'Bikes and Tires, or 'Forks', you would write the following SQL query:
+
 ```python
 statement = """
 SELECT
@@ -606,6 +701,7 @@ JOIN SalesLT.ProductCategory
 JOIN SalesLT.ProductModel
     ON Product.ProductModelID=ProductModel.ProductModelID
 WHERE ProductCategory.Name = 'Tires and Tubes'
+    AND NOT ProductModel.Name = 'Patch kit'
     OR ProductCategory.Name = 'Forks'
 """
 
@@ -616,32 +712,56 @@ with conn.cursor() as cursor:
     print(tabulate(rows, headers=headers))
 ```
 
+The output expands to include the category, 'Forks', but leaves out the row where the product model name was 'Patch kit':
+
 ```
-  ProductID  Name                 ProdNum    Category         Model
------------  -------------------  ---------  ---------------  ------------------
-        802  LL Fork              FK-1639    Forks            LL Fork
-        803  ML Fork              FK-5136    Forks            ML Fork
-        804  HL Fork              FK-9939    Forks            HL Fork
-        873  Patch Kit/8 Patches  PK-7098    Tires and Tubes  Patch kit
-        921  Mountain Tire Tube   TT-M928    Tires and Tubes  Mountain Tire Tube
-        922  Road Tire Tube       TT-R982    Tires and Tubes  Road Tire Tube
-        923  Touring Tire Tube    TT-T092    Tires and Tubes  Touring Tire Tube
-        928  LL Mountain Tire     TI-M267    Tires and Tubes  LL Mountain Tire
-        929  ML Mountain Tire     TI-M602    Tires and Tubes  ML Mountain Tire
-        930  HL Mountain Tire     TI-M823    Tires and Tubes  HL Mountain Tire
-        931  LL Road Tire         TI-R092    Tires and Tubes  LL Road Tire
-        932  ML Road Tire         TI-R628    Tires and Tubes  ML Road Tire
-        933  HL Road Tire         TI-R982    Tires and Tubes  HL Road Tire
-        934  Touring Tire         TI-T723    Tires and Tubes  Touring Tire
+  ProductID  Name                ProdNum    Category         Model
+-----------  ------------------  ---------  ---------------  ------------------
+        802  LL Fork             FK-1639    Forks            LL Fork
+        803  ML Fork             FK-5136    Forks            ML Fork
+        804  HL Fork             FK-9939    Forks            HL Fork
+        921  Mountain Tire Tube  TT-M928    Tires and Tubes  Mountain Tire Tube
+        922  Road Tire Tube      TT-R982    Tires and Tubes  Road Tire Tube
+        923  Touring Tire Tube   TT-T092    Tires and Tubes  Touring Tire Tube
+        928  LL Mountain Tire    TI-M267    Tires and Tubes  LL Mountain Tire
+        929  ML Mountain Tire    TI-M602    Tires and Tubes  ML Mountain Tire
+        930  HL Mountain Tire    TI-M823    Tires and Tubes  HL Mountain Tire
+        931  LL Road Tire        TI-R092    Tires and Tubes  LL Road Tire
+        932  ML Road Tire        TI-R628    Tires and Tubes  ML Road Tire
+        933  HL Road Tire        TI-R982    Tires and Tubes  HL Road Tire
+        934  Touring Tire        TI-T723    Tires and Tubes  Touring Tire
 ```
 
 
+### SQL functions
 
-## SQL functions
+The SQL *func()* function has many methods that allow you to run [SQL functions](https://learn.microsoft.com/en-us/sql/t-sql/functions/functions?view=sql-server-ver16) on the SQL server. SQL functions may be built in to the SQL server and may also be defined by the database administrator or user.
 
-The SQL *func()* function has many methods that allow you to run [SQL functions](https://learn.microsoft.com/en-us/sql/t-sql/functions/functions?view=sql-server-ver16) on the SQL server. [^4] To select data from a random sample of five items, run the SQL Server's [*NEWID()* T-SQL function](https://learn.microsoft.com/en-us/sql/t-sql/functions/newid-transact-sql?view=sql-server-ver16#d-query-random-data-with-the-newid-function). Create a statement like the following:
+In the following example, we call SQL Server's built-in *COUNT()* function to count the number of rows in the table.  
 
-[^4]: Each version of SQL support different functions. For example, to analyze data from a random sample of items, you use the *NEWID()* T-SQL function. But, other SQL database engines provide functions like *RANDOM()* or *RAND()* to do the same thing.
+```python
+statement = """
+SELECT COUNT(*)
+FROM SalesLT.Product
+"""
+
+with conn.cursor() as cursor:
+    cursor.execute(statement)
+    result = cursor.fetchval()
+    print(f'Rows in Product table:  {result}')
+```
+
+The output is shown below:
+
+```
+Rows in Product table:  295
+```
+
+To select data from a random sample of five items, run the SQL Server's [*NEWID()* T-SQL function](https://learn.microsoft.com/en-us/sql/t-sql/functions/newid-transact-sql?view=sql-server-ver16#d-query-random-data-with-the-newid-function) to randomly assign new row IDs, then sort the table by the new row IDs using the *ORDER BY* statement and select the top five results [^3]. 
+
+[^3]: Each version of SQL support different functions. For example, to analyze data from a random sample of items, you use the *NEWID()* T-SQL function. Other SQL database engines provide functions like *RANDOM()* or *RAND()* to get random samples in a more direct fashion.
+
+Create a statement like the following:
 
 ```python
 statement = """
@@ -666,6 +786,8 @@ with conn.cursor() as cursor:
     print(tabulate(rows, headers=headers))
 ```
 
+The random sample of five rows will be printed to the terminal as shown below:
+
 ```
 ProductID  Name                       ProdNum     Category         Model
 ---------  -------------------------  ----------  ---------------  ------------------
@@ -676,24 +798,18 @@ ProductID  Name                       ProdNum     Category         Model
       845  Mountain Pump              PU-M044     Pumps            Mountain Pump
 ```
 
-Every time you execute the statement, you get a different set of data. 
+Every time you execute the T-SQL statement above, you get a different set of data. 
 
-In the following example, we call SQL Server's *COUNT()* function to count the number of rows in the table.  
+## Close the database connection
+
+Now that you are done with this tutorial, it is a best-practice to close the database connection. Run the following Python code to close the connection instance you initially created:
 
 ```python
-statement = """
-SELECT COUNT(*)
-FROM SalesLT.Product
-"""
-
-with conn.cursor() as cursor:
-    cursor.execute(statement)
-    result = cursor.fetchval()
-    print(f'Rows in Product table:  {result}')
+conn.close()
 ```
 
-```
-Rows in Product table:  295
-```
+## Conclusion
 
-## 
+I showed how you can use a Python program to read data from an SQL database using the *pyodbc* library. I also demonstrated SQL *SELECT* statements that you can use to get the data you need from the database.
+
+Whether you're a data analyst, a software developer, or a curious learner, mastering the art of reading data from an SQL database using Python and *pyodbc* enable you to extract, transform, and analyze data with ease.
