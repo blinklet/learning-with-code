@@ -24,9 +24,6 @@ Series of posts getting data from Northwind database. See notes at top of *Azure
 
 # Existing docs
 
-000-use-environment-variables.md
-* Mostly done. Need to set environment variables to I can create DB connection strings in Jupyter Notebooks
-
 
 001-create-sample-db-azure.md,  azure-db-linux.md
 * practical commands to create and connect to Azure test DB. Also look at notebooks.
@@ -49,10 +46,13 @@ Pandas-data-from-database.md
 * SQLite example with Chinook DB
 * Does not cover how to get scheme information -- basic disucssion of available scheme-reading tools
 * Covers using Pandast read-sql-table and read-sql-query functions. Avoids SQLAlchemy queries
+* should get section about visualization from data-science-environment.md
+
 Sqlalchemy-minimum.md
 * This is a subset of "data-science-environment.md" with a lot of extras removed
 * Does not cover how to get scheme information
 * SQLite example with Chinook DB
+
 
 data-science-environment.md
 * SQLALchemy
@@ -60,6 +60,7 @@ data-science-environment.md
 * I think this was divided up into above two docs and the rest not used
 * Goes into detail about using SQLAlchemy to read database scheme, including creating custom functions to read shema data
 * So use this as a source of "extra" content but it has already been refined into the two docs above.
+* includes section on visualization
 
 
 Azure-python-big-database.md
