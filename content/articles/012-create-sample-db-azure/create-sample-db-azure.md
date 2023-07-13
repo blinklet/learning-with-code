@@ -255,7 +255,7 @@ $ python3 -m venv env
 Then, activate the virtual environment.
 
 ```bash
-$ source .\env\bin\activate
+$ source ./env/bin/activate
 (env) $ 
 ```
 

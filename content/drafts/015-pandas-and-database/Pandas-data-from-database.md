@@ -1,280 +1,277 @@
-% Python, pandas, and databases
+# Python, pandas, and databases
 
-Python programmers who use Pandas to perform data analysis have many options for gathering data from databases and incorporating it into their programs. Pandas users may get data from SQL databases using Pandas functions, using a Python database driver combined with SQL queries, using an [object-relational mapping (ORM) framework](https://en.wikipedia.org/wiki/Object%E2%80%93relational_mapping), or some combination of these tools.
-
-Many [Pandas](https://pandas.pydata.org/) books and blogs do not show you how to get data stored in databases. Instead, they work with simpler-to-use data sources like [CSV files](https://en.wikipedia.org/wiki/Comma-separated_values). There are already [many](https://alongrandomwalk.com/2020/09/14/read-and-write-files-with-jupyter-notebooks/) [tutorials](https://www.digitalocean.com/community/tutorials/data-analysis-and-visualization-with-pandas-and-jupyter-notebook-in-python-3) [available](https://www.datacamp.com/tutorial/python-excel-tutorial) for these simpler examples so this document will focus only on using Pandas to read data from databases.
-
-<!--more-->
-
-# Data from a database
-
-Programmers who do not wish to use SQL can use Pandas to read individual SQL database tables into Pandas dataframes. Then, they can use Pandas to join, transform, and filter those dataframes until they create the dataset that they need.
-
-Python programmers who are already proficient in writing [SQL queries](https://www.postgresqltutorial.com/postgresql-tutorial/postgresql-select/) may use them in Pandas to read a complex dataset into a Pandas dataframe. Or, they may directly access the data by passing their SQL queries to an SQL database driver. [^1]
-
-[^1]: Use the appropriate driver that is compatible with the SQL database you are using, such as [psycopg](https://www.psycopg.org/) for PostgreSQL, or [mysql-connector-python](https://dev.mysql.com/doc/connector-python/en/) for MySQL. Since we are using an SQLite database, we could use the [sqlite package](https://www.sqlite.org/index.html), which is part of the Python standard library.
-
-Finally, Python programmers who do not wish to use SQL, but who still want to build powerful SQL queries in Python programs, may use the [SQLAlchemy ORM](https://www.sqlalchemy.org/SQLAlchemy). It can be used to create queries for Pandas functions or to select data directly from the database. I will discuss SQLAlchemy in another document.
-
-# Set up your environment
-
-Before you start working through this tutorial, set up your database server and install Python on your laptop. Then, start a Python virtual environment and install Jupyter notebooks and Pandas in it.
-
-## Set up your database
-
-To follow this tutorial, you do not need to install a database server because we will use a SQLite database. SQLite is a file-based database and the SQLite database driver is built into the Python standard library so you do not need to install and configure a separate SQL server.
-
-## Install Python on your Windows laptop
-
-Start by installing Python on your laptop, if it is not already installed. Go to the [Python web page](https://www.python.org/) for the most up-to-date information about installing python on your operating system.
-
-## Install Pandas
-
-[Pandas](https://pandas.pydata.org/pandas-docs/stable/index.html) is a Python package that makes working with relational or labeled data both easy and intuitive. It aims to be the fundamental high-level building block for doing practical, real-world data analysis in Python. [^2]
+[Pandas](https://pandas.pydata.org/pandas-docs/stable/index.html) is a Python package that makes working with relational or labeled data both easy and intuitive. It aims to be the fundamental high-level building block for doing practical, real-world data analysis in Python [^2].
 
 [^2]: From the [Pandas package overview documentation](https://pandas.pydata.org/pandas-docs/stable/getting_started/overview.html), accessed on March 17, 2023
 
-To install Pandas:
+Data scientists commonly load data into Pandas dataframes from databases. However, when you are learning to use Pandas, it is hard to find a public database with which you can practice meaningful data operations. I believe this is why many data-science books and blogs show you how to work with other data sources like [CSV files](https://en.wikipedia.org/wiki/Comma-separated_values). There are already many [public sources of interesting data](https://www.dropbase.io/post/top-11-open-and-public-data-sources) in CSV files and there are also [many](https://alongrandomwalk.com/2020/09/14/read-and-write-files-with-jupyter-notebooks/) [tutorials](https://www.digitalocean.com/community/tutorials/data-analysis-and-visualization-with-pandas-and-jupyter-notebook-in-python-3) [available](https://www.datacamp.com/tutorial/python-excel-tutorial) that show you how to load data from CSV files into Pandas dataframes. 
 
-* Create a new folder for your data science learning projects
-* Create a [Python virtual environment](https://realpython.com/python-virtual-environments-a-primer/) and activate it
-* Install Pandas in your virtual environment
+This post shows you how to Pandas to read data from a database that contains enough data to be interesting and how to perform basic data preparation. The examples in this tutorial will use the Microsoft AdventureWorks LT sample database. You may [create your own version of this database]({filename}/articles/012-create-sample-db-azure/create-sample-db-azure.md) or you may use the [public AdventureWorks SQL Server](https://www.sqlservercentral.com/articles/sqlservercentral-hosts-adventureworks-on-azure). In this post, you will use the public server so that you can immediately get started with the examples.
 
-Open the [Windows Terminal](https://apps.microsoft.com/store/detail/windows-terminal/9N0DX20HK701?hl=en-us&gl=us) app.
+## The short answer
 
-Create a new folder that will store your virtual environment and the files you create while learning about data science. Navigate to your home folder, or to a subdirectory of your choice and create a folder named *data-science*:
+Once you are connected to a database, Pandas makes it easy to load data from it. But, Pandas only supports database connections using SQLAlchemy
 
-```powershell
-> mkdir data-science
-```
+If you read my previous posts about [reading databases schema information]({filename}/articles/013-read-database-python-odbc/read-db-python-odbc-driver.md) or [using Python programs to read data from a database]({filename}/articles/014-read-data-from-database-with-python/python-program-read-database-data.md), you have already learned how to connect to a database. 
 
-Navigate into the folder you created and create a Python virtual environment. I chose to call mine *env*.
+Programmers can use the Pandas *read_sql_table()* method to read entire SQL database tables into Pandas dataframes simply by passing in the table name as a parameter. Then, they can use Pandas to join, transform, and filter those dataframes until they create the dataset that they need.
 
-```powershell
-> cd data-science
-> python -m venv env
-```
+Python programmers who are proficient in writing [SQL queries](https://www.postgresqltutorial.com/postgresql-tutorial/postgresql-select/) may pass a string containing an SQL query in the Pandas *read_sql_query()* method to extract and transform a dataset before loading it into a Pandas dataframe. 
 
-Next, activate the virtual environment.
 
-```powershell
-> .\env\Scripts\activate
-(env) > 
-```
+## Set up your environment
 
-In the virtual environment, install the Pandas Python package and supporting packages for converting Pandas dataframes to Microsoft Excel spreadsheets. Go to the terminal window that is running your virtual environment and enter the commands:
+Before you start working through this tutorial, create a Python virtual environment and install the packages you need in it. The start a Jupyter Notebook so you can follow along with this tutorial. You may use the Python REPL instead, if you do not want to use Jupyter.
 
-```powershell
-(env) > pip install pandas
-(env) > pip install openpyxl xlsxwriter xlrd
+I have already covered the process in my previous posts so I will just list the required commands here, without explanation.
+
+```bash
+$ sudo su
+$ curl https://packages.microsoft.com/keys/microsoft.asc | apt-key add -
+$ curl https://packages.microsoft.com/config/ubuntu/$(lsb_release -rs)/prod.list > /etc/apt/sources.list.d/mssql-release.list
+$ exit
+$ sudo apt-get update
+$ sudo ACCEPT_EULA=Y apt-get install -y msodbcsql18
+$
+$ mkdir data-science
+$ cd data-science
+$ python -m venv .venv
+$ source ./.venv/bin/activate
+(.venv) $ pip install jupyterlab
+(.venv) $ pip install python-dotenv
+(.venv) $ pip install pyodbc
+(.venv) $ sudo apt install unixodbc
+``````
+
+Finally, install Pandas.
+
+```bash
+(.venv) $ pip install pandas
+(.venv) $ pip install openpyxl xlsxwriter xlrd
 ```
 
 When Pandas is installed, [NumPy](https://numpy.org/) will also be installed. NumPy (Numerical Python) is an open source Python library that’s used for working with numerical data in Python.
 
-### Other frameworks
+Start a new Jupyter Notebook. 
 
-While Pandas and NumPy are often used for data analytics in Python, some other projects claim to be more modern and efficient. 
-
-[Apache Arrow](https://arrow.apache.org/) could be used in place of NumPy. Arrow uses memory in a more efficient way and supports faster data processing operations. The next major release of [Pandas will use Apache Arrow](https://datapythonista.me/blog/pandas-20-and-the-arrow-revolution-part-i) as its back end.
-
-[Polars](https://www.pola.rs/) could be used in place of Pandas. It supports parallel processing, which delivers better performance on modern CPUs. It also uses Apache Arrow as its back end for data processing.
-
-For very large use-cases, Python programmers may use a "big data" framework like [Apache Spark](https://spark.apache.org/), which provides dataframe functionality [similar to Pandas and Polars](https://towardsdatascience.com/spark-vs-pandas-part-2-spark-c57f8ea3a781) and processes data sets stored across multiple computers. Spark is incorporated into [Databricks](https://www.databricks.com/). PySpark provides a [Python API](https://spark.apache.org/docs/latest/api/python/index.html) and a [Pandas API](https://spark.apache.org/docs/3.2.0/api/python/user_guide/pandas_on_spark/). Spark also [does a lot more](https://www.toptal.com/spark/introduction-to-apache-spark) than just process data in dataframes.
-
-## Install Jupyter Notebooks
-
-Many data scientists use [Jupyter](https://jupyter.org/) notebooks as a development environment and to present their results.
-
-This document uses a Jupyter Notebook as an advanced [REPL](https://codewith.mu/en/tutorials/1.0/repl) that makes it easier to demonstrate the Python code used to access data from a database and display the results. If you prefer to use a simple text editor or another REPL, you may. You can still follow along with this tutorial.
-
-Install JupyterLab in your Python virtual environment.
-
-```powershell
-(env) > pip install jupyterlab
+```bash
+(.venv) $ jupyter-lab
 ```
-
-Run JupyterLab.
-
-```powershell
-(env) > jupyter notebook
-```
-
-The terminal will show multiple URLs that you can copy and paste into a web browser. Because you installed JupyterLab in a virtual environment, use one of the *localhost* URLs, like the following
-
-```
-http://localhost:8888/?token=678b6891879b80fc02488701d553b1a2b4
-```
-
-The Jupyter Notebook web interface looks like the image below.
-
-![Jupyter Notebook user interface](./Images/JupyterNotebook001.png)
 
 When following along with the code examples in this document, open a new notebook cell for each example, enter the code, and run it. The results of code run in previous cells is held in memory and is available to subsequent cells. For example, a dataframe created in one cell can be used in a later cell.
 
-### Alternative Jupyter interfaces
+## Connect to a database
 
-JupyterLab is the newer interface for Jupyter Notebooks and has more features.  If you want to open notebooks using the JupyterLab interface, start the Jupyter server with the following command, instead of using the `jupyter notebook` command. 
+Many data sets that are [available to the public](https://www.dropbase.io/post/top-11-open-and-public-data-sources) but very few of them run on database servers. 
 
+Fortunately, there is a [public SQL server](https://www.sqlservercentral.com/articles/sqlservercentral-hosts-adventureworks-on-azure) that contains most of the AdventureWorks LT sample database. It is supported by the *[sqlservercentral.com](https://www.sqlservercentral.com/about)* web site. 
+
+I do not know that this public server will be supported indefinitely so, if it is not available when you read this post, you can [create your own AdventureWorks LT database]({filename}/articles/012-create-sample-db-azure/create-sample-db-azure.md) on a free server in Microsoft Azure. Or, you can run a version of the same database locally on your PC with [SQLite](https://database.guide/2-sample-databases-sqlite/) or [Docker](https://github.com/pthom/northwind_psql). 
+
+To connect to the database, first define an environment variable that contains the connection string. The connection string is based on the [database and user information](https://www.sqlservercentral.com/articles/connecting-to-adventureworks-on-azure) provided on the *sqlservercentral.com* web site. 
+
+In your terminal window, run the following command to crete a *dotenv* file the contains the correct connection string:
+
+```bash
+(.venv) $ echo 'CONN_PUBLIC="Driver={ODBC Driver 18 for SQL Server};'\
+'Server=tcp:sqlservercentralpublic.database.windows.net,1433;'\
+'Database=AdventureWorks;Uid=sqlfamily;Pwd=sqlf@m1ly;Encrypt=yes;'\
+'TrustServerCertificate=no;"' > .env
 ```
-(env) > jupyter-lab
+
+Then switch to your Jupyter Notebook (or REPL). In the first Jupyter Notebook cell, get the connection string environment variable and assign it to the variable named *connection_string*:
+
+```python
+import os
+from dotenv import load_dotenv
+
+load_dotenv('.env', override=True)
+connection_string = os.getenv('CONN_PUBLIC')
 ```
 
-Also, you can [edit Jupyter Notebooks in the VS Code editor](https://code.visualstudio.com/docs/datascience/jupyter-notebooks). Install the VSCode [Python extension](https://code.visualstudio.com/docs/languages/python) and [Jupyter extension](https://marketplace.visualstudio.com/items?itemName=ms-toolsai.jupyter), then open the Notebook file in VS Code. The virtual environment must already be activated and the JupyterLab server must already be started.
+Pandas does not support *pyodbc* connection objects. It only supports *SQLAlchemy* connections, *sqlite* connections, or a database string URI. So, you will have to convert the connection string into a database URI.
 
-# Data sources
+The code below will perform the conversion. All you need to do is append a prefix that identifies the driver Pandas will use. Run the code below to set up the database URI:
 
-To practice the basics of data science, you need data. Eventually, you need to learn how to work with many sources of data, such as:
+```python
+from urllib.parse import quote_plus
 
-* SQL Databases
-* Excel and CSV files stored on a secure SharePoint site
-* APIs of external services
-* Web scraping
+url_string = quote_plus(connection_string)
+uri = f'mssql+pyodbc:///?odbc_connect={url_string}'
+```
 
-While you work in the Analytics team, most of the data you will access will come from a database or a file on a secure SharePoint site. Most of our data comes from the DATABASE database.
+The [*quote_plus* function](https://docs.python.org/3/library/urllib.parse.html#urllib.parse.quote_plus) replaces spaces and special characters with escape codes so if you have a password in your connection string and if that password contains special characters, Pandas can still use it.
 
-It may be best to practice on a "dummy" database so you do not accidentally cause issues with a production database. 
+Pandas will use the database URI to create and manage its own *pyodbc* connection. Now, you are ready to use Pandas to read data from the database.
 
-## Available public databases
-
-Many data sets that are [available to the public](https://www.dropbase.io/post/top-11-open-and-public-data-sources) but very few of them run on database servers. We want to learn how to analyze data stored in a database so we need data available in that format.
-
-The best solution is to install an SQL database engine like [SQLite](https://www.sqlite.org/index.html) on your PC and download a database backup from a public repository. In this document, we will use the *[Chinook database](https://github.com/lerocha/chinook-database)*, which is a public database that tries to emulate a media store's database. It contains customer names and addresses, sales data, and inventory data.
-
-[Download the *Chinook_Sqlite.sqlite* file](https://github.com/lerocha/chinook-database/blob/master/ChinookDatabase/DataSources/Chinook_Sqlite.sqlite) from the Chinook Database project's [downloads folder]() and save it to your computer.
 
 # Read database tables into Pandas dataframes
 
-You may encounter a "chicken and egg" situation where you want to use Pandas to read SQL tables into dataframes but you do not know enough about the database schema to proceed. At a minimum, you need to know the database table names. 
+To read data from the database, you need to know the schema information. Ideally, the database administrator would provide you with documentation that describes the schemas, tables, and data relationships. You can read more information about the AdventureWorks LT database in my previous posts. For this example, you just need to know the schema and table names.
 
-It is best to read the database documentation, if it is available. If no documentation is available, you can analyze the database with an SQL discovery tool like [*SchemaSpy*](https://schemaspy.org/), [*SchemaCrawler*](https://www.schemacrawler.com/), or [*SQLite Browser*](https://github.com/sqlitebrowser/sqlitebrowser).
+The only schema available to you (other than system schemas) is the *SalesLT* schema. It contains the following tables:
 
-Right now, all you need is the table names. You can research the SQL statement that will list the database table names. The statement syntax is different for different databases. For a SQLite database, the statement is:
-
-```python
-import pandas as pd
-
-url = r"sqlite:///C:/Users/blinklet/Documents/Chinook_Sqlite.sqlite"
-
-statement = 'SELECT name FROM sqlite_master WHERE type= "table"'
-
-tables = pd.read_sql_query(statement, url)
-print(tables)
-```
-
-We will cover the Pandas *read_sql_query()* function later in this chapter. The output lists the table names in the database:
-
-```
-             name
-0           Album
-1          Artist
-2        Customer
-3        Employee
-4           Genre
-5         Invoice
-6     InvoiceLine
-7       MediaType
-8        Playlist
-9   PlaylistTrack
-10          Track
-```
+* Address
+* Customer
+* CustomerAddress
+* Product
+* ProductCategory
+* ProductDescription 
+* ProductModel 
+* ProductModelProductDescription
+* SalesOrderDetail
+* SalesOrderHeader
 
 
-## The *read_sql_table* function
+### The *read_sql_table* method
 
-Developers who want to use Pandas to read data from the SQL database into Pandas dataframes may use the Pandas [*read_sql_table()* function](https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.read_sql_table.html). To use the function, simply pass it the name of the table in the database and the URL of the database.
+Developers who want to use Pandas to read entire tables from the SQL database into Pandas dataframes may use the Pandas [*read_sql_table()* method](https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.read_sql_table.html). Simply pass it the name of the table in the database, the database URI, and the schema name.
 
-Pandas does the work of creating a connection to the database, reading all the columns in the table, exporting them into a Pandas dataframe, and returning the dataframe. For example, we will read the contents of the *Album* table from the Chinook database we previously downloaded and display the first few lines.
+Pandas does the work of creating a connection to the database, reading all the columns in the table, exporting them into a Pandas dataframe, and returning the dataframe. For example, we will read the contents of the *ProductCategories* table and print the first few lines.
 
 ```python
 import pandas as pd
-from pathlib import Path
 
-home_dir = Path.home()
-file_path = home_dir.joinpath('Documents', 'Chinook_Sqlite.sqlite')
-url = 'sqlite:///' + str(file_path)
+categories = pd.read_sql_table('ProductCategory', uri, 'SalesLT')
 
-albums = pd.read_sql_table('Album', url)
-
-print(albums.shape)
-display(albums.head(3))
+print(categories.shape)
+print(categories.head(7))
 ```
 
-> **NOTE:** We used the Python *pathlib* library to build a path that would work on any user's computer. If you wish, you may manually encode the path as a raw string using a statement like the one below:
->
->     url = r"sqlite:///C:/Users/username/Documents/Chinook_Sqlite.sqlite"
+The printed dataframe looks like the following output:
 
-Since we are using a Jupyter Notebook, we can use the [*display* function](https://datascientyst.com/style-pandas-dataframe-like-pro-examples/) to output a [styled table](https://pandas.pydata.org/pandas-docs/stable/user_guide/style.html) that is more readable. The output looks like below:
+```
+   ProductCategoryID  ParentProductCategoryID            Name  \
+0                  1                      NaN           Bikes   
+1                  2                      NaN      Components   
+2                  3                      NaN        Clothing   
+3                  4                      NaN     Accessories   
+4                  5                      1.0  Mountain Bikes   
+5                  6                      1.0      Road Bikes   
+6                  7                      1.0   Touring Bikes   
 
-![Read database table using pandas *read_sql_table()* function](./Images/pandas050.png){width=60%}
+                                rowguid ModifiedDate  
+0  CFBDA25C-DF71-47A7-B81B-64EE161AA37C   2002-06-01  
+1  C657828D-D808-4ABA-91A3-AF2CE02300E9   2002-06-01  
+2  10A7C342-CA82-48D4-8A38-46A2EB089B74   2002-06-01  
+3  2BE3BE36-D9A2-4EEE-B593-ED895D97C2A6   2002-06-01  
+4  2D364ADE-264A-433C-B092-4FCBF3804E01   2002-06-01  
+5  000310C0-BCC8-42C4-B0C3-45AE611AF06B   2002-06-01  
+6  02C5061D-ECDC-4274-B5F1-E91D76BC3F37   2002-06-01  
+```
 
-You can read multiple tables into different dataframes to build up a set of data to analyze. Get the contents of the *Artist* and *Track* table:
+You can read multiple tables into different dataframes to build up a set of data to analyze. Get the contents of the *Product* and *ProductModel* tables:
 
 ```python
-artists = pd.read_sql_table('Artist', url)
-tracks = pd.read_sql_table('Track', url)
+products = pd.read_sql_table('Product', uri, 'SalesLT')
+models = pd.read_sql_table('ProductModel', uri, 'SalesLT')
 ```
 
 ## Merging dataframes in Pandas
 
 To get more interesting data sets, we need to [join database tables](https://learnsql.com/blog/how-to-join-tables-sql/). For now, we will accomplish this by reading different tables into Pandas dataframes and [merging the dataframes](https://pandas.pydata.org/pandas-docs/stable/user_guide/merging.html). 
 
+It is easier to merge dataframes if you already understand the relationships between them. If you imported entire tables into dataframes, look at the database documentation and find the primary keys and foreign keys that define relationships. 
 
-If you look at the columns in the dataframes you created, you see that there may be a relationship between each of the tables that you read into dataframes. 
-
-Print the output of each dataframes *columns* attribute:
+Print the output of each dataframe's *columns* attribute:
 
 ```python
-print(albums.columns)
-print(artists.columns)
-print(tracks.columns)
+print(products.columns)
+print(categories.columns)
+print(models.columns)
 ```
 
 the output shows the columns names in each dataframe
 
 ```
-albums columns:  Index(['AlbumId', 'Title', 'ArtistId'], dtype='object')
-
-artists columns:  Index(['ArtistId', 'Name'], dtype='object')
-
-tracks columns:  Index(['TrackId', 'Name', 'AlbumId', 'MediaTypeId', 'GenreId', 'Composer', 'Milliseconds', 'Bytes', 'UnitPrice'], dtype='object')
+Index(['ProductID', 'Name', 'ProductNumber', 'Color', 'StandardCost',
+       'ListPrice', 'Size', 'Weight', 'ProductCategoryID', 'ProductModelID',
+       'SellStartDate', 'SellEndDate', 'DiscontinuedDate', 'ThumbNailPhoto',
+       'ThumbnailPhotoFileName', 'rowguid', 'ModifiedDate'],
+      dtype='object')
+Index(['ProductCategoryID', 'ParentProductCategoryID', 'Name', 'rowguid',
+       'ModifiedDate'],
+      dtype='object')
+Index(['ProductModelID', 'Name', 'CatalogDescription', 'rowguid',
+       'ModifiedDate'],
+      dtype='object')
 ```
 
-You see that the *AlbumId* column in the *albums* dataframe matches with the *AlbumId* column in the *tracks* dataframe. The *ArtistId* column in the *albums* dataframe matches with the ArtistId in the *artists* dataframe.
+You see that the *ProductCategoryID* column in the *products* dataframe matches with the *ParentProductCategoryID* column in the *categories* dataframe. It's not obvious (which is why you need to document your database schema), but the *ParentProductCategoryID* in the *categories* dataframe is has a foreign-key relationship with the *ProductCategoryID* in the same table. The *ProductModelID* column in the *products* dataframe matches with the *ProductModelID* column in the *models* dataframe.
 
 ### Merging dataframes
 
-I want to create a dataframe that lists the full artist name associated with every album. So, I will [merge](https://pandas.pydata.org/pandas-docs/stable/user_guide/merging.html#database-style-dataframe-or-named-series-joining-merging) the dataframe *albums* and the dataframe *artists* into a new dataframe named *df1*. By default, the [pandas merge method](https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.merge.html) operates like an [*inner join*](https://pandas.pydata.org/pandas-docs/stable/user_guide/merging.html#database-style-dataframe-or-named-series-joining-merging) operation so it returns merged rows that match between the left and right side of the join.
+I want to create a dataframe that lists selected product information, including the product name, model, category. So, I will [merge](https://pandas.pydata.org/pandas-docs/stable/user_guide/merging.html#database-style-dataframe-or-named-series-joining-merging) the dataframe *products* and the dataframe *models* into a new dataframe named *df1*. By default, the [pandas merge method](https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.merge.html) operates like an [*inner join*](https://pandas.pydata.org/pandas-docs/stable/user_guide/merging.html#database-style-dataframe-or-named-series-joining-merging) operation so it returns merged rows that match between the left and right side of the join.
 
-You can join two dataframes together using the Pandas *merge()* function, or you can join any number of dataframes together using each dataframe's *merge()* method. 
+You can join two dataframes together using the Pandas *merge()* function, or you can join any number of dataframes together using each dataframe's *merge()* method. Pandas does not know about the relationships between the tables in the database. In simple cases Pandas will perform the inner join by matching columns from each dataframe that have the same name. If you need to join on columns that do not have the same names, or if there are more than one set of columns with the same names, you can specify which columns to join on in the Pandas *merge()* function's parameters.
 
 For example, to merge the albums and artists dataframes, use the following code:
 
 ```python
-df1 = pd.merge(left = albums, right = artists)
+df1 = pd.merge(left=products, right=categories, on='ProductCategoryID')
 print(df1.shape)
 print(df1.head())
 ```
 
-I used the Pandas dataframe *shape* attribute to check the number of rows and columns in the dataframe, since I am only displaying the first five rows.
+I used the Pandas dataframe *shape* attribute to check the number of rows and columns in the dataframe, since I am only displaying the first two rows.
 
 ```
-(347, 4)
-   AlbumId                                  Title  ArtistId       Name
-0        1  For Those About To Rock We Salute You         1      AC/DC
-1        4                      Let There Be Rock         1      AC/DC
-2        2                      Balls to the Wall         2     Accept
-3        3                      Restless and Wild         2     Accept
-4        5                               Big Ones         3  Aerosmith
+(295, 21)
+   ProductID                     Name_x ProductNumber  Color  StandardCost  \
+0        680  HL Road Frame - Black, 58    FR-R92B-58  Black       1059.31   
+1        706    HL Road Frame - Red, 58    FR-R92R-58    Red       1059.31   
+
+   ListPrice Size   Weight  ProductCategoryID  ProductModelID  ...  \
+0     1431.5   58  1016.04                 18               6  ...   
+1     1431.5   58  1016.04                 18               6  ...   
+
+  SellEndDate DiscontinuedDate  \
+0         NaT              NaT   
+1         NaT              NaT   
+
+                                      ThumbNailPhoto  \
+0  b'GIF89aP\x001\x00\xf7\x00\x00\x00\x00\x00\x80...   
+1  b'GIF89aP\x001\x00\xf7\x00\x00\x00\x00\x00\x80...   
+
+         ThumbnailPhotoFileName                             rowguid_x  \
+0  no_image_available_small.gif  43DD68D6-14A4-461F-9069-55309D90EA7E   
+1  no_image_available_small.gif  9540FF17-2712-4C90-A3D1-8CE5568B2462   
+
+           ModifiedDate_x ParentProductCategoryID       Name_y  \
+0 2008-03-11 10:01:36.827                     2.0  Road Frames   
+1 2008-03-11 10:01:36.827                     2.0  Road Frames   
+
+                              rowguid_y ModifiedDate_y  
+0  5515F857-075B-4F9A-87B7-43B4997077B3     2002-06-01  
+1  5515F857-075B-4F9A-87B7-43B4997077B3     2002-06-01  
+
+[2 rows x 21 columns]
 ```
 
-Pandas does not know about the relationships between the tables in the database. It assumes that the inner join will be performed by matching columns from each dataframe that have the same name. If you need to join on columns that do not have the same names, you can specify which columns to join on in the Pandas *merge()* function's parameters.
+You can see that Pandas uses the "_x" and "_y" suffixes to rename merged columns with the same name. 
+
+If you want to use other suffixes, you can specify them as parameters when you call the *merge()* method. For example, the output would be clearer if you wrote the following code, instead:
+
+```python
+df1 = pd.merge(
+    left=products, 
+    right=categories, 
+    on='ProductCategoryID',
+    suffixes=['_product','_category']
+)
+
+print(df1.shape)
+print(df1.head(2))
+```
+
+Now, after the merge, the columns from each table that had the same name are called "Name_product" and "Name_category"
 
 
 ### Merging multiple dataframes
 
 Pandas dataframes have a [*merge()* method](https://www.w3schools.com/python/pandas/ref_df_merge.asp) that works the same as the Pandas *merge()* function with the calling dataFrame being considered the left side in the join.
 
-You can chain multiple *merge()* methods together to join multiple dataframes in one statement. But you have to be careful if you have multiple columns that have the same name, as you get in this case. Pandas will return only the rows that match in all columns with same names. To avoid this problem, specify the single column that each merge should match on.
+You can chain multiple *merge()* methods together to join multiple dataframes in one statement. But you have to be careful if you have multiple columns that have the same name, as you get in this case. Pandas will return only the rows that match in all columns with same names. To avoid this problem, specify the column that each merge should match on.
 
 ```python
 df1 = albums.merge(artists, on='ArtistId').merge(tracks, on='AlbumId')
@@ -283,23 +280,6 @@ print(df1.shape)
 display(df1.head(3))
 ```
 
-You can see we had two columns with the column name *Name* that were automatically renamed by Pandas to prevent confusion.
-
-![Pandas merging multiple dataframes](./Images/pandas051.png)
-
- By default, Pandas uses the "_x" and "_y" suffixes to rename merged columns with the same name. If you want to use other suffixes, you can specify them as parameters when you call the *merge()* method.
-
-```python
-df1 = (
-    albums
-    .merge(artists, on='ArtistId')
-    .merge(tracks, on='AlbumId', suffixes=['_artist','_track'])
-)
-print(df1.shape)
-display(df1.head(3))
-```
-
-You specified the suffixes in the second *merge()* method because that is where you expect to encounter two columns with the same name, "Name".
 
 You can keep chaining Pandas dataframe methods to create complex operations that merge dataframes, rename and delete columns, and more. For example:
 
@@ -480,7 +460,7 @@ The output shows that the *albums* dataframe now contains only four rows of albu
 
 ## Joining tables into one dataframe
 
-Another benefit of SQL is that, when working with large databases, you can join tables and clean data more efficiently on the SQL server because it is optimized for these kinds of operations.
+Another benefit of SQL is that, when working with large databases, you can join tables and filter data more efficiently on the SQL server because it is optimized for these kinds of operations.
 
 SQL query statements can select specific columns from tables, filter returned rows based on your criteria, join tables, rename columns, and more. For example, the query below merges data from the Album, Artist, and Track tables and then returns only the tracks performed by the artist named "Alanis Morissette":
 

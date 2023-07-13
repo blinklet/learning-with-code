@@ -1,0 +1,3 @@
+Maybe retry Northwind on SQLite?
+* [SQLite](https://database.guide/2-sample-databases-sqlite/)
+* because I think it is the same as the sample data in SQL Server...
