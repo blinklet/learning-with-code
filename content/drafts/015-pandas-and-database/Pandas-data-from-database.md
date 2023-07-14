@@ -203,7 +203,7 @@ You see that the *ProductCategoryID* column in the *products* dataframe matches 
 
 I want to create a dataframe that lists selected product information, including the product name, model, category. So, I will [merge](https://pandas.pydata.org/pandas-docs/stable/user_guide/merging.html#database-style-dataframe-or-named-series-joining-merging) the dataframe *products* and the dataframe *models* into a new dataframe named *df1*. By default, the [pandas merge method](https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.merge.html) operates like an [*inner join*](https://pandas.pydata.org/pandas-docs/stable/user_guide/merging.html#database-style-dataframe-or-named-series-joining-merging) operation so it returns merged rows that match between the left and right side of the join.
 
-You can join two dataframes together using the Pandas *merge()* function, or you can join any number of dataframes together using each dataframe's *merge()* method. Pandas does not know about the relationships between the tables in the database. In simple cases Pandas will perform the inner join by matching columns from each dataframe that have the same name. If you need to join on columns that do not have the same names, or if there are more than one set of columns with the same names, you can specify which columns to join on in the Pandas *merge()* function's parameters.
+You can join two dataframes together using the Pandas *merge()* function, or you can join any number of dataframes together using each dataframe's *merge()* method. Pandas does not know about the relationships between the tables in the database. In simple cases Pandas will perform the inner join by matching columns with the same name from each dataframe. But, you have to be careful if you have multiple columns that have the same name, as you get in this case. Pandas will return only the rows that match in all columns with same names. To avoid this problem, specify the column that each merge should match on.
 
 For example, to merge the albums and artists dataframes, use the following code:
 
@@ -269,40 +269,90 @@ Now, after the merge, the columns from each table that had the same name are cal
 
 ### Merging multiple dataframes
 
-Pandas dataframes have a [*merge()* method](https://www.w3schools.com/python/pandas/ref_df_merge.asp) that works the same as the Pandas *merge()* function with the calling dataFrame being considered the left side in the join.
+Pandas dataframes have a [*merge()* method](https://www.w3schools.com/python/pandas/ref_df_merge.asp) that works the same as the Pandas *merge()* function with the calling data frame being considered the left side in the join.
 
-You can chain multiple *merge()* methods together to join multiple dataframes in one statement. But you have to be careful if you have multiple columns that have the same name, as you get in this case. Pandas will return only the rows that match in all columns with same names. To avoid this problem, specify the column that each merge should match on.
+Perform the same merge as you performed above with the Pandas *merge()* function, but use the dataframe's *merge()* method:
 
 ```python
-df1 = albums.merge(artists, on='ArtistId').merge(tracks, on='AlbumId')
+df2 = products.merge(categories, on='ProductCategoryID', suffixes=['_product','_category'])
 
-print(df1.shape)
-display(df1.head(3))
+print(df2.shape)
+display(df2.head(2))
 ```
 
+You get the same output as was displayed when you used the Pandas *Merge()* function.
+
+You can chain multiple *merge()* methods together to join multiple dataframes in one statement. 
+
+```python
+df3 = products.merge(categories, on='ProductCategoryID', suffixes=['_product','_category'])
+
+print(df3.shape)
+display(df3.head(2))
+```
 
 You can keep chaining Pandas dataframe methods to create complex operations that merge dataframes, rename and delete columns, and more. For example:
 
 ```python
-df1 = (
-    albums
-    .merge(artists, on='ArtistId')
-    .merge(tracks, on='AlbumId', suffixes=['_artist','_track'])
-    .rename(columns = {'Title':'Album','Name_artist':'Artist', 
-                       'Name_track':'Track', 'Milliseconds':'Length',})
-    .drop(['AlbumId', 'TrackId', 'MediaTypeId', 
-           'GenreId', 'Bytes', 'UnitPrice', 'ArtistId'], axis=1)
-)
+df4 = (products[['Name', 'ProductCategoryID', 
+                 'ProductModelID']]
+       .merge(categories[['ProductCategoryID', 'ParentProductCategoryID', 
+                          'Name']],
+              on='ProductCategoryID', 
+              suffixes=['_product','_category'])
+       .merge(models[['ProductModelID', 'Name']],
+              suffixes=['_productcategory','_model'])
+       .rename(columns={'Name_product':'ProductName',
+                        'Name_category':'CategoryName',
+                        'Name':'ModelName',})
+       .merge(categories[['ProductCategoryID', 'Name']],
+              left_on='ParentProductCategoryID',
+              right_on='ProductCategoryID',
+              suffixes=['_left','_right'])
+       .rename(columns={'Name':'ParentCategory',})
+       .drop(columns=['ProductModelID', 'ParentProductCategoryID',
+             'ProductCategoryID_left', 'ProductCategoryID_right'])
+      )
 
-print(df1.shape)
-display(df1.head(3))
+print(df4.shape)
+with pd.option_context('display.width', 1000):
+    print(df4.sample(8))
 ```
 
 Which displays the following output:
 
-![Result of merging multiple tables and chaining multiple methods](./Images/pandas052.png)
+```
+(295, 4)
+                       ProductName     CategoryName               ModelName ParentCategory
+279        Touring-1000 Yellow, 54    Touring Bikes            Touring-1000          Bikes
+160          Fender Set - Mountain          Fenders   Fender Set - Mountain    Accessories
+125                  HL Road Pedal           Pedals           HL Road Pedal     Components
+124                  ML Road Pedal           Pedals           ML Road Pedal     Components
+82          LL Mountain Rear Wheel           Wheels  LL Mountain Rear Wheel     Components
+179        Men's Sports Shorts, XL           Shorts     Men's Sports Shorts       Clothing
+50   ML Mountain Frame - Black, 48  Mountain Frames       ML Mountain Frame     Components
+128                    ML Crankset        Cranksets             ML Crankset     Components
+```
 
-Now you have a dataframe that has 3,503 rows. Each row contains  information about a track's album, artists, composer, and length.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 ### Merging dataframes with outer joins
