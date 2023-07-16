@@ -1,16 +1,20 @@
-# Python, pandas, and databases
+title: Python, pandas, and databases
+slug: python-pandas-databases
+summary: Use the Pandas data analysis framework to read data from an SQL database. In this post, you will use two methodes: you can read entire database tables and process them exclusively in Pandas, or you can use SQL queries to pre-process only selected database data to reduce the memory used by Pandas when analyzing the data.
+date: 2023-07-14
+modified: 2023-07-14
+category: Databases
+<!--status: Published-->
 
-[Pandas](https://pandas.pydata.org/pandas-docs/stable/index.html) is a Python package that makes working with relational or labeled data both easy and intuitive. It aims to be the fundamental high-level building block for doing practical, real-world data analysis in Python [^2].
+[Pandas](https://pandas.pydata.org/pandas-docs/stable/index.html) is a Python package that makes working with relational or labeled data both easy and intuitive. It aims to be the fundamental high-level building block for doing practical, real-world data analysis in Python [^2]. Data scientists commonly load data from databases into Pandas dataframes. However, when you are learning to use Pandas, it is hard to find a public database with which you can practice meaningful data operations. 
 
 [^2]: From the [Pandas package overview documentation](https://pandas.pydata.org/pandas-docs/stable/getting_started/overview.html), accessed on March 17, 2023
 
-Data scientists commonly load data into Pandas dataframes from databases. However, when you are learning to use Pandas, it is hard to find a public database with which you can practice meaningful data operations. I believe this is why many data-science books and blogs show you how to work with other data sources like [CSV files](https://en.wikipedia.org/wiki/Comma-separated_values). There are already many [public sources of interesting data](https://www.dropbase.io/post/top-11-open-and-public-data-sources) in CSV files and there are also [many](https://alongrandomwalk.com/2020/09/14/read-and-write-files-with-jupyter-notebooks/) [tutorials](https://www.digitalocean.com/community/tutorials/data-analysis-and-visualization-with-pandas-and-jupyter-notebook-in-python-3) [available](https://www.datacamp.com/tutorial/python-excel-tutorial) that show you how to load data from CSV files into Pandas dataframes. 
-
-This post shows you how to Pandas to read data from a database that contains enough data to be interesting and how to perform basic data preparation. The examples in this tutorial will use the Microsoft AdventureWorks LT sample database. You may [create your own version of this database]({filename}/articles/012-create-sample-db-azure/create-sample-db-azure.md) or you may use the [public AdventureWorks SQL Server](https://www.sqlservercentral.com/articles/sqlservercentral-hosts-adventureworks-on-azure). In this post, you will use the public server so that you can immediately get started with the examples.
+This post shows you how to Pandas to read data from a database that contains enough data to be interesting and how to perform basic data preparation. The examples in this tutorial will use the Microsoft *AdventureWorks LT* sample database. You may [create your own version of this database]({filename}/articles/012-create-sample-db-azure/create-sample-db-azure.md) or you may use the [public AdventureWorks SQL Server](https://www.sqlservercentral.com/articles/sqlservercentral-hosts-adventureworks-on-azure). In this post, you will use the public server so that you can immediately get started with the examples.
 
 ## The short answer
 
-Once you are connected to a database, Pandas makes it easy to load data from it. But, Pandas only supports database connections using SQLAlchemy
+Once you are connected to a database, Pandas makes it easy to load data from it. 
 
 If you read my previous posts about [reading databases schema information]({filename}/articles/013-read-database-python-odbc/read-db-python-odbc-driver.md) or [using Python programs to read data from a database]({filename}/articles/014-read-data-from-database-with-python/python-program-read-database-data.md), you have already learned how to connect to a database. 
 
@@ -22,6 +26,8 @@ Python programmers who are proficient in writing [SQL queries](https://www.postg
 ## Set up your environment
 
 Before you start working through this tutorial, create a Python virtual environment and install the packages you need in it. The start a Jupyter Notebook so you can follow along with this tutorial. You may use the Python REPL instead, if you do not want to use Jupyter.
+
+### Basic configuration
 
 I have already covered the process in my previous posts so I will just list the required commands here, without explanation.
 
@@ -41,16 +47,29 @@ $ source ./.venv/bin/activate
 (.venv) $ pip install python-dotenv
 (.venv) $ pip install pyodbc
 (.venv) $ sudo apt install unixodbc
-``````
+```
 
-Finally, install Pandas.
+### Install Pandas
+
+Install Pandas. When Pandas is installed, [NumPy](https://numpy.org/) will also be installed. NumPy (Numerical Python) is an open source Python library that’s used for working with arrays of numerical data in Python. Also install some Excel packages that help Pandas write dataframes to local storage as Excel spreadsheets.
 
 ```bash
 (.venv) $ pip install pandas
 (.venv) $ pip install openpyxl xlsxwriter xlrd
 ```
 
-When Pandas is installed, [NumPy](https://numpy.org/) will also be installed. NumPy (Numerical Python) is an open source Python library that’s used for working with numerical data in Python.
+### Install SQLAlchemy
+
+Install [SQLAlchemy](https://www.sqlalchemy.org/). Pandas methods use SQLAlchemy functions when they read SQL database tables. Pandas does not support *pyodbc* connection objects. It only supports *SQLAlchemy* connections, *sqlite* connections, or a *database string URI*. Even when using just the database string URI, Pandas still uses SQLAlcehmy functions to connect to and read from an SQL database. 
+
+
+```bash
+(.venv) $ pip install sqlalchemy
+```
+
+We don't use it explicitly in this tutorial, but SQLAlchemy is a very interesting library. It can be used with Pandas to define programmers' access to databases, to  manage connections, and to build database queries using only Python code. I will cover more about using SQLAlchemy in future posts.
+
+### Start a notebook
 
 Start a new Jupyter Notebook. 
 
@@ -62,15 +81,13 @@ When following along with the code examples in this document, open a new noteboo
 
 ## Connect to a database
 
-Many data sets that are [available to the public](https://www.dropbase.io/post/top-11-open-and-public-data-sources) but very few of them run on database servers. 
-
-Fortunately, there is a [public SQL server](https://www.sqlservercentral.com/articles/sqlservercentral-hosts-adventureworks-on-azure) that contains most of the AdventureWorks LT sample database. It is supported by the *[sqlservercentral.com](https://www.sqlservercentral.com/about)* web site. 
+Many data sets that are [available to the public](https://www.dropbase.io/post/top-11-open-and-public-data-sources) but very few of them run on database servers. Fortunately, the team that runs the *[sqlservercentral.com](https://www.sqlservercentral.com/about)* web site support a [public SQL server](https://www.sqlservercentral.com/articles/sqlservercentral-hosts-adventureworks-on-azure) that contains most of the AdventureWorks LT sample database. 
 
 I do not know that this public server will be supported indefinitely so, if it is not available when you read this post, you can [create your own AdventureWorks LT database]({filename}/articles/012-create-sample-db-azure/create-sample-db-azure.md) on a free server in Microsoft Azure. Or, you can run a version of the same database locally on your PC with [SQLite](https://database.guide/2-sample-databases-sqlite/) or [Docker](https://github.com/pthom/northwind_psql). 
 
-To connect to the database, first define an environment variable that contains the connection string. The connection string is based on the [database and user information](https://www.sqlservercentral.com/articles/connecting-to-adventureworks-on-azure) provided on the *sqlservercentral.com* web site. 
+To connect to the database, first define an environment variable that contains the connection string. If you are working with a database on Microsoft Azure, you will get the string from the Azure Portal or from the database administrator. In this case, the connection string is based on the [database and user information](https://www.sqlservercentral.com/articles/connecting-to-adventureworks-on-azure) provided on the *sqlservercentral.com* web site. 
 
-In your terminal window, run the following command to crete a *dotenv* file the contains the correct connection string:
+In your terminal window, run the following command to create a *dotenv* file the contains the correct connection string:
 
 ```bash
 (.venv) $ echo 'CONN_PUBLIC="Driver={ODBC Driver 18 for SQL Server};'\
@@ -89,9 +106,9 @@ load_dotenv('.env', override=True)
 connection_string = os.getenv('CONN_PUBLIC')
 ```
 
-Pandas does not support *pyodbc* connection objects. It only supports *SQLAlchemy* connections, *sqlite* connections, or a database string URI. So, you will have to convert the connection string into a database URI.
+Pandas does not support *pyodbc* connection objects so you will pass a database string URI to Pandas so it can manage the connection for you using SQLAlchemy. Convert the connection string into the format required so it can be used as a database URI.
 
-The code below will perform the conversion. All you need to do is append a prefix that identifies the driver Pandas will use. Run the code below to set up the database URI:
+The code below will perform the conversion. The [*quote_plus* function](https://docs.python.org/3/library/urllib.parse.html#urllib.parse.quote_plus) replaces spaces and special characters with escape codes so if you have a password in your connection string and if that password contains special characters, Pandas can still use it. Then, append a prefix that identifies the driver SQLAlchemy and Pandas will use. Run the code below to set up the database URI:
 
 ```python
 from urllib.parse import quote_plus
@@ -100,9 +117,7 @@ url_string = quote_plus(connection_string)
 uri = f'mssql+pyodbc:///?odbc_connect={url_string}'
 ```
 
-The [*quote_plus* function](https://docs.python.org/3/library/urllib.parse.html#urllib.parse.quote_plus) replaces spaces and special characters with escape codes so if you have a password in your connection string and if that password contains special characters, Pandas can still use it.
-
-Pandas will use the database URI to create and manage its own *pyodbc* connection. Now, you are ready to use Pandas to read data from the database.
+Pandas will use the database URI to create and manage its own *SQLAlchemy* connection. Now, you are ready to use Pandas to read data from the database.
 
 
 # Read database tables into Pandas dataframes
@@ -285,7 +300,11 @@ You get the same output as was displayed when you used the Pandas *Merge()* func
 You can chain multiple *merge()* methods together to join multiple dataframes in one statement. 
 
 ```python
-df3 = products.merge(categories, on='ProductCategoryID', suffixes=['_product','_category'])
+df3 = (
+    products
+        .merge(categories, on='ProductCategoryID', suffixes=['_product','_category'])
+        .merge(models, suffixes=['_productandcategory','_model'])
+)
 
 print(df3.shape)
 display(df3.head(2))
