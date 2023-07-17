@@ -1,6 +1,6 @@
 title: Python, pandas, and databases
 slug: python-pandas-databases
-summary: Use the Pandas data analysis framework to read data from an SQL database. In this post, you will use two methodes: you can read entire database tables and process them exclusively in Pandas, or you can use SQL queries to pre-process only selected database data to reduce the memory used by Pandas when analyzing the data.
+summary: Use the Pandas data analysis framework to read data from an SQL database. In this post, I show you how to use two methods: you can read entire database tables and process them exclusively in Pandas, or you can use SQL queries to pre-process only selected database data to reduce the memory used by Pandas when analyzing the data.
 date: 2023-07-14
 modified: 2023-07-14
 category: Databases
