@@ -491,7 +491,7 @@ The output shows that the *df* dataframe now contains only four rows of product 
 4     Road-750 Black, 58      Road-750     Road Bikes       Bikes
 ```
 
-You can see that this procedure would be better if you have large database tables and are only interested in specific columns or in rows that meet a certain criteria. Then you do not need to put pressure on the network and on computer memory to move entire tables to your computer when, insetad, you can select the data you need on the SQL server and send only what you selected to your computer.
+You can see that this procedure would be better if you have large database tables and are only interested in specific columns or in rows that meet a certain criteria. Then you do not need to put pressure on the network and on computer memory to move entire tables to your computer when, instead, you can select the data you need on the SQL server and send only what you selected to your computer.
 
 ## Saving pandas dataframes
 
@@ -505,13 +505,13 @@ df1.to_excel("product_info.xlsx", index=False)
 
 You can [add style methods](https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.io.formats.style.Styler.to_excel.html#pandas.io.formats.style.Styler.to_excel) to make the Excel spreadsheet look nice for your stakeholder. You can also output [complex spreadsheets with multiple worksheets](https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.ExcelWriter.html).
 
-Another case might be where you want to convert the Pandas dataframe into a CSV file for use by Power BI. This is not the best way to integrate Pandas and Power BI; it is better to [use pandas in Power BI](https://realpython.com/power-bi-python/). But, sometimes you have to work the way others are working. To save a Pandas dataframe as a CSV file, execute the following statement:
+Another case might be where you want to convert the Pandas dataframe into a CSV file for use by Power BI. This is not the best way to integrate Pandas and Power BI; it is better to [use pandas *in* Power BI](https://realpython.com/power-bi-python/). But, sometimes you have to work the way others with whom you collaborate are working. To save a Pandas dataframe as a CSV file, execute the following statement:
 
 ```python
 df1.to_csv("product_info.csv", index=False)
 ```
 
-You will not normally need to save your Pandas dataframe to disk for your own use. You should avoid saving data to disk when you work with sensitive data. However, if you want to save your Pandas dataframe to disk so you can use it later, the best option is to [*pickle*](https://realpython.com/python-pickle-module/) the dataframe. This saves pandas dataframe objects to a file, maintaining column data types and other Pandas-specific information that would be lost if the dataframe was saved in other formats. To pickle a pandas dataframe, execute the following statement:
+You will not normally need to save your Pandas dataframe to disk for your own use. You should avoid saving data to disk when you work with sensitive data. However, if you want to save your Pandas dataframe to disk so you can use it later, the best option is to [*pickle*](https://realpython.com/python-pickle-module/) the dataframe. This saves pandas dataframe objects to a file, maintaining column data types and other Pandas-specific information that would be lost if the dataframe was saved in other formats. Another, more modern, option is to use the [*parquet* file format](https://arrow.apache.org/docs/python/parquet.html), but *pickle* is most commonly used for individual projects. To pickle a pandas dataframe, execute the following statement:
 
 ```python
 df1.to_pickle("product_info.pkl")
@@ -528,5 +528,6 @@ new_df = pd.read_pickle("product_info.pkl")
 
 You have learned enough to read data from an SQL database into a Pandas dataframe. You can use Pandas to read entire database tables into dataframes, then operate on them locally on your PC. You can also use Pandas to send an SQL query to the database and read the results into a dataframe. 
 
-You may most often use SQL queries to select the data from the database before reading it into a Pandas dataframe. The SQL language is something most data scientists and analysts need to learn because it is one of the common languages of data and many data products offer an SQL interface.
+In the end, your decision about whether you read entire tables into separate dataframes and then join and manipulate them in Pandas, or whether you run SQL queries that load already selected and joined data into one or more dataframes, will depend on issues like the purpose of your application, the size of the database tables and pandas dataframes, database server performance, and the processing and memory resources available on your workstation.
 
+In my opinion, if your data comes from a database, you should do most of your data joining and filtering using the database and then use Pandas for additional data cleaning and analysis. If your data comes from spreadsheets or CSV files, you have to use Pandas to combine, filter, clean, and analyze data.
