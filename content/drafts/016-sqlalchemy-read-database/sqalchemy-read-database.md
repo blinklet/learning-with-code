@@ -1,117 +1,163 @@
-title: SQLAlchemy and Pandas: The minimum you need to know
+title: SQLAlchemy queries: The minimum you need to know
 slug: sqalchemy-read-database
-summary: The minimum you need to know about SQLAlchemy to build complex, powerful SQL queries that you can use with the Pandas *read_sql_query()* function.
-date: 2023-08-30
-modified: 2023-08-30
+summary: The minimum you need to know about SQLAlchemy to build complex, powerful SQL queries that you can use with the Pandas *read_sql_query()* function, without having to learn SQL.
+date: 2023-08-07
+modified: 2023-08-07
 category: Databases
 <!--status: Published-->
 
 In my previous post about [reading database tables into pandas dataframes]({filename}/articles/015-pandas-and-database/Pandas-data-from-database.md), I showed show you how to use simple SQL queries to read data from a database and load it into Pandas dataframes. To integrate Pandas with larger, more complex databases, you need to master the [SQL language](https://en.wikipedia.org/wiki/SQL) or use a Python library like SQLAlchemy to create SQL query statements.
 
-SQLAlchemy can seem like it has a large learning curve but you only need to learn a little bit about it if all you want to do is use it to create SQL queries. Many SQLAlchemy books and blog posts are written for web application developers so they show how to create a new database, how to build Python objects that map to new database tables using [Declarative Mapping](https://docs.sqlalchemy.org/en/20/orm/declarative_mapping.html), and then how to manage SQLAlchemy sessions that write data to the tables. They cover all these topics before they show you how to use SQLAlchemy to read from a database.
+SQLAlchemy can seem like it has a large learning curve but you only need to learn a little bit about it if all you want to do is use it to create SQL queries. This document covers the minimum you need to know about SQLAlchemy to gather information about an existing database's schema and to build complex, powerful SQL queries that you can use with the Pandas *read_sql_query()* function.
 
-This document covers the minimum you need to know about SQLAlchemy to gather information about an existing database's schema and to build complex, powerful SQL queries that you can use with the Pandas *read_sql_query()* function.
+## SQLAlchemy
 
-# SQLAlchemy
-
-[SQLAlchemy](https://www.sqlalchemy.org/SQLAlchemy) is an [Object Relational Mapper (ORM)](https://en.wikipedia.org/wiki/Object%E2%80%93relational_mapping) tool that translates Python classes to tables on relational databases and automatically converts function calls to SQL statements. SQLAlchemy provides a standard interface that allows developers to create database-agnostic code that communicates with a wide variety of database engines. [^1]
+[SQLAlchemy](https://www.sqlalchemy.org/SQLAlchemy) is an [Object Relational Mapper (ORM)](https://en.wikipedia.org/wiki/Object%E2%80%93relational_mapping) tool that translates Python classes to tables in relational databases, and automatically converts function calls to SQL statements. SQLAlchemy provides a standard interface that allows developers to create database-agnostic code that communicates with a wide variety of database engines. [^1]
 
 [^1]: From https://auth0.com/blog/sqlalchemy-orm-tutorial-for-python-developers/ on March 23, 2023
 
-## Why use SQLAlchemy to generate query statements?
+### Why use SQLAlchemy to generate query statements?
 
-The SQL language is relatively simple to use for simple database table queries. So, why would a Python progammer want to use SQLAlchemy ORM to build the SQL statements used by the Pandas *read_sql_query* function?
+The SQL language is relatively simple to use for database table queries. So, why would a Python programmer want to use the SQLAlchemy ORM to build the SQL statements used by the Pandas *read_sql_query* function instead of writing actual SQL statements? The main reasons are:
 
-When working with large and complex databases, users must ensure their SQL statements are optimized. Un-optimized queries can produce the same data as optimized queries but may use up significantly more resources. The SQLAlchemy ORM will output query statements using industry standard optimizations.
+* Automatic SQL statement optimization
+* Support for multiple SQL language variations
+* Philosophical focus on writing "Pythonic" code and avoiding embedding SQL code in Python programs
+* Declarative mapping of database tables to Python classes documents the database schema
 
-Different SQL servers support variations on the SQL language so an SQL statement that works on SQLite might not work on Microsoft SQL Server. Programmers can configure the SQLAlchemy ORM to create different SQL statements for different SQL databases. The Python programmer may invest her time learning SQLAlchemy instead of [multiple SQL language dialects](https://towardsdatascience.com/how-to-find-your-way-through-the-different-types-of-sql-26e3d3c20aab).
+When working with large and complex databases, users must ensure their SQL statements are optimized. Un-optimized queries can produce the same data as optimized queries but may use up significantly more resources. The SQLAlchemy ORM will output query statements using industry-standard optimizations.
 
-Finally, Python programmers may prefer to use SQLAlchemy to create query statements because it allows them to use Python code to express database queries and, if they want to explore more advanced uses of SQLAlchemy, to map the database schema.
+Different SQL servers support variations of the SQL language. For example, an SQL statement that works on SQLite might not work on Microsoft SQL Server. Programmers can configure the SQLAlchemy ORM to create different SQL statements for different SQL databases without changing the functions that build the queries. The Python programmer may invest her time learning SQLAlchemy instead of [multiple SQL language dialects](https://towardsdatascience.com/how-to-find-your-way-through-the-different-types-of-sql-26e3d3c20aab).
 
-## The minimum you need to know about SQLAlchemy
+Python programmers may prefer to use SQLAlchemy to create query statements because it allows them to use Python code to express database queries and 
 
-If you analyze data, all you need to know is how to read data from an existing database. This is a small sub-set of SQLAlchemy functionality and it easy to learn by working through a few practical examples. This document covers the following topics with step-by-step tutorials:
+While we do not cover it in this post, programmers may use [Declarative Mapping](https://docs.sqlalchemy.org/en/20/orm/declarative_mapping.html) to manually build SQLAlchemy ORM classes as Python classes. The code you write documents the database and its relationships in Python classes, which help other program maintainers. It also makes a program more robust, because you will be better able to predict the impact that changes in the database schema will have on your program.
 
-* How to install SQLAlchemy
-* How to connect SQLAlchemy to an existing database
+### The minimum you need to know about SQLAlchemy
+
+To select data from a database, you only need to know a small sub-set of SQLAlchemy functionality and it easy to learn by working through a few practical examples. This document covers the following topics with step-by-step tutorials:
+
 * How to make SQLAlchemy read the database schema and automatically convert it into mapped Python objects
 * Learn the SQLAlchemy functions that create SQL queries
 * Integrate the SQLAlchemy queries into Pandas functions to get data from the database
 
-## Prerequisite knowledge
+### Prerequisite knowledge
 
 Before you get started using SQLAlchemy, you need to know a little bit about each of the following topics:
 
-* The basics of Python. If you do not already have some basic Python skills, I suggest you read my document, "Python: the Minimum You Need to Know", or a similar tutorial.
+* The basics of Python. If you do not already have some basic Python skills, I suggest you read my post, *[Python: the Minimum You Need to Know]({filename}/articles/001-python-minimum-you-need-to-know/python-minimum-you-need-to-know.md)*, or a similar tutorial.
 * The basics of relational databases. You need to understand the principles upon which [relational databases](https://www.oracle.com/ca-en/database/what-is-a-relational-database/) like SQL databases are based.
-* The basics of working with data in Pandas. I covered this in my previous document, "Reading database tables into pandas dataframes"
+* The basics of working with data in Pandas. I covered this in my previous post, *[Python, pandas, and databases]({filename}/articles/015-pandas-and-database/Pandas-data-from-database.md)*
 
 
-# Install SQLAlchemy and other packages
+## Basic setup
 
-Install SQLAlchemy in the same virtual environment in which you already installed Pandas. If you have not already created a Python virtual environment, run the folloing commands to create one in the same folder in which you will save your Jupyter notebook files:
+The examples in this document were created on a system running Ubuntu Linux 22.04. You may follow the same procedures using Windows or Mac OS, with minor changes.
 
-```powershell
-> cd data-science-folder
-> python -m venv env
-> .\env\Scripts\activate
-(env) > 
+### Database
+
+You must have access to a database. Either you followed the instructions in my previous post about [setting up a sample database on Azure SQL Server]({filename}/articles/012-create-sample-db-azure/create-sample-db-azure.md) and got the connection string from your Azure database server, or you already have a valid connection string to an existing database. 
+
+In this post, you will use a [*sqlservercentral.com* public SQL Server database](https://www.sqlservercentral.com/articles/sqlservercentral-hosts-adventureworks-on-azure) that serves an instance of the AdventureWorks LT sample database. So, you need to install the Microsoft SQL Server driver on your PC and get the [database and user information](https://www.sqlservercentral.com/articles/connecting-to-adventureworks-on-azure) provided on the *sqlservercentral.com* web site.  
+
+### Install drivers and other software
+
+I have already covered the process for installing the correct drivers on Ubuntu Linux and creating a Python virtual environment in my previous posts, so I will just list the required commands here, without explanation.
+
+```bash
+$ sudo su
+$ curl https://packages.microsoft.com/keys/microsoft.asc | apt-key add -
+$ curl https://packages.microsoft.com/config/ubuntu/$(lsb_release -rs)/prod.list > /etc/apt/sources.list.d/mssql-release.list
+$ exit
+$ sudo apt-get update
+$ sudo ACCEPT_EULA=Y apt-get install -y msodbcsql18
+$
+$ mkdir data-science
+$ cd data-science
+$ python -m venv .venv
+$ source ./.venv/bin/activate
+(.venv) $ pip install jupyterlab
+(.venv) $ pip install python-dotenv
+(.venv) $ pip install pyodbc
+(.venv) $ sudo apt install unixodbc
+(.venv) $ pip install pandas
+(.venv) $ pip install openpyxl xlsxwriter xlrd
 ```
 
-Then, install SQLAchemy with the following command.
+### Install SQLAlchemy
 
-```powershell
-(env) > pip install SQLAlchemy
+Install [SQLAlchemy](https://www.sqlalchemy.org/):
+
+```bash
+(.venv) $ pip install sqlalchemy
 ```
 
-## Database drivers
+### Start a notebook
 
-If you are using a database driver other than [SQLite](https://www.sqlite.org/index.html), which is built into Python, you will have to install it. Other database drivers include [psycopg](https://www.psycopg.org/) for PostgreSQL, or [mysql-connector-python](https://dev.mysql.com/doc/connector-python/en/) for MySQL.
+This post uses a [Jupyter notebook](https://jupyter.org/) as an advanced [REPL](https://codewith.mu/en/tutorials/1.0/repl) that makes it easier to demonstrate the Python code used to access data from a database and display the results. Start a new Jupyter Notebook. 
 
-## Pandas and Jupyter Notebooks
-
-If you did not already install Pandas and Jupyter when you followed the tutorials in the "Reading database tables into pandas dataframes" document, install them now:
-
-```powershell
-(env) > pip install pandas
-(env) > pip install openpyxl xlsxwriter xlrd
-(env) > pip install jupyterlab
+```bash
+(.venv) $ jupyter-lab
 ```
 
-This document uses a [Jupyter notebook](https://jupyter.org/) as an advanced [REPL](https://codewith.mu/en/tutorials/1.0/repl) that makes it easier to demonstrate the Python code used to access data from a database and display the results. Create a new Jupyter notebook and start it using the commands below:
+When following along with the code examples in this document, open a new notebook cell for each example, enter the code, and run it. The results of code run in previous cells is held in memory and is available to subsequent cells. For example, a dataframe created in one cell can be used in a later cell.
 
-```powershell
-(env) > create-notebook my_notebook
-(env) > jupyter notebook my_notebook.ipynb
-```
+If you prefer to use a simple text editor or the Python REPL, you can still follow along with this tutorial.
 
-If you prefer to use a simple text editor or another REPL, you can still follow along with this tutorial.
+### Database documentation
 
+You need information about the database schema, specifically the relationships between tables. Read the database documentation or analyze the database with an SQL discovery tool like [*SchemaSpy*](https://schemaspy.org/), [*SchemaCrawler*](https://www.schemacrawler.com/), [*SQLite Browser*](https://github.com/sqlitebrowser/sqlitebrowser), or [ Community Edition](https://dbeaver.io/). Another way is to use the [SQLAlchemy *inspection* module](https://docs.sqlalchemy.org/en/20/core/inspection.html#module-sqlalchemy.inspection) to gather information and use it to draw your own diagram. I will describe how to use the *inspection* module in a future post.
 
-# Database and documentation
+>**NOTE:** You can also use the metadata stored in SQLAlchemy ORM classes to derive the database schema information. This is a good exercise because it will help you learn about the information stored in the SQLAlchemy ORM objects. This is a more advanced topic and is not covered in this post.
 
-You need a database that is usable for practice. Use the [SQLite](https://www.sqlite.org/index.html) version of the *[Chinook database](https://github.com/lerocha/chinook-database)*, which is a public database that tries to emulate a media store's database. It contains customer names and addresses, sales data, and inventory data.
+The database diagram is shown below [^1]:
 
-[Download the *Chinook_Sqlite.sqlite* file](https://github.com/lerocha/chinook-database/blob/master/ChinookDatabase/DataSources/Chinook_Sqlite.sqlite) from the Chinook Database project's [downloads folder](https://github.com/lerocha/chinook-database/tree/master/ChinookDatabase/DataSources) and save it to a folder your computer.
+[^1]: Diagram from *Microsoft Learning Transact-SQL Exercises and Demonstrations* website at [https://microsoftlearning.github.io/dp-080-Transact-SQL/](https://microsoftlearning.github.io/dp-080-Transact-SQL/)
 
-You need information about the database schema, specifically the relationships between tables. Read the database documentation or analyze the database with an SQL discovery tool like [*SchemaSpy*](https://schemaspy.org/), [*SchemaCrawler*](https://www.schemacrawler.com/), [*SQLite Browser*](https://github.com/sqlitebrowser/sqlitebrowser), or [ Community Edition](https://dbeaver.io/). Another way is to use the [SQLAlchemy *inspection* module](https://docs.sqlalchemy.org/en/20/core/inspection.html#module-sqlalchemy.inspection) to gather information and use it to draw your own diagram. The *inspection* module is described in *Appendix A*.
-
->**NOTE:** You can also use the metadata stored in SQLAlchemy ORM classes to derive the database schema information. This is a good exercise because it will help you learn about the information stored in the SQLAlchemy ORM objects. This is a more advanced topic and is not covered here.
-
-The Chinook database diagram, created by SchemaSpy, is shown below:
-
-![Chinook database diagram showing table relationships](./Images/chinook-diagram-03.png){width=14cm}
+![AdventureWorksLT database diagram]({attach}adventureworks-lt-diagram.png){width=99%}
 
 The diagram shows the database tables, the columns in each table, each table's primary key, and the columns that are foreign keys that create relationships between tables.
 
-# Create a database connection
+## Create a database connection
 
-Create the [database URL](https://dev.to/chrisgreening/connecting-to-a-relational-database-using-sqlalchemy-and-python-1619#deconstructing-the-database-url) that tells SQLAlchemy which database driver to use, the location of the database, and how to authenticate access to it. The URL may be as simple as the string shown below, which simply contains the name of the SQLite driver, *sqlite*, and the path to the SQLite file on my computer disk. Or, it may involve an internet address and access credentials.
+To connect to the database, first define an environment variables that contain the database authentication information. In this case, use the [database and user information](https://www.sqlservercentral.com/articles/connecting-to-adventureworks-on-azure) provided on the *sqlservercentral.com* web site, which is:
 
-Enter the following Python code into a Jupyter notebook cell or text editor and run it:
+* Server: sqlservercentralpublic.database.windows.net
+* Database: AdventureWorks
+* User: sqlfamily
+* Password: sqlf@m1ly
 
+It's good practice to [store your authentication information separately from the program code]({filename}/articles/011-use-environment-variables/use-environment-variables.md) in a file that is not tracked by source control. In this example, you will create a *dotenv* file name *.env*. 
+
+In your terminal window, run the following command to create the *dotenv* file the contains the correct database authentication information:
+
+```bash
+(.venv) $ echo DB_SERVER=sqlservercentralpublic.database.windows.net > .env
+(.venv) $ echo DB_NAME=AdventureWorks >> .env
+(.venv) $ echo DB_USER=sqlfamily >> .env
+(.venv) $ echo DB_PASSWD=sqlf@m1ly >> .env
 ```
-url = r"sqlite:///C:/Users/blinklet/Documents/Chinook_Sqlite.sqlite"
+
+In your Python program, convert the database information into a [database URL](https://dev.to/chrisgreening/connecting-to-a-relational-database-using-sqlalchemy-and-python-1619#deconstructing-the-database-url) that tells SQLAlchemy which database driver to use, the location of the database, and how to authenticate access to it. In this example, the URL will contain an internet address and access credentials.
+
+Enter the following Python code into a Jupyter notebook cell or text editor, and run it. This code imports the [sqlalchemy.engine.URL](https://docs.sqlalchemy.org/en/20/core/engines.html#sqlalchemy.engine.URL) class and uses its *create()* method to build a database URL. In addition to the database authentication information you got from the database administrator, you also specify the drive names you will use and the TCP port. Also, because you are using Microsoft SQL Server, you need to add an additional [query parameter](https://docs.sqlalchemy.org/en/20/core/engines.html#sqlalchemy.engine.URL.query) the contains the name of the SQL Server driver installed on your PC. 
+
+```python
+import os
+from dotenv import load_dotenv
+from sqlalchemy.engine import URL
+
+load_dotenv('.env2', override=True)
+
+url_object = URL.create(
+    drivername='mssql+pyodbc',
+    username=os.getenv('DB_USER'),
+    password=os.getenv('DB_PASSWD'),
+    host=os.getenv('DB_SERVER'),
+    port='1433',
+    database=os.getenv('DB_NAME'),
+    query=dict(driver='ODBC Driver 18 for SQL Server')
+)
 ```
 
 Next, import the *create_engine()* function from SQLAlchemy and use it to create an [engine](https://docs.sqlalchemy.org/en/20/core/engines_connections.html) object which includes a connection to the database specified in the URL passed to the *create_engine* function.
@@ -122,72 +168,84 @@ from sqlalchemy import create_engine
 engine = create_engine(url)
 ```
 
-You are now ready to get information from the database connection. You will use the *engine* object in your program when you need to specify the connection.
+You are now ready to get information from the database engine, which represents the connection to the database. You will pass the *engine* object to the Pandas *read_sql_query()* function when you want to select data from the database and load it into Pandas.
 
-# Build an SQLAlchemy model
+## Build an SQLAlchemy model
 
 The SQLAlchemy ORM defines database tables as classes. The process of automatically building new classes based on an existing database's schema is called [reflection](https://betterprogramming.pub/reflecting-postgresql-databases-using-python-and-sqlalchemy-48b50870d40f). If you start with a properly designed database, you can automatically map classes and relationships with the [SQLAlchemy Automap extension](https://docs.sqlalchemy.org/en/20/orm/extensions/automap.html). Database reflection is useful when writing simple, single-use scripts like the ones in this document.
 
-> **NOTE:** Instead of using reflection, The SQLAlchemy documentation recommends you use [Declarative Mapping](https://docs.sqlalchemy.org/en/20/orm/declarative_mapping.html) to manually build SQLAlchemy ORM classes as Python classes. The code you write that describes these classes enables other program maintainers to see the database information expressed in Python code. It also makes a program more robust, because you will be better able to predict the impact that changes in the database schema will have on your program. 
+> **NOTE:** Instead of using reflection, The SQLAlchemy documentation recommends you use [Declarative Mapping](https://docs.sqlalchemy.org/en/20/orm/declarative_mapping.html) to manually build SQLAlchemy ORM classes as Python classes. We ignore that recommendation in this post because it goes beyond the minimum you need to know.
 >
-> When working with an existing database you may us the *[sqlacodegen](https://github.com/agronholm/sqlacodegen)* tool to read the structure of an existing database and generate Python code describing SQLAlchemy declarative mapping classes. We leave Declarative Mapping for your future consideration. 
+> If you do not know the schema of an existing database, and if you want to use declarative mapping, you may use the *[sqlacodegen](https://github.com/agronholm/sqlacodegen)* tool to read the structure of an existing database and generate Python code describing SQLAlchemy declarative mapping classes. 
+>
+> We leave Declarative Mapping to your future studies. 
 
-## Automap the ORM
+### Automap the ORM
 
-To automatically generate an object model from the Chinook database, run the following code:
+To automatically generate an object model from the public AdventureWorks LT database, run the following code. If the database has many tables, this code may take a while to return a result. Note that you already need to know the name of the database schema you will reflect, which is *SalesLT* in this example.
 
 ```python
 from sqlalchemy.ext.automap import automap_base
-from sqlalchemy.orm import Session
 
 Base = automap_base()
-Base.prepare(autoload_with=engine)
+Base.prepare(autoload_with=engine, schema='SalesLT')
 ```
 
-You used SQLAlchemy's *automap_base* function to create a [declarative base class instance](https://docs.sqlalchemy.org/en/20/orm/extensions/automap.html#basic-use) named *Base* and then used its *prepare* method to automatically map, or *reflect*, the database schema metadata. 
+You used SQLAlchemy's *automap_base* function to create a [declarative base class instance](https://docs.sqlalchemy.org/en/20/orm/extensions/automap.html#basic-use) named *Base* and then used its *prepare* method to automatically map, or *reflect*, the database schema metadata as a collection of classes. 
 
-## Assign table classes
+### Assign table classes
 
-The *automap_base* function returns class instances that were mapped to database tables in the *Base.classes* instance and also stores tables in the *Base.metadata*. It's important to know this because [association tables](https://docs.sqlalchemy.org/en/20/orm/basic_relationships.html#many-to-many) that support [many-to-many relationships](https://medium.com/@BryanFajardo/how-to-use-associative-entities-in-relational-databases-4456a2c71cda) between other tables do not get mapped to classes and are only available as table objects in the ORM.
+The *automap_base* function returns class instances that were mapped to database tables in the *Base.classes* instance and also stores tables in the *Base.metadata* [^1]. You should already know the table names from reading the database diagram, but if you want to list them for your own convenience, run the following code:
 
-For example, in the Chinook database diagram above, you can [identify](https://condor.depaul.edu/gandrus/240IT/accesspages/relationships.htm) that the *PlaylistTrack* table is an association table because it has only two columns and each of its columns are both Primary Keys and Foreign Keys. 
-
-So that you can more easily use the reflected tables, assign each SQLAlchemy ORM class to a variable so it is easier to work with. Run the following code:
+[^1]: It's important to know this because [association tables](https://docs.sqlalchemy.org/en/20/orm/basic_relationships.html#many-to-many) that support [many-to-many relationships](https://medium.com/@BryanFajardo/how-to-use-associative-entities-in-relational-databases-4456a2c71cda) between other tables do not get mapped to classes and are only available as table objects in the ORM. But, there are no association tables in the AdventureWorks LT database so we won't explore this complication at this time.
 
 ```python
-Album = Base.classes.Album
-Artist = Base.classes.Artist
-Customer = Base.classes.Customer
-Employee = Base.classes.Employee
-Genre = Base.classes.Genre
-Invoice = Base.classes.Invoice
-InvoiceLine = Base.classes.InvoiceLine
-MediaType = Base.classes.MediaType
-Playlist = Base.classes.Playlist
-Track = Base.classes.Track
-playlisttrack = Base.metadata.tables['PlaylistTrack']
+print(Base.classes.keys())
 ```
 
-Notice that we assigned the *playlisttrack* variable name to the *PlaylistTrack* table in the *Base.metadata.tables* class, instead of to a class instance like the other table objects. Now that you've created variable names that represent each table mapped in the ORM, you don't need to worry about whether a table is an association table, or not.
+Which outputs a list containing all the table names, as shown below:
+
+```python
+['Address', 'Customer', 'CustomerAddress', 'Product', 'ProductCategory', 'ProductModel', 'ProductDescription', 'ProductModelProductDescription', 'SalesOrderDetail', 'SalesOrderHeader']
+```
+
+So that you can more easily use the reflected tables, assign each SQLAlchemy ORM class to a variable. Run the following code:
+
+```python
+Address = Base.classes.Address
+Customer = Base.classes.Customer
+CustomerAddress = Base.classes.CustomerAddress
+Product = Base.classes.Product
+ProductCategory = Base.classes.ProductCategory
+ProductDescription = Base.classes.ProductDescription
+ProductModel = Base.classes.ProductModel
+ProductModelProductDescription = Base.classes.ProductModelProductDescription
+SalesOrderDetail = Base.classes.SalesOrderDetail
+SalesOrderHeader = Base.classes.SalesOrderHeader
+```
+
+Now you've created variable names that represent each table mapped in the ORM.
+
+Remember, you got this far because you already had a database diagram or documentation. You need to know the schema names in the database and you should also know the table names, column names, primary keys, and foreign key relationships in the database. If you do not have this information, either from documentaion of by discovering it yourself using the SQLAlchemy *inspection* module or by examining the *Base* object's metadata, then using reflection by itself to read data will be less effective. 
 
 
-# Generating SQL statements in SQLAlchemy
+## Generating SQL statements in SQLAlchemy
 
-SQLAlchemy has functions that support interacting with a database. Since we are only interested in reading data from the, we will cover some examples using the *select()* function and the methods.
+SQLAlchemy has functions that support interacting with a database. Since we are only interested in reading data from the database, we will cover some examples using the *select()* construct and its methods.
 
 
-## Reading data with the *select()* function
+### Reading table data with the *select()* construct
 
-Use the SQLAlchemy [*select()* function](https://docs.sqlalchemy.org/en/20/tutorial/data_select.html) to create SQL SELECT statements and that read rows from tables in the database. The *select()* function returns an instance of the SQLAlchemy Select class that offers methods that can be chained together to provider all the information the Select object needs to output a query when requested by Pandas, or when executed as part of other functions like Python's *print()* function.
+Use the SQLAlchemy [*select()* construct](https://docs.sqlalchemy.org/en/20/tutorial/data_select.html) to create SQL SELECT statements and that select rows from tables in the database. The *select()* construct returns an instance of the SQLAlchemy Select class that offers methods that can be chained together to provider all the information the Select object needs to output a query when requested by Pandas, or when executed as part of other functions like Python's *print()* function.
 
-This section covers some common uses of the *select()* function and its methods. Use the SQLAlchemy guides, [*Using Select Statements*](https://docs.sqlalchemy.org/en/20/tutorial/data_select.html) and [*ORM Querying Guide*](https://docs.sqlalchemy.org/en/20/orm/queryguide/index.html) as references when you need to look up additional methods to build the SQL queries you need.
+This section covers some common uses of the *select()* construct and its methods. Use the SQLAlchemy guides, [*Using Select Statements*](https://docs.sqlalchemy.org/en/20/tutorial/data_select.html) and [*ORM Querying Guide*](https://docs.sqlalchemy.org/en/20/orm/queryguide/index.html) as references when you need to look up additional methods to build the SQL queries you need.
 
-The following code builds an SQL query that selects all rows in the Chinook database's *Album* table. 
+The following code builds an SQL query that selects all rows in the AdventureWorks LT database's *Product* table. 
 
 ```python
 from sqlalchemy import select
 
-statement = (select(Artist))
+statement = (select(ProductDescription))
 ```
 
 The statement variable name is assigned to the SQLAlchemy Select object returned by the *Select()* function. You can view the SQL statement by printing the *statement* object or by converting it to a string. Either of those operations cause the *statement* object to return a string containing the SQL Query.
@@ -198,14 +256,14 @@ print(statement)
 
 Running the previous code produces the following output:
 
-```
-SELECT "Artist"."ArtistId", "Artist"."Name" 
-FROM "Artist"
+```sql
+SELECT "SalesLT"."ProductDescription"."ProductDescriptionID", "SalesLT"."ProductDescription"."Description", "SalesLT"."ProductDescription".rowguid, "SalesLT"."ProductDescription"."ModifiedDate" 
+FROM "SalesLT"."ProductDescription"
 ```
 
 You can use the *statement* object directly in the *pandas_sql_query()* function to read the rows returned by the SQL query into a Pandas data frame.
 
-```
+```python
 import pandas as pd
 
 artists = pd.read_sql_query(sql=statement, con=engine)
@@ -215,90 +273,221 @@ artists = pd.read_sql_query(sql=statement, con=engine)
 
 Show the Pandas dataframe shape and print the first five rows.
 
-```
-print(artists.shape)
-print(artists.head(5))
-```
-
-The output below shows all 275 rows from the *Artist* database table are in the *artists* dataframe.
-
-```
-(275, 2)
-   ArtistId               Name
-0         1              AC/DC
-1         2             Accept
-2         3          Aerosmith
-3         4  Alanis Morissette
-4         5    Alice In Chains
+```python
+print(descriptions.shape)
+print(descriptions.head())
 ```
 
-## Filtering with the *where* method
+The output below shows all 762 rows from the *ProductDescription* database table are in the *descriptions* dataframe.
 
-If you want to get only data about the artist named "Alice in Chains", add the *where()* method to the instance returned by the *Select()* function. 
+```
+(762, 4)
+   ProductDescriptionID                                        Description  \
+0                     3                                    Chromoly steel.   
+1                     4       Aluminum alloy cups; large diameter spindle.   
+2                     5             Aluminum alloy cups and a hollow axle.   
+3                     8  Suitable for any type of riding, on or off-roa...   
+4                    64  This bike delivers a high-level of performance...   
+
+                                rowguid ModifiedDate  
+0  301EED3A-1A82-4855-99CB-2AFE8290D641   2007-06-01  
+1  DFEBA528-DA11-4650-9D86-CAFDA7294EB0   2007-06-01  
+2  F7178DA7-1A7E-4997-8470-06737181305E   2007-06-01  
+3  8E6746E5-AD97-46E2-BD24-FCEA075C3B52   2007-06-01  
+4  7B1C4E90-85E2-4792-B47B-E0C424E2EC94   2007-06-01  
+```
+
+### Selecting columns
+
+You can select specific columns from a table by specifying each column as a parameter in the *select()* construct. For example, to select only the *ProductDescriptionID* and *Description* columns in the *ProductDescription* table, run the following code:
 
 ```python
-statement = select(Artist).where(Artist.Name=='Alice In Chains')
-print(statement)
+statement = (select(ProductDescription.ProductDescriptionID, 
+                    ProductDescription.Description))
+descriptions = (pd.read_sql_query(sql=statement, con=engine))
+print(descriptions.shape)
+print(descriptions.head())
+```
+
+You can see that only the columns you selected were loaded into the dataframe, which is still 762 rows but now only 2 columns:
+
+```bash
+(762, 2)
+   ProductDescriptionID                                        Description
+0                     3                                    Chromoly steel.
+1                     4       Aluminum alloy cups; large diameter spindle.
+2                     5             Aluminum alloy cups and a hollow axle.
+3                     8  Suitable for any type of riding, on or off-roa...
+4                    64  This bike delivers a high-level of performance...
+```
+
+### Limiting output with the *limit()* method
+
+In cases where you want to limit output to a specific number of rows, use the *limit()* method. For example, to load only the first three rows into the dataframe, run the following code:
+
+```python
+statement = (select(ProductDescription.ProductDescriptionID, 
+                    ProductDescription.Description)).limit(3)
+
+descriptions = (pd.read_sql_query(sql=statement, con=engine))
+print(descriptions.shape)
+print(descriptions)
+```
+
+The output shows only three rows in the dataframe:
+
+```bash
+(3, 2)
+   ProductDescriptionID                                   Description
+0                     3                               Chromoly steel.
+1                     4  Aluminum alloy cups; large diameter spindle.
+2                     5        Aluminum alloy cups and a hollow axle.
+```
+
+### Filtering with the *where()* method
+
+If you want to get only data about the descriptions of "Chromoly steel", add the *where()* method to the instance returned by the *Select()* construct. 
+
+```python
+statement2 = (select(ProductDescription.ProductDescriptionID, 
+                    ProductDescription.Description))
+             .where(ProductDescription.Description=='Chromoly steel.'))
+print(statement2)
 ```
 
 The generate SQL statement is:
 
-```
-SELECT "Artist"."ArtistId", "Artist"."Name" 
-FROM "Artist" 
-WHERE "Artist"."Name" = :Name_1
+```sql
+SELECT "SalesLT"."ProductDescription"."ProductDescriptionID", "SalesLT"."ProductDescription"."Description" 
+FROM "SalesLT"."ProductDescription" 
+WHERE "SalesLT"."ProductDescription"."Description" = :Description_1
 ```
 
-The Select object that returned the above SQL statement knows that the ":Name_1" variable's value is "Alice in Chains". When you pass the *statement* variable into the Pandas *read_sql_query* function, it creates the correct query for the SQL dialect used by the database.
+The Select object that returned the above SQL statement knows that the ":Description_1" variable's value is "Chromoly steel.". When you pass the *statement* variable into the Pandas *read_sql_query* function, it creates the correct query for the SQL dialect used by the database.
 
-Use this new *statement* object with Pandas to read the data you requested into a dataframe:
+Use this new *statement2* object with Pandas to read the data you requested into a dataframe:
 
 ```python
-dataframe = pd.read_sql_query(sql=statement, con=engine)
+descriptions2 = pd.read_sql_query(sql=statement, con=engine)
 
-print(dataframe.shape)
-print(dataframe.head(5))
+print(descriptions2.shape)
+print(descriptions2.head())
 ```
 
-This returned only one row: the row containing the artist named "Alice In Chains"
+This returned only one row: the row containing the description "Chromoly steel."
 
 ```
 (1, 2)
-   ArtistId             Name
-0         5  Alice In Chains
+   ProductDescriptionID      Description
+0                     3  Chromoly steel.   
 ```
 
 If you have very large data sets, you can imagine how useful it can be to filter data before it is loaded into a pandas dataframe.
 
-## Chaining *select()* function methods
+#### Filtering columns containing text
 
-You can use other methods to perform more complex queries and you can chain instance methods together similar to the way you can chain methods in Pandas.
+You can also select text within a column using that column's *like()* method. For example, if you want to select all rows where the *Description* column contains the word "Aluminum" anywhere in the string, run the following code:
 
-For example, if you want to sort the names in the Artist table in alphabetical order and then read the first five rows into a Pandas dataframe, use the *order_by()* and *limit()* methods. Run the following code:
+```python
+statement3 = (select(ProductDescription.ProductDescriptionID, 
+                    ProductDescription.Description)
+             .where(ProductDescription.Description.like("%Aluminum%")))
+
+print(statement3)
+```
+
+Which creates the following SQL query:
+
+```sql
+SELECT "SalesLT"."ProductDescription"."ProductDescriptionID", "SalesLT"."ProductDescription"."Description" 
+FROM "SalesLT"."ProductDescription" 
+WHERE "SalesLT"."ProductDescription"."Description" LIKE :Description_1
+```
+
+Pass the SQLAlchemy select statement into the Pandas *read_sql_query()* method, as shown below:
+
+```python
+descriptions3 = (pd.read_sql_query(sql=statement3, con=engine))
+
+print(descriptions3.shape)
+print(descriptions3.head())
+```
+
+This will select only twenty-seven of the rows in the *ProductDescriptions* table. Each row loaded into the Pandas dataframe has the word "aluminum" in the *Description* column, as seen below.
+
+```bash
+(27, 4)
+   ProductDescriptionID                                        Description
+0                     4       Aluminum alloy cups; large diameter spindle.   
+1                     5             Aluminum alloy cups and a hollow axle.   
+2                   457  This bike is ridden by race winners. Developed...   
+3                   594  Travel in style and comfort. Designed for maxi...   
+4                   634  Composite road fork with an aluminum steerer t...   
+```
+
+### Chaining *select()* methods
+
+You can use other methods to perform more complex queries and you can chain the *select()* construct's methods together similar to the way you can chain methods in Pandas.
+
+For example, if you want to sort the returned results by the *ProductDescriptionID* column, and then select a specific range of rows, chain the *order_by()*, *offset()* and *limit()* methods together [^2]. To skip over the first three rows and then load the next two rows into the dataframe, run the following code:
+
+[^2]: The *offset()* method requires the *order_by()* method or an error will occur. See: [https://docs.sqlalchemy.org/en/20/dialects/mssql.html#limit-offset-support](https://docs.sqlalchemy.org/en/20/dialects/mssql.html#limit-offset-support)
 
 ```python
 statement = (
-    select(Artist)
-    .order_by(Artist.Name)
-    .limit(5)
-    )
+    select(ProductDescription.ProductDescriptionID, 
+           ProductDescription.Description)
+    .order_by(ProductDescription.ProductDescriptionID)
+    .offset(3)
+    .limit(2)
+)
 
-alpha_artists = pd.read_sql_query(sql=statement, con=engine)
-print(alpha_artists.shape)
-print(alpha_artists.head(5))
+descriptions = (pd.read_sql_query(sql=statement, con=engine))
+print(descriptions.shape)
+print(descriptions)
 ```
 
-You can see below that only five rows were returned and the rows were sorted alphabetically.
+The output shows only two rows in the dataframe:
 
+```bash
+(2, 2)
+   ProductDescriptionID                                        Description
+0                     8  Suitable for any type of riding, on or off-roa...
+1                    64  This bike delivers a high-level of performance...
 ```
-(5, 2)
-   ArtistId                                               Name
-0        43                                       A Cor Do Som
-1         1                                              AC/DC
-2       230          Aaron Copland & London Symphony Orchestra
-3       202                                     Aaron Goldberg
-4       214  Academy of St. Martin in the Fields & Sir Nevi...
-```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 ## SQL Functions using the *func()* method
 
