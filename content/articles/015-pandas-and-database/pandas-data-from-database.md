@@ -353,7 +353,7 @@ You can keep chaining Pandas dataframe methods to create complex operations that
 
 ## Select data from the database using SQL queries
 
-When working with large amounts of data, you may prefer to perform most of your data joins and filter operations on the database server instead of locally on your PC. The Pandas *read_sql_query* enables you to send an SQL query to the database and then load the selected data into a dataframe.
+When working with large amounts of data, you may prefer to perform most of your data joins, grouping, and filter operations on the database server instead of locally on your PC. The Pandas *read_sql_query* enables you to send an SQL query to the database and then load the selected data into a dataframe.
 
 ### The *read_sql_query* function
 
