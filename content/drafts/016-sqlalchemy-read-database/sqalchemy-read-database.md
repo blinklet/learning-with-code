@@ -12,7 +12,7 @@ SQLAlchemy can seem like it has a large learning curve but you only need to lear
 
 ## SQLAlchemy
 
-[SQLAlchemy](https://www.sqlalchemy.org/SQLAlchemy) is an [Object Relational Mapper (ORM)](https://en.wikipedia.org/wiki/Object%E2%80%93relational_mapping) tool that translates Python classes to tables in relational databases, and automatically converts function calls to SQL statements. SQLAlchemy provides a standard interface that allows developers to create database-agnostic code that communicates with a wide variety of database engines. [^1]
+[SQLAlchemy](https://www.sqlalchemy.org/SQLAlchemy) is an [Object Relational Mapper (ORM)](https://en.wikipedia.org/wiki/Object%E2%80%93relational_mapping) framework that translates Python classes to relational database tables, and automatically converts Python function calls to SQL statements. SQLAlchemy provides a standard interface that allows developers to create database-agnostic code that communicates with a wide variety of database engines. [^1]
 
 [^1]: From https://auth0.com/blog/sqlalchemy-orm-tutorial-for-python-developers/ on March 23, 2023
 
@@ -116,7 +116,7 @@ The database diagram is shown below [^1]:
 
 ![AdventureWorksLT database diagram]({attach}adventureworks-lt-diagram.png){width=99%}
 
-The diagram shows the database tables, the columns in each table, each table's primary key, and the columns that are foreign keys that create relationships between tables.
+The diagram shows the database tables, the columns in each table, each table's primary key, and the foreign keys that create relationships between tables.
 
 ## Create a database connection
 
@@ -170,7 +170,7 @@ engine = create_engine(url)
 
 You are now ready to get information from the database engine, which represents the connection to the database. You will pass the *engine* object to the Pandas *read_sql_query()* function when you want to select data from the database and load it into Pandas.
 
-## Build an SQLAlchemy model
+## Build an SQLAlchemy ORM model
 
 The SQLAlchemy ORM defines database tables as classes. The process of automatically building new classes based on an existing database's schema is called [reflection](https://betterprogramming.pub/reflecting-postgresql-databases-using-python-and-sqlalchemy-48b50870d40f). If you start with a properly designed database, you can automatically map classes and relationships with the [SQLAlchemy Automap extension](https://docs.sqlalchemy.org/en/20/orm/extensions/automap.html). Database reflection is useful when writing simple, single-use scripts like the ones in this document.
 
@@ -384,7 +384,7 @@ This returned only one row: the row containing the description "Chromoly steel."
 
 If you have very large data sets, you can imagine how useful it can be to filter data before it is loaded into a pandas dataframe.
 
-#### Filtering columns containing text
+### Filtering rows that contain specific words
 
 You can also select text within a column using that column's *like()* method. For example, if you want to select all rows where the *Description* column contains the word "Aluminum" anywhere in the string, run the following code:
 
@@ -574,9 +574,9 @@ There is a lot going on in the *select()* constructor. You used the *func()* met
 40        Accessories             0
 ```
 
-Unless you want to dedicate some time to mastering SQL and the SQLAlchemy *Select* class, it is probably best to perform procedures like grouping in another tool, such as Pandas.
+Unless you want to dedicate some time to mastering SQL and the SQLAlchemy *Select* class, it is probably best to perform procedures like grouping in a Python framework, such as Pandas.
 
-# Conclusion
+## Conclusion
 
 This document showed you the simple ways you can use SQLAlchemy to build SQL queries using Python code, and use those queries to load database information into a Pandas dataframe. You only need to know a little bit about SQLAlchemy to get started. Eventually, you should learn to use SQLAlchemy functions to Declaratively Map your database schema. While I used database reflection in this post, you should only use database reflection when doing single-use scripts where performance is not an issue.
 
