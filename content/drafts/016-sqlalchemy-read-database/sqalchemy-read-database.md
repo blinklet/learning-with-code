@@ -193,7 +193,7 @@ Base.prepare(autoload_with=engine, schema='SalesLT')
 
 You used SQLAlchemy's *automap_base* function to create a [declarative base class instance](https://docs.sqlalchemy.org/en/20/orm/extensions/automap.html#basic-use) named *Base* and then used its *prepare* method to automatically map, or *reflect*, the database schema metadata as a collection of classes. 
 
-### Assign table classes
+### Assign table classes to variables
 
 The *automap_base* function returns class instances that were mapped to database tables in the *Base.classes* instance and also stores tables in the *Base.metadata* [^1]. You should already know the table names from reading the database diagram, but if you want to list them for your own convenience, run the following code:
 
@@ -226,17 +226,17 @@ SalesOrderHeader = Base.classes.SalesOrderHeader
 
 Now you've created variable names that represent each table mapped in the ORM.
 
-Remember, you got this far because you already had a database diagram or documentation. You need to know the schema names in the database and you should also know the table names, column names, primary keys, and foreign key relationships in the database. If you do not have this information, either from documentaion of by discovering it yourself using the SQLAlchemy *inspection* module or by examining the *Base* object's metadata, then using reflection by itself to read data will be less effective. 
+Remember, you got this far because you already had a database diagram or documentation. You need to know the schema names in the database and you should also know the table names, column names, primary keys, and foreign key relationships in the database. Using reflection by itself to read data will be less effective if you do not have this information, either from documentation or by discovering it yourself using the SQLAlchemy *inspection* module or the *Base* object's metadata.
 
 
 ## Generating SQL statements in SQLAlchemy
 
-SQLAlchemy has functions that support interacting with a database. Since we are only interested in reading data from the database, we will cover some examples using the *select()* construct and its methods.
+SQLAlchemy provides functions that support interacting with a database in many ways. Since we are only interested in reading data from the database, we will cover examples using the *select()* constructor and its methods.
 
 
 ### Reading table data with the *select()* construct
 
-Use the SQLAlchemy [*select()* construct](https://docs.sqlalchemy.org/en/20/tutorial/data_select.html) to create SQL SELECT statements and that select rows from tables in the database. The *select()* construct returns an instance of the SQLAlchemy Select class that offers methods that can be chained together to provider all the information the Select object needs to output a query when requested by Pandas, or when executed as part of other functions like Python's *print()* function.
+Use the SQLAlchemy [*select()* constructor](https://docs.sqlalchemy.org/en/20/tutorial/data_select.html) to create SQL SELECT statements and that select rows from tables in the database. The *select()* constructor returns an instance of the SQLAlchemy *Select* class that offers methods that can be chained together to provider all the information the Select object needs to output a query when requested by Pandas, or when executed as part of other functions like Python's *print()* function.
 
 This section covers some common uses of the *select()* construct and its methods. Use the SQLAlchemy guides, [*Using Select Statements*](https://docs.sqlalchemy.org/en/20/tutorial/data_select.html) and [*ORM Querying Guide*](https://docs.sqlalchemy.org/en/20/orm/queryguide/index.html) as references when you need to look up additional methods to build the SQL queries you need.
 
@@ -248,7 +248,7 @@ from sqlalchemy import select
 statement = (select(ProductDescription))
 ```
 
-The statement variable name is assigned to the SQLAlchemy Select object returned by the *Select()* function. You can view the SQL statement by printing the *statement* object or by converting it to a string. Either of those operations cause the *statement* object to return a string containing the SQL Query.
+The statement variable name is assigned to the SQLAlchemy object returned by the *select()* function. You can view the SQL statement by printing the *statement* object or by converting it to a string. Either of those operations cause the *statement* object to return a string containing the SQL Query. For example:
 
 ```
 print(statement)
@@ -261,7 +261,7 @@ SELECT "SalesLT"."ProductDescription"."ProductDescriptionID", "SalesLT"."Product
 FROM "SalesLT"."ProductDescription"
 ```
 
-You can use the *statement* object directly in the *pandas_sql_query()* function to read the rows returned by the SQL query into a Pandas data frame.
+You can use the *statement* object directly in the *pandas_sql_query()* function to read the rows returned by the SQL query into a Pandas data frame. See the example code [^4], below:
 
 ```python
 import pandas as pd
@@ -269,7 +269,7 @@ import pandas as pd
 artists = pd.read_sql_query(sql=statement, con=engine)
 ```
 
->**NOTE:** Some other documents show that you can use the database URL in the Pandas *read_sql_query()* function instead of the *engine* object. That would work for SQLite, but you need to define the engine to manage a more complex connection to a server that requires authentication. So, we use the engine object to manage the database connection even in a simple example like this.
+[^4]: Some other documents show that you can use the database URL in the Pandas *read_sql_query()* function instead of the *engine* object. That would work for SQLite, but you need to define the engine to manage a more complex connection to a server that requires authentication. So, we use the engine object to manage the database connection even in a simple example like this.
 
 Show the Pandas dataframe shape and print the first five rows.
 
@@ -427,11 +427,13 @@ This will select only twenty-seven of the rows in the *ProductDescriptions* tabl
 
 ### Chaining *select()* methods
 
-You can use other methods to perform more complex queries and you can chain the *select()* construct's methods together similar to the way you can chain methods in Pandas.
+You can use other methods to perform more complex queries and you can chain the *select()* construct's methods together, like the way you can chain methods in Pandas.
 
-For example, if you want to sort the returned results by the *ProductDescriptionID* column, and then select a specific range of rows, chain the *order_by()*, *offset()* and *limit()* methods together [^2]. To skip over the first three rows and then load the next two rows into the dataframe, run the following code:
+For example, if you want to sort the returned results by the *ProductDescriptionID* column, and then select a specific range of rows, chain the *order_by()*, *offset()* and *limit()* methods together [^2]. To skip over the first three rows and then load the next two rows into the dataframe [^3], run the following code:
 
 [^2]: The *offset()* method requires the *order_by()* method or an error will occur. See: [https://docs.sqlalchemy.org/en/20/dialects/mssql.html#limit-offset-support](https://docs.sqlalchemy.org/en/20/dialects/mssql.html#limit-offset-support)
+
+[^3]: You may also use the *limit()* method instead of combining the *offset()* and *limit()* methods.
 
 ```python
 statement = (
@@ -447,7 +449,7 @@ print(descriptions.shape)
 print(descriptions)
 ```
 
-The output shows only two rows in the dataframe:
+The output shows only two rows were loaded into the dataframe and it contains the fourth and fifth rows of the table after the table was sorted by the *ProductDescriptionID*:
 
 ```bash
 (2, 2)
@@ -458,311 +460,124 @@ The output shows only two rows in the dataframe:
 
 
 
+### Joining tables using *join()* methods
 
+You can select data from multiple columns in different tables where there is a relationship between tables. For example, the *Product* table a column that defines the product category ID, which is an integer, of each product in the table. The *ProductCategory* table lists the category name that corresponds to each Product Category ID. Similarly, the *Product* table lists the product model ID for each product and the *ProductModel* table lists the product model name that corresponds to each product model ID.
 
+If you want the SQL database to return a table containing product information along with the product category name and the product model name, you need to [join](https://learn.microsoft.com/en-us/sql/relational-databases/performance/joins) the *Product*, *ProductCategory*, and *ProductModel* tables and select the columns you need from each.
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-## SQL Functions using the *func()* method
-
-The SQAlchemy *func()* function has many methods that provide standard SQL functions. 
-
-For example, if you wanted to analyze data from a random sample of five artists, and you wanted to filter the data before loading it into a pandas dataframe, you could change the statement to the following:
+The following *select()* constructor statement will join the tables and select the columns you want:
 
 ```python
 statement = (
-    select(Artist)
-    .order_by(func.random())
-    .limit(5))
-
-rand_artists = pd.read_sql_query(sql=statement, con=engine)
-print(rand_artists.shape)
-print(rand_artists)
-```
-
-The output shows five rows were read at random from the database and loaded into the *rand_artists* dataframe.
-
-```
-(5, 2)
-   ArtistId                                               Name
-0       225  Herbert Von Karajan, Mirella Freni & Wiener Ph...
-1       191                                        Nação Zumbi
-2        18                        Chico Science & Nação Zumbi
-3       197                                          Aisha Duo
-4       232                  Sergei Prokofiev & Yuri Temirkano
-```
-
-## Joining tables using *join()* methods
-
-To create a dataframe containing album and track information from the Chinook database, use the *select()* function's *join()* or *join_from()* methods to join the *Album* and *Track* tables.
-
-In a well-designed database like the Chinook database, the relationships between tables are already defined by primary and foreign keys, and association tables. SQLAlchemy objects can use these relationships to automatically join data in different tables together even if the column that form the relationship have different names.
-
-In the Chinook database diagram above, look at the relationships between the tables named *Album*, *Track*, and *Artist*. The *Album* table has a foreign key that points to the *Artist* table and the *Track* table has a foreign key that points to the *Album* table.
-
-Knowing that these relationships exist, we can simply join all the data from multiple tables together using the *select()* function's *join()* method. 
-
-The code below creates an SQL statement that selects all the columns from the *Album*, *Track*, and *Artist* tables by joining the *Track* and *Artist* tables with the Album table.
-
-```python
-statement = (select(Album, Track, Artist)
-     .join(Track)
-     .join(Artist)
-    )
-print(statement)
-```
-
-The SQL query looks like the following :
-
-```
-SELECT "Album"."AlbumId", 
-       "Album"."Title", 
-       "Album"."ArtistId", 
-       "Track"."TrackId", 
-       "Track"."Name", 
-       "Track"."AlbumId" AS "AlbumId_1", 
-       "Track"."MediaTypeId", 
-       "Track"."GenreId", 
-       "Track"."Composer", 
-       "Track"."Milliseconds", 
-       "Track"."Bytes", 
-       "Track"."UnitPrice", 
-       "Artist"."ArtistId" AS "ArtistId_1", 
-       "Artist"."Name" AS "Name_1" 
-FROM "Album" 
-JOIN "Track" ON "Album"."AlbumId" = "Track"."AlbumId" 
-JOIN "Artist" ON "Artist"."ArtistId" = "Album"."ArtistId"
-```
-
-Use the pandas *read_sql_query* method to get data selected by the statement and load it into a dataframe.
-
-```python
-df4 = pd.read_sql_query(sql=q.statement, con=engine)
-print(df4.shape)
-display(df4.head())
-```
-
-The resulting dataset will look like the following:
-
-![Joined tables loaded into Pandas dataframe](./Images/pandas008.png)
-
-You can see the columns, and the column names assigned by SQLAlchemy where column names overlapped, in the query result. 
-
-To get only the specific columns you need, create a new statement that will select each column by name, starting with the *Album.Title* column. Then, [rename the columns](https://devsheet.com/code-snippet/column-name-as-alias-name-sqlalchemy/) in the select statement using the *label()* method.
-
-```python
-statement = (select(Album.Title.label("Album"),
-            Artist.Name.label("Artist"),
-            Track.Name.label("Track"),
-            Track.Composer, 
-            Track.Milliseconds.label("Length"))
-     .join(Track)
-     .join(Artist)
-    )
-print(statement)
-```
-
-The resulting SQL statement looks like the following:
-
-```
-SELECT "Album"."Title" AS "Album", 
-       "Artist"."Name" AS "Artist", 
-       "Track"."Name" AS "Track", 
-       "Track"."Composer", 
-       "Track"."Milliseconds" AS "Length(ms)" 
-FROM "Album" 
-JOIN "Track" ON "Album"."AlbumId" = "Track"."AlbumId" 
-JOIN "Artist" ON "Artist"."ArtistId" = "Album"."ArtistId"
-```
-
-Use the statement to load the selected data from the database into a pandas dataframe:
-
-```python
-dataframe = pd.read_sql_query(sql=statement, con=engine)
-print(dataframe.shape)
-display(dataframe.head().style.format(thousands=","))
-```
-
-The result is shown below:
-
-![Selected columns from joined tables](./Images/pandas010.png)
-
-
-You see that joining tables and selecting specific columns in an SQLAlchemy query can give you the data you need in one step. Reading that data into a Pandas dataframe makes it easy to analyze the results.
-
-### Using *join_from()* methods
-
-You can create very large datasets by joining many tables together. As you create more complex queries, SQLAlchemy may not be able to automatically choose how tables will join. You can assist SQLAlchemy in determining relationships between tables by using the *join_from* method, which will specify which tables are on the left and right side of a join. 
-
-For example, if you want to know the names of all the tracks purchased by each customer, create the following SQLAlchemy select statement:
-
-```python
-statement = (select(Customer.FirstName,
-                    Customer.LastName,
-                    Customer.Country,
-                    Track.Name.label("Track"),
-                    Album.Title.label("Album"),
-                    Artist.Name.label("Artist"),
-                    InvoiceLine.Quantity,
-                    InvoiceLine.UnitPrice
-                    )
-                .join_from(InvoiceLine, Invoice)
-                .join_from(Invoice, Customer)
-                .join_from(InvoiceLine, Track)
-                .join_from(Track, Album)
-                .join_from(Album, Artist))
-```
-
-Read the data selected by the statement into a pandas dataframe:
-
-```python
-dataframe = pd.read_sql_query(sql=statement, con=engine)
-print(dataframe.shape)
-display(dataframe.head(5).style.format(thousands=","))
-```
-
-See that the output looks like that below:
-
-![Selected columns from many tables](./Images/pandas015.png)
-
-
-You used the *join_from()* method to make the left and right sides of each join clearer to the program. normally it can infer the correct relationships but sometimes you need to be more specific.
-
-As another example, if you want to see all the tracks on all the playlists, which have a many-to-many relationship:
-
-```python
-statement = (select(Playlist.Name.label("Playlist"),
-                    Track.Name.label("Track"),
-                    Album.Title.label("Album"),
-                    Artist.Name.label("Artist")
-                    )
-                .join_from(Playlist, playlisttrack)
-                .join_from(playlisttrack, Track)
-                .join_from(Track, Album)
-                .join_from(Album, Artist))
-
-dataframe = pd.read_sql_query(sql=statement, con=engine)
-
-print(dataframe.shape)
-display(dataframe.head(5))
-```
-
-The result was a dataframe with 4 columns and 8,715 rows.
-
-![Joining tables with many-to-many relationship](./Images/pandas016.png){width=12cm}
-
-### Outer joins using the *select()* function
-
-Sometimes you need to perform an *outer join* to get all the data you want.
-
-In SQLAlchemy, a normal (inner) join of the Employee and Customer tables would look like:
-
-```python
-statement = select(
-    Employee.EmployeeId, 
-    Employee.FirstName.label("Emp_First_Name"),
-    Employee.LastName.label("Emp_Last_Name"), 
-    Employee.Title,
-    Customer.FirstName.label("Cust_First_Name"),
-    Customer.LastName.label("Cust_Last_Name"),
-    Customer.Company.label("Cust_Company"),   
-).join(Customer)
-
-dataframe = pd.read_sql_query(sql=statement, con=engine)
-print(dataframe.shape)
-display(dataframe.style.hide(axis="index"))
-```
-
-Which gives you 59 rows showing the employee names and the customers each employee supports. 
-
-![Inner join of Employee and Customer table](./Images/sqlalchemy010.png)
-
-We know we have eight employees but only three employee names appear in the output. You can assume that the missing five employees do not support customers but if you want to see them in the report, anyway, you need to perform an outer join.
-
-An outer join simply uses the *select()* function's *outerjoin()* method:
-
-```python
-statement = select(
-    Employee.EmployeeId, 
-    Employee.FirstName.label("Emp_First_Name"),
-    Employee.LastName.label("Emp_Last_Name"), 
-    Employee.Title,
-    Customer.FirstName.label("Cust_First_Name"),
-    Customer.LastName.label("Cust_Last_Name"),
-    Customer.Company.label("Cust_Company"),   
-).outerjoin(Customer)
-
-dataframe = pd.read_sql_query(sql=statement, con=engine)
-print(dataframe.shape)
-display(dataframe.style.hide(axis="index"))
-```
-
-Which gives you 64 rows because it now includes the five employees who do not support customers. You can see that the customer information contains null values in the rows where the employee's *EmployeeId* column does not match any customers' *SupportRepId* column.
-
-![Outer join of Employee and Customer table](./Images/sqlalchemy011.png)
-
-## Grouping results using the *group_by()* method
-
-You can use SQL queries to group results before reading them into a Pandas dataframe. For example, group employees based on how many customers each supports, similar to an example we described in the "Reading database tables into pandas dataframes" document. Run the following code:
-
-```
-statement = (
-    select(
-        Employee.EmployeeId, 
-        (Employee.FirstName + ' ' + Employee.LastName).label("Employee Name"), 
-        Employee.Title,
-        func.count(Customer.CustomerId).label("Num_Customers")
-    )
-    .outerjoin(Customer)
-    .group_by(Employee.EmployeeId)
+    select(Product.Name, 
+           Product.ProductNumber,
+           ProductCategory.Name,
+           ProductModel.Name)
+    .join(ProductCategory)
+    .join(ProductModel)
 )
 
-dataframe = pd.read_sql_query(sql=statement, con=engine)
-print(dataframe.to_string(index=False))
+df = (pd.read_sql_query(sql=statement, con=engine))
+print(df.shape)
+print(df.head())
 ```
 
-You also performed an outer join so you get all employees grouped in the dataframe, even the ones who do not support customers.
+The output is shown below:
 
 ```
- EmployeeId    Employee Name               Title  Num_Customers
-          1     Andrew Adams     General Manager              0
-          2    Nancy Edwards       Sales Manager              0
-          3     Jane Peacock Sales Support Agent             21
-          4    Margaret Park Sales Support Agent             20
-          5    Steve Johnson Sales Support Agent             18
-          6 Michael Mitchell          IT Manager              0
-          7      Robert King            IT Staff              0
-          8   Laura Callahan            IT Staff              0
+(295, 4)
+                        Name ProductNumber       Name_1               Name_2
+0  HL Road Frame - Black, 58    FR-R92B-58  Road Frames        HL Road Frame
+1    HL Road Frame - Red, 58    FR-R92R-58  Road Frames        HL Road Frame
+2      Sport-100 Helmet, Red     HL-U509-R      Helmets            Sport-100
+3    Sport-100 Helmet, Black       HL-U509      Helmets            Sport-100
+4     Mountain Bike Socks, M     SO-B909-M        Socks  Mountain Bike Socks
 ```
 
-Unlike when merging Pandas dataframes where one contained information from the Employee table and the other contained information from the Customer table, we did not need to specify which columns to join on. SQLAlchemy knows the relationships between the Employee and Customer tables, even if the matching columns have different names, because it is defined in the database schema and is now reflected in the SQLAlchemy ORM.
+The SQLAlchemy *Select* class provides [other join methods](https://docs.sqlalchemy.org/en/20/orm/queryguide/select.html#joins). The default *join()* method performs an *inner join*, which selects only rows where there is a corresponding match. [Other types of join](https://learnsql.com/blog/sql-joins-types-explained/) methods, like *join_from()* and *outerjoin()*, are available to support cases where you want to also select rows that do not match on one side of the join or the other.
+
+Unlike when merging Pandas dataframes, we did not need to specify which columns to join on. SQLAlchemy knows the relationships between the tables, even if the matching columns have different names, because it is defined in the database schema and is now reflected in the SQLAlchemy ORM. In a well-designed database like the AdventureWorks LT database, the relationships between tables are already defined by primary and foreign keys, and association tables. SQLAlchemy objects can use these relationships to automatically join data in different tables together even if the columns that form the relationship have different names.
+
+### Labeling output columns
+
+When joining tables that may have columns with the same name in each table, like the *Name* column in the *Product*, *ProductCategory*, and *ProductModel* tables as shown in the previous example, SQLAlchemy adds a suffix to each duplicate column name so you see headers in the dataframe like "Name_1" and "Name_2". This is not very descriptive so
+you may want to rename the columns returned from the database. Use the Column class's *label()* method to change the output column name to a label of your choice. For example, redo the previous example with labels:
+
+```python
+statement = (
+    select(
+        Product.Name.label("ProductName"), 
+        Product.ProductNumber,
+        ProductCategory.Name.label("CategoryName"),
+        ProductModel.Name.label("ModelName")
+    )
+    .join(ProductCategory)
+    .join(ProductModel)
+)
+
+df = (pd.read_sql_query(sql=statement, con=engine))
+print(df.shape)
+print(df.head())
+```
+
+The dataframe now has meaningful header names, as seen below:
+
+```bash
+(295, 4)
+                 ProductName ProductNumber CategoryName            ModelName
+0  HL Road Frame - Black, 58    FR-R92B-58  Road Frames        HL Road Frame
+1    HL Road Frame - Red, 58    FR-R92R-58  Road Frames        HL Road Frame
+2      Sport-100 Helmet, Red     HL-U509-R      Helmets            Sport-100
+3    Sport-100 Helmet, Black       HL-U509      Helmets            Sport-100
+4     Mountain Bike Socks, M     SO-B909-M        Socks  Mountain Bike Socks
+```
+
+
+### Grouping results using the *group_by()* method
+
+As a final example that hints at the powerful transformations you may perform on the SQL server before loading the results into a dataframe, create an SQL query that counts the number of products in each category and returns the top ten categories sorted in descending order.
+
+```
+from sqlalchemy import func, desc
+
+statement = (
+    select(
+        ProductCategory.Name.label("CategoryName"),
+        func.count(Product.ProductID).label("ProductCount")
+    )
+    .join_from(ProductCategory, Product, isouter=True)
+    .group_by(ProductCategory.Name)
+    .order_by(desc("ProductCount"))
+)
+df = (pd.read_sql_query(sql=statement, con=engine))
+print(df.shape)
+print(df)
+```
+
+There is a lot going on in the *select()* constructor. You used the *func()* method to add SQL functions to the query and you used the *join_from()* method to specify which table is on the left and right side of the join. You also performed an outer join so you get all categories grouped in the dataframe, even the ones that do not have products.
+
+```
+(41, 2)
+         CategoryName  ProductCount
+0          Road Bikes            43
+1         Road Frames            33
+2      Mountain Bikes            32
+3     Mountain Frames            28
+4       Touring Bikes            22
+...
+35         Bike Racks             1
+36        Bike Stands             1
+37              Bikes             0
+38         Components             0
+39           Clothing             0
+40        Accessories             0
+```
+
+Unless you want to dedicate some time to mastering SQL and the SQLAlchemy *Select* class, it is probably best to perform procedures like grouping in another tool, such as Pandas.
 
 # Conclusion
 
-This document showed you the simple ways you can use SQLAlchemy to build SQL queries using Python code, and use those queries to load database information into a Pandas dataframe. You only need to know a little bit about SQLAlchemy to get started. Eventually, you should learn to use SQLAlchemy functions to Declaratively Map your database schema and use database reflection only when doing single-use scripts where performance is not an issue.
+This document showed you the simple ways you can use SQLAlchemy to build SQL queries using Python code, and use those queries to load database information into a Pandas dataframe. You only need to know a little bit about SQLAlchemy to get started. Eventually, you should learn to use SQLAlchemy functions to Declaratively Map your database schema. While I used database reflection in this post, you should only use database reflection when doing single-use scripts where performance is not an issue.
+
+SQL and SQLAlchemy are powerful tools that can perform a lot of data transformations before you load the results into Pandas. In my opinion, it is clearer to do simple data work like joining and filtering data using SQLAlchemy and then do complex data transformation in Pandas.
