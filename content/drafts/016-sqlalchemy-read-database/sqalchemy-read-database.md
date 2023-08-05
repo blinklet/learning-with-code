@@ -6,7 +6,7 @@ modified: 2023-08-07
 category: Databases
 <!--status: Published-->
 
-In my previous post about [reading database tables into pandas dataframes]({filename}/articles/015-pandas-and-database/Pandas-data-from-database.md), I showed show you how to use simple SQL queries to read data from a database and load it into Pandas dataframes. To integrate Pandas with larger, more complex databases, you need to master the [SQL language](https://en.wikipedia.org/wiki/SQL) or use a Python library like SQLAlchemy to create SQL query statements.
+In my previous post about [reading database tables into pandas dataframes]({filename}/articles/015-pandas-and-database/pandas-data-from-database.md), I showed show you how to use simple SQL queries to read data from a database and load it into Pandas dataframes. To integrate Pandas with larger, more complex databases, you need to master the [SQL language](https://en.wikipedia.org/wiki/SQL) or use a Python library like SQLAlchemy to create SQL query statements.
 
 SQLAlchemy can seem like it has a large learning curve but you only need to learn a little bit about it if all you want to do is use it to create SQL queries. This document covers the minimum you need to know about SQLAlchemy to gather information about an existing database's schema and to build complex, powerful SQL queries that you can use with the Pandas *read_sql_query()* function.
 
@@ -47,7 +47,7 @@ Before you get started using SQLAlchemy, you need to know a little bit about eac
 
 * The basics of Python. If you do not already have some basic Python skills, I suggest you read my post, *[Python: the Minimum You Need to Know]({filename}/articles/001-python-minimum-you-need-to-know/python-minimum-you-need-to-know.md)*, or a similar tutorial.
 * The basics of relational databases. You need to understand the principles upon which [relational databases](https://www.oracle.com/ca-en/database/what-is-a-relational-database/) like SQL databases are based.
-* The basics of working with data in Pandas. I covered this in my previous post, *[Python, pandas, and databases]({filename}/articles/015-pandas-and-database/Pandas-data-from-database.md)*
+* The basics of working with data in Pandas. I covered this in my previous post, *[Python, pandas, and databases]({filename}/articles/015-pandas-and-database/pandas-data-from-database.md)*
 
 
 ## Basic setup
