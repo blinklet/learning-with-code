@@ -1,6 +1,6 @@
 title: SQLAlchemy queries: The minimum you need to know
 slug: sqalchemy-read-database
-summary: The minimum you need to know about SQLAlchemy to build complex, powerful SQL queries that you can use with the Pandas *read_sql_query()* function, without having to learn SQL.
+summary: The minimum you need to know about using SQLAlchemy to build powerful SQL queries that you can use with the Pandas *read_sql_query()* function, without having to learn SQL.
 date: 2023-08-07
 modified: 2023-08-07
 category: Databases
@@ -8,38 +8,30 @@ category: Databases
 
 In my previous post about [reading database tables into pandas dataframes]({filename}/articles/015-pandas-and-database/pandas-data-from-database.md), I showed show you how to use simple SQL queries to read data from a database and load it into Pandas dataframes. To integrate Pandas with larger, more complex databases, you need to master the [SQL language](https://en.wikipedia.org/wiki/SQL) or use a Python library like SQLAlchemy to create SQL query statements.
 
-SQLAlchemy can seem like it has a large learning curve but you only need to learn a little bit about it if all you want to do is use it to create SQL queries. This document covers the minimum you need to know about SQLAlchemy to gather information about an existing database's schema and to build complex, powerful SQL queries that you can use with the Pandas *read_sql_query()* function.
+SQLAlchemy can seem like it has a large learning curve but you only need to learn a little bit about it if all you want to do is use it to create SQL queries that select data from an existing database. This post describes how to use SQLAlchemy to gather information about an existing database's schema and to build SQL queries that you can use with the Pandas *read_sql_query()* function.
 
 ## SQLAlchemy
 
-[SQLAlchemy](https://www.sqlalchemy.org/SQLAlchemy) is an [Object Relational Mapper (ORM)](https://en.wikipedia.org/wiki/Object%E2%80%93relational_mapping) framework that translates Python classes to relational database tables, and automatically converts Python function calls to SQL statements. SQLAlchemy provides a standard interface that allows developers to create database-agnostic code that communicates with a wide variety of database engines. [^1]
+[SQLAlchemy](https://www.sqlalchemy.org/SQLAlchemy) provides a standard interface that allows developers to create database-agnostic code that communicates with a wide variety of database engines [^1]. It is an [Object Relational Mapper (ORM)](https://en.wikipedia.org/wiki/Object%E2%80%93relational_mapping) framework that translates Python classes to relational database tables, and automatically converts Python function calls to SQL statements. 
 
 [^1]: From https://auth0.com/blog/sqlalchemy-orm-tutorial-for-python-developers/ on March 23, 2023
 
 ### Why use SQLAlchemy to generate query statements?
 
-The SQL language is relatively simple to use for database table queries. So, why would a Python programmer want to use the SQLAlchemy ORM to build the SQL statements used by the Pandas *read_sql_query* function instead of writing actual SQL statements? The main reasons are:
+The SQL language is relatively simple to use for the kinds of database table queries that you will create while you are learning data science technologies. So, why would a Python programmer want to use the SQLAlchemy ORM instead of just embedding actual SQL statements in their programs? The main reasons are:
 
 * Automatic SQL statement optimization
 * Support for multiple SQL language variations
-* Philosophical focus on writing "Pythonic" code and avoiding embedding SQL code in Python programs
 * Declarative mapping of database tables to Python classes documents the database schema
+* Philosophical focus on writing "Pythonic" code and avoiding embedding SQL code in Python programs
 
 When working with large and complex databases, users must ensure their SQL statements are optimized. Un-optimized queries can produce the same data as optimized queries but may use up significantly more resources. The SQLAlchemy ORM will output query statements using industry-standard optimizations.
 
-Different SQL servers support variations of the SQL language. For example, an SQL statement that works on SQLite might not work on Microsoft SQL Server. Programmers can configure the SQLAlchemy ORM to create different SQL statements for different SQL databases without changing the functions that build the queries. The Python programmer may invest her time learning SQLAlchemy instead of [multiple SQL language dialects](https://towardsdatascience.com/how-to-find-your-way-through-the-different-types-of-sql-26e3d3c20aab).
+Different SQL servers support variations of the SQL language. The Python programmer may invest her time learning SQLAlchemy instead of [multiple SQL language dialects](https://towardsdatascience.com/how-to-find-your-way-through-the-different-types-of-sql-26e3d3c20aab).
+
+While we do not cover it in this post, programmers may use [Declarative Mapping](https://docs.sqlalchemy.org/en/20/orm/declarative_mapping.html) to manually build SQLAlchemy ORM classes. The code you write becomes documentation of the database and its relationships, which helps other program maintainers.
 
 Python programmers may prefer to use SQLAlchemy to create query statements because it allows them to use Python code to express database queries and 
-
-While we do not cover it in this post, programmers may use [Declarative Mapping](https://docs.sqlalchemy.org/en/20/orm/declarative_mapping.html) to manually build SQLAlchemy ORM classes as Python classes. The code you write documents the database and its relationships in Python classes, which help other program maintainers. It also makes a program more robust, because you will be better able to predict the impact that changes in the database schema will have on your program.
-
-### The minimum you need to know about SQLAlchemy
-
-To select data from a database, you only need to know a small sub-set of SQLAlchemy functionality and it easy to learn by working through a few practical examples. This document covers the following topics with step-by-step tutorials:
-
-* How to make SQLAlchemy read the database schema and automatically convert it into mapped Python objects
-* Learn the SQLAlchemy functions that create SQL queries
-* Integrate the SQLAlchemy queries into Pandas functions to get data from the database
 
 ### Prerequisite knowledge
 
@@ -58,11 +50,11 @@ The examples in this document were created on a system running Ubuntu Linux 22.0
 
 You must have access to a database. Either you followed the instructions in my previous post about [setting up a sample database on Azure SQL Server]({filename}/articles/012-create-sample-db-azure/create-sample-db-azure.md) and got the connection string from your Azure database server, or you already have a valid connection string to an existing database. 
 
-In this post, you will use a [*sqlservercentral.com* public SQL Server database](https://www.sqlservercentral.com/articles/sqlservercentral-hosts-adventureworks-on-azure) that serves an instance of the AdventureWorks LT sample database. So, you need to install the Microsoft SQL Server driver on your PC and get the [database and user information](https://www.sqlservercentral.com/articles/connecting-to-adventureworks-on-azure) provided on the *sqlservercentral.com* web site.  
+In this post, you will use a [*sqlservercentral.com* public SQL Server database](https://www.sqlservercentral.com/articles/sqlservercentral-hosts-adventureworks-on-azure) that serves an instance of the AdventureWorks LT sample database. 
 
 ### Install drivers and other software
 
-I have already covered the process for installing the correct drivers on Ubuntu Linux and creating a Python virtual environment in my previous posts, so I will just list the required commands here, without explanation.
+I have already covered the process for installing the correct drivers on Ubuntu Linux and creating a Python virtual environment in my previous posts. I also showed you how to install the Microsoft SQL Server driver on your PC in a previous post. So, I will just list all the required commands here, without explanation.
 
 ```bash
 $ sudo su
@@ -106,11 +98,9 @@ If you prefer to use a simple text editor or the Python REPL, you can still foll
 
 ### Database documentation
 
-You need information about the database schema, specifically the relationships between tables. Read the database documentation or analyze the database with an SQL discovery tool like [*SchemaSpy*](https://schemaspy.org/), [*SchemaCrawler*](https://www.schemacrawler.com/), [*SQLite Browser*](https://github.com/sqlitebrowser/sqlitebrowser), or [ Community Edition](https://dbeaver.io/). Another way is to use the [SQLAlchemy *inspection* module](https://docs.sqlalchemy.org/en/20/core/inspection.html#module-sqlalchemy.inspection) to gather information and use it to draw your own diagram. I will describe how to use the *inspection* module in a future post.
+You need information about the database schema, specifically the relationships between tables. Read the database documentation. If no documentation is available, you may analyze the database with an SQL discovery tool like [*SchemaSpy*](https://schemaspy.org/), [*SchemaCrawler*](https://www.schemacrawler.com/), [*SQLite Browser*](https://github.com/sqlitebrowser/sqlitebrowser), or [DBeaver Community Edition](https://dbeaver.io/). Another way is to use the [SQLAlchemy *inspection* module](https://docs.sqlalchemy.org/en/20/core/inspection.html#module-sqlalchemy.inspection) to gather information and use it to draw your own diagram. I will describe how to use the *inspection* module in a future post.
 
->**NOTE:** You can also use the metadata stored in SQLAlchemy ORM classes to derive the database schema information. This is a good exercise because it will help you learn about the information stored in the SQLAlchemy ORM objects. This is a more advanced topic and is not covered in this post.
-
-The database diagram is shown below [^1]:
+For now, use the database diagram as your documentation. The AdventureWorks LT database diagram is shown below [^1]:
 
 [^1]: Diagram from *Microsoft Learning Transact-SQL Exercises and Demonstrations* website at [https://microsoftlearning.github.io/dp-080-Transact-SQL/](https://microsoftlearning.github.io/dp-080-Transact-SQL/)
 
@@ -140,7 +130,7 @@ In your terminal window, run the following command to create the *dotenv* file t
 
 In your Python program, convert the database information into a [database URL](https://dev.to/chrisgreening/connecting-to-a-relational-database-using-sqlalchemy-and-python-1619#deconstructing-the-database-url) that tells SQLAlchemy which database driver to use, the location of the database, and how to authenticate access to it. In this example, the URL will contain an internet address and access credentials.
 
-Enter the following Python code into a Jupyter notebook cell or text editor, and run it. This code imports the [sqlalchemy.engine.URL](https://docs.sqlalchemy.org/en/20/core/engines.html#sqlalchemy.engine.URL) class and uses its *create()* method to build a database URL. In addition to the database authentication information you got from the database administrator, you also specify the drive names you will use and the TCP port. Also, because you are using Microsoft SQL Server, you need to add an additional [query parameter](https://docs.sqlalchemy.org/en/20/core/engines.html#sqlalchemy.engine.URL.query) the contains the name of the SQL Server driver installed on your PC. 
+Enter the following Python code into a Jupyter notebook cell or text editor, and run it. This code uses the [sqlalchemy.engine.URL](https://docs.sqlalchemy.org/en/20/core/engines.html#sqlalchemy.engine.URL) class's *create()* method to build a database URL. In addition to the database authentication information you got from the database administrator, the URL also specifies the driver names you will use and the server's TCP port number. Also, because you are using Microsoft SQL Server, you need to add an additional [query parameter](https://docs.sqlalchemy.org/en/20/core/engines.html#sqlalchemy.engine.URL.query) the contains the name of the SQL Server driver installed on your PC. 
 
 ```python
 import os
@@ -160,7 +150,7 @@ url_object = URL.create(
 )
 ```
 
-Next, import the *create_engine()* function from SQLAlchemy and use it to create an [engine](https://docs.sqlalchemy.org/en/20/core/engines_connections.html) object which includes a connection to the database specified in the URL passed to the *create_engine* function.
+Next, import the *create_engine()* function from SQLAlchemy and use it to create an [engine object](https://docs.sqlalchemy.org/en/20/core/engines_connections.html) using the URL object you created. 
 
 ```python
 from sqlalchemy import create_engine
@@ -168,11 +158,11 @@ from sqlalchemy import create_engine
 engine = create_engine(url)
 ```
 
-You are now ready to get information from the database engine, which represents the connection to the database. You will pass the *engine* object to the Pandas *read_sql_query()* function when you want to select data from the database and load it into Pandas.
+You are now ready to get information from the *engine* object, which represents the connection to the database. You will pass the *engine* object to the Pandas *read_sql_query()* function when you want to select data from the database and load it into Pandas.
 
 ## Build an SQLAlchemy ORM model
 
-The SQLAlchemy ORM defines database tables as classes. The process of automatically building new classes based on an existing database's schema is called [reflection](https://betterprogramming.pub/reflecting-postgresql-databases-using-python-and-sqlalchemy-48b50870d40f). If you start with a properly designed database, you can automatically map classes and relationships with the [SQLAlchemy Automap extension](https://docs.sqlalchemy.org/en/20/orm/extensions/automap.html). Database reflection is useful when writing simple, single-use scripts like the ones in this document.
+The SQLAlchemy ORM defines database tables as classes. The process of automatically building new classes based on an existing database's schema is called [reflection](https://betterprogramming.pub/reflecting-postgresql-databases-using-python-and-sqlalchemy-48b50870d40f). If you start with a properly designed database, you can reflect table classes and data relationships with the [SQLAlchemy Automap extension](https://docs.sqlalchemy.org/en/20/orm/extensions/automap.html). Database reflection is useful when writing simple, single-use scripts like the ones in this document.
 
 > **NOTE:** Instead of using reflection, The SQLAlchemy documentation recommends you use [Declarative Mapping](https://docs.sqlalchemy.org/en/20/orm/declarative_mapping.html) to manually build SQLAlchemy ORM classes as Python classes. We ignore that recommendation in this post because it goes beyond the minimum you need to know.
 >
@@ -182,7 +172,7 @@ The SQLAlchemy ORM defines database tables as classes. The process of automatica
 
 ### Automap the ORM
 
-To automatically generate an object model from the public AdventureWorks LT database, run the following code. If the database has many tables, this code may take a while to return a result. Note that you already need to know the name of the database schema you will reflect, which is *SalesLT* in this example.
+To automatically map tables and data relationships from the public AdventureWorks LT database to SQLAlchemy ORM classes, run the following code. If the database has many tables, this code may take a while to return a result. Note that you already need to know the name of the database schema you will reflect, which is *SalesLT* in this example.
 
 ```python
 from sqlalchemy.ext.automap import automap_base
@@ -195,15 +185,15 @@ You used SQLAlchemy's *automap_base* function to create a [declarative base clas
 
 ### Assign table classes to variables
 
-The *automap_base* function returns class instances that were mapped to database tables in the *Base.classes* instance and also stores tables in the *Base.metadata* [^1]. You should already know the table names from reading the database diagram, but if you want to list them for your own convenience, run the following code:
+The *automap_base* function returns mapped classes in the *Base.classes* collection and also stores table information in the *Base.metadata* [^1] collection. You should already know the table names from reading the database diagram, but if you want to list them for your own convenience, run the following code:
 
-[^1]: It's important to know this because [association tables](https://docs.sqlalchemy.org/en/20/orm/basic_relationships.html#many-to-many) that support [many-to-many relationships](https://medium.com/@BryanFajardo/how-to-use-associative-entities-in-relational-databases-4456a2c71cda) between other tables do not get mapped to classes and are only available as table objects in the ORM. But, there are no association tables in the AdventureWorks LT database so we won't explore this complication at this time.
+[^1]: It's important to know that there are two places to find table information because [association tables](https://docs.sqlalchemy.org/en/20/orm/basic_relationships.html#many-to-many) that support [many-to-many relationships](https://medium.com/@BryanFajardo/how-to-use-associative-entities-in-relational-databases-4456a2c71cda) between other tables do not get mapped to classes and are only available as table objects in the ORM. There are no association tables in the AdventureWorks LT database so we won't explore this complication at this time.
 
 ```python
 print(Base.classes.keys())
 ```
 
-Which outputs a list containing all the table names, as shown below:
+Running the code outputs a list containing all the table names, as shown below:
 
 ```python
 ['Address', 'Customer', 'CustomerAddress', 'Product', 'ProductCategory', 'ProductModel', 'ProductDescription', 'ProductModelProductDescription', 'SalesOrderDetail', 'SalesOrderHeader']
@@ -236,11 +226,11 @@ SQLAlchemy provides functions that support interacting with a database in many w
 
 ### Reading table data with the *select()* construct
 
-Use the SQLAlchemy [*select()* constructor](https://docs.sqlalchemy.org/en/20/tutorial/data_select.html) to create SQL SELECT statements and that select rows from tables in the database. The *select()* constructor returns an instance of the SQLAlchemy *Select* class that offers methods that can be chained together to provider all the information the Select object needs to output a query when requested by Pandas, or when executed as part of other functions like Python's *print()* function.
+Use the SQLAlchemy [*select()* constructor](https://docs.sqlalchemy.org/en/20/tutorial/data_select.html) to create SQL SELECT statements that select rows from tables in the database. The *select()* constructor returns an instance of the SQLAlchemy *Select* class that offers methods that can be chained together to provider all the information the Select object needs to output an SQL query statement when requested by Pandas, or when executed as part of other functions like Python's *print()* function.
 
-This section covers some common uses of the *select()* construct and its methods. Use the SQLAlchemy guides, [*Using Select Statements*](https://docs.sqlalchemy.org/en/20/tutorial/data_select.html) and [*ORM Querying Guide*](https://docs.sqlalchemy.org/en/20/orm/queryguide/index.html) as references when you need to look up additional methods to build the SQL queries you need.
+This section covers some common uses of the *select()* construct and its methods. Use the SQLAlchemy guides, [*Using Select Statements*](https://docs.sqlalchemy.org/en/20/tutorial/data_select.html) and [*ORM Querying Guide*](https://docs.sqlalchemy.org/en/20/orm/queryguide/index.html), as references when you need to look up additional methods to build the SQL queries you need.
 
-The following code builds an SQL query that selects all rows in the AdventureWorks LT database's *Product* table. 
+For example, the following code builds an SQLAlchemy *Select()* instance that will, when used in an appropriate function like the Pandas *read_sql_query()* function, select all rows in the AdventureWorks LT database's *Product* table. 
 
 ```python
 from sqlalchemy import select
@@ -248,7 +238,7 @@ from sqlalchemy import select
 statement = (select(ProductDescription))
 ```
 
-The statement variable name is assigned to the SQLAlchemy object returned by the *select()* function. You can view the SQL statement by printing the *statement* object or by converting it to a string. Either of those operations cause the *statement* object to return a string containing the SQL Query. For example:
+You can view the returned SQLAlchemy *Select()* instance as a readable SQL statement by printing it or by converting it to a string. Either of those operations cause the instance to return a string containing the SQL Query. For example:
 
 ```
 print(statement)
@@ -299,7 +289,9 @@ The output below shows all 762 rows from the *ProductDescription* database table
 
 ### Selecting columns
 
-You can select specific columns from a table by specifying each column as a parameter in the *select()* construct. For example, to select only the *ProductDescriptionID* and *Description* columns in the *ProductDescription* table, run the following code:
+After you used *reflection* to map database information into ORM classes, you created a collection of Python objects that represent elements in the database. One of these object types is the *Column* type. You can specify columns by name using dot notation, starting with the columns table name followed by the column nmae.
+
+When building a query, you can select specific columns from a table by specifying each column as a parameter in the *select()* construct. For example, to select only the *ProductDescriptionID* and *Description* columns in the *ProductDescription* table, run the following code:
 
 ```python
 statement = (select(ProductDescription.ProductDescriptionID, 
