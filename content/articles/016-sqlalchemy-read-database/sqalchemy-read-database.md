@@ -6,9 +6,7 @@ modified: 2023-08-07
 category: Databases
 status: Published
 
-In my previous post about [reading database tables into pandas dataframes]({filename}/articles/015-pandas-and-database/pandas-data-from-database.md), I showed show you how to use simple SQL queries to read data from a database and load it into Pandas dataframes. To integrate Pandas with larger, more complex databases, you need to master the [SQL language](https://en.wikipedia.org/wiki/SQL) or use a Python library like SQLAlchemy to create SQL query statements.
-
-SQLAlchemy can seem like it has a large learning curve but you only need to learn a little bit about it if all you want to do is use it to create SQL queries that select data from an existing database. This post describes how to use SQLAlchemy to gather information about an existing database's schema and to build SQL queries that you can use with the Pandas *read_sql_query()* function.
+In my previous post, I showed show you how to use simple SQL queries to [read data from a database and load it into Pandas dataframes](({filename}/articles/015-pandas-and-database/pandas-data-from-database.md)). As you learn more about data science, you will need to learn more about the [SQL language](https://en.wikipedia.org/wiki/SQL). However, if you wish to work mostly in the Python language, you may instead invest your time learning to use the SQLAlchemy library.
 
 ## SQLAlchemy
 
@@ -16,22 +14,24 @@ SQLAlchemy can seem like it has a large learning curve but you only need to lear
 
 [^1]: From https://auth0.com/blog/sqlalchemy-orm-tutorial-for-python-developers/ on March 23, 2023
 
+SQLAlchemy can seem like it has a large learning curve, but you only need to learn a little bit about it to get started, especially if you plan to use Pandas with SQLAlchemy. This post describes how to use SQLAlchemy to gather information about an existing database's schema and to build SQL queries that you can use with the Pandas *read_sql_query()* function.
+
 ### Why use SQLAlchemy to generate query statements?
 
 The SQL language is relatively simple to use for the kinds of database table queries that you will create while you are learning data science technologies. So, why would a Python programmer want to use the SQLAlchemy ORM instead of just embedding actual SQL statements in their programs? The main reasons are:
 
+* It abstracts away the SQL language and focus on writing "Pythonic" code that interfaces with the database
+* The same code supports multiple SQL language variations
 * Automatic SQL statement optimization
-* Support for multiple SQL language variations
-* Declarative mapping of database tables to Python classes documents the database schema
-* Philosophical focus on writing "Pythonic" code and avoiding embedding SQL code in Python programs
+* Declarative mapping of database tables to Python classes enables you to document the database schema in your Python program
 
-When working with large and complex databases, users must ensure their SQL statements are optimized. Un-optimized queries can produce the same data as optimized queries but may use up significantly more resources. The SQLAlchemy ORM will output query statements using industry-standard optimizations.
+Python programmers may prefer to use SQLAlchemy to create query statements because it allows them to use Python code to express database queries and avoids embedding strings that contain SQL queries in Python programs.
 
-Different SQL servers support variations of the SQL language. The Python programmer may invest her time learning SQLAlchemy instead of [multiple SQL language dialects](https://towardsdatascience.com/how-to-find-your-way-through-the-different-types-of-sql-26e3d3c20aab).
+Different SQL servers support variations of the SQL language. Python programmers may invest their time learning SQLAlchemy instead of [multiple SQL language dialects](https://towardsdatascience.com/how-to-find-your-way-through-the-different-types-of-sql-26e3d3c20aab).
+
+When working with large and complex databases, users must ensure their SQL statements are optimized. Un-optimized queries produce the same data as optimized queries but may use up significantly more resources. The SQLAlchemy ORM will output query statements using industry-standard optimizations.
 
 While we do not cover it in this post, programmers may use [Declarative Mapping](https://docs.sqlalchemy.org/en/20/orm/declarative_mapping.html) to manually build SQLAlchemy ORM classes. The code you write becomes documentation of the database and its relationships, which helps other program maintainers.
-
-Python programmers may prefer to use SQLAlchemy to create query statements because it allows them to use Python code to express database queries and 
 
 ### Prerequisite knowledge
 
@@ -41,10 +41,9 @@ Before you get started using SQLAlchemy, you need to know a little bit about eac
 * The basics of relational databases. You need to understand the principles upon which [relational databases](https://www.oracle.com/ca-en/database/what-is-a-relational-database/) like SQL databases are based.
 * The basics of working with data in Pandas. I covered this in my previous post, *[Python, pandas, and databases]({filename}/articles/015-pandas-and-database/pandas-data-from-database.md)*
 
-
 ## Basic setup
 
-The examples in this document were created on a system running Ubuntu Linux 22.04. You may follow the same procedures using Windows or Mac OS, with minor changes.
+The examples in this document were created on a PC running Ubuntu Linux 22.04. You may follow the same procedures using Windows or Mac OS, with minor changes.
 
 ### Database
 
@@ -584,8 +583,8 @@ Unless you want to dedicate some time to mastering SQL and the SQLAlchemy *Selec
 
 ## Conclusion
 
-This document showed you the simple ways you can use SQLAlchemy to build SQL queries using Python code, and how Pandas can use those queries to load database information into a Pandas dataframe. You only need to know a little bit about SQLAlchemy to use it. 
+This document showed you the simple ways you can use SQLAlchemy to build SQL queries, and how Pandas can use those queries to load database information into a Pandas dataframe. You only need to know a little bit about SQLAlchemy to use it. 
 
 Eventually, you should learn to use SQLAlchemy functions to Declaratively Map your database schema. Database reflection, which I used in this post, takes a long time and you should only use it when doing single-use scripts where performance is not an issue.
 
-SQL and SQLAlchemy are powerful tools that can perform a lot of data transformations before you load the results into Pandas. However, in my opinion, it is clearer to use SQLAlchemy to perform simple data work like joining and filtering and then use Pandas to perform complex data transformations and analysis.
+SQL and SQLAlchemy are powerful tools that can perform a lot of data transformations before you load the results into Pandas. However, in my opinion, it is clearer to use SQLAlchemy to perform simple data work like joining tables and filtering rows, and then use Pandas to perform complex data transformations and analysis.
