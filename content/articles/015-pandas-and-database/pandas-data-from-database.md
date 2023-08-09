@@ -517,7 +517,7 @@ You will not normally need to save your Pandas dataframe to disk for your own us
 df1.to_pickle("product_info.pkl")
 ```
 
-To read back the picked dataframe, execute the following statement:
+To read back the pickled dataframe, execute the following statement:
 
 ```python
 new_df = pd.read_pickle("product_info.pkl")

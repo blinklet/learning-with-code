@@ -143,10 +143,6 @@ https://medium.com/analytics-vidhya/translating-sql-queries-to-sqlalchemy-orm-a8
 
 
 
-The statement `length = q[0]` is actually doing a lotmore than it looks like. The object, *q* returned by the query uses [lazy loading](https://docs.sqlalchemy.org/en/20/orm/queryguide/relationships.html#lazy-loading) so it does not contain any data until you assign it to another object or cause it to iterate at least once. When the object does load data, it returns row data in a tuple. Since you queried only one row from the column, the tuple contains only one value. You [get that value by indexing](https://docs.sqlalchemy.org/en/20/tutorial/data_select.html#selecting-orm-entities-and-columns) the tuple.
-
-I could also use the *iter()* function to cause the row object to return the tuple and then use the *next* functions to return the first item in the tuple. Then the statement would be `length = next(iter(q))`. 
-
 
 
 
@@ -364,107 +360,7 @@ Programmers who are have already mastered the SQL language could simply use the 
 
 
 
-You can remove the "ArtistId" column from the data frame because it is now redundant. Keep the *AlbumId* column because you will use it to join data from the Track table in the next step. 
 
-```python
-df1.drop('ArtistId', axis=1)
-```
-
-You can also rename the *Name* column to *Artist* so it is clearer.
-
-```
-df1.rename(columns = {'Name':'Artist'})
-```
-
-Also, you could have done everything in one statement when you merged the dataframes by chaining pandas methods together:
-
-```python
-df1 = (pd
-     .merge(albums, artists)
-     .drop('ArtistId', axis=1)
-     .rename(columns = {'Name':'Artist'}))
-```
-
-Now get data from a third table and merge it with the dataframe *df1*. Get the data from the Track table and load it into a pandas dataframe named *tracks*:
-
-```python
-tracks = pd.read_sql_table(table_name='Track', con=engine)
-```
-
-If you print the first few rows of the *tracks* dataframe, you can see it has 3,503 rows and nine columns. You should expect that Pandas will use the *AlbumId* column in the dataframe *df1* to join on the AlbumId column in dataframe *tracks*.
-
-```python
-print(tracks.head())
-print(tracks.shape)
-```
-```
-   TrackId                                     Name  AlbumId  MediaTypeId  \
-0        1  For Those About To Rock (We Salute You)        1            1   
-1        2                        Balls to the Wall        2            2   
-2        3                          Fast As a Shark        3            2   
-3        4                        Restless and Wild        3            2   
-4        5                     Princess of the Dawn        3            2   
-
-   GenreId                                           Composer  Milliseconds  \
-0        1          Angus Young, Malcolm Young, Brian Johnson        343719   
-1        1                                               None        342562   
-2        1  F. Baltes, S. Kaufman, U. Dirkscneider & W. Ho...        230619   
-3        1  F. Baltes, R.A. Smith-Diesel, S. Kaufman, U. D...        252051   
-4        1                         Deaffy & R.A. Smith-Diesel        375418   
-
-      Bytes  UnitPrice  
-0  11170334       0.99  
-1   5510424       0.99  
-2   3990994       0.99  
-3   4331779       0.99  
-4   6290521       0.99  
-(3503, 9)
-```
-
-You can see how Pandas displays the nine columns by spitting the displayed tables into three "rows". And you can see that we have 3,503 rows in the Tracks table.
-
-Finally, merge the *tracks* dataframe with the *df1* dataframe and, at the same time, delete unneeded columns and rename other columns:
-
-```python
-df3 = (pd
-     .merge(df1, tracks)
-     .drop(['AlbumId','TrackId',
-            'Bytes','UnitPrice',
-            'MediaTypeId','GenreId'], axis=1)
-     .rename(columns = {'Name':'Track', 
-                        'Title':'Album',
-                        'Milliseconds':'Length(ms)'}))
-
-print(df3.shape)
-display(df3.head().style.format(thousands=","))
-```
-
-
-
-
-
-
-
-
-
-
-
-
-
-# NaN and NULL and None
-
-
-Check that every customer has a support representative assigned to them. 
-
-```python
-test = customers.loc[customers['SupportRepId'].isnull()] 
-print(len(test))
-```
-```
-0
-```
-
-We see zero customers have a null, or "NaN", value in their *SupportRepId* column. So, we can place the *customers* dataframe on the right side of the merge function and perform a *left outer join*.
 
 
 

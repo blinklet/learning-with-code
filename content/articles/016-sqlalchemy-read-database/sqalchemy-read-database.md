@@ -1,5 +1,5 @@
 title: SQLAlchemy queries: The minimum you need to know
-slug: sqalchemy-read-database
+slug: sqlalchemy-read-database
 summary: The minimum you need to know about using SQLAlchemy to build powerful SQL queries that you can use with the Pandas *read_sql_query()* function.
 date: 2023-08-07
 modified: 2023-08-07
@@ -541,7 +541,7 @@ The dataframe now has meaningful header names, as seen below:
 
 ### Grouping results using the *group_by()* method
 
-As a final example that hints at the powerful transformations you may perform on the SQL server before loading the results into a dataframe, create a SQL query that counts the number of products in each category and returns the top ten categories sorted in descending order.
+As a final example that hints at the powerful transformations you may perform on the SQL server before loading the results into a dataframe, create a SQL query that counts the number of products in each category and sorts the results in descending order.
 
 ```
 from sqlalchemy import func, desc
@@ -560,7 +560,7 @@ print(df.shape)
 print(df)
 ```
 
-There is a lot going on in this *Select* instance. You used the *func()* method to add SQL functions to the query and you used the *join_from()* method to specify which table is on the left and right side of the join. You also performed an outer join so you get all categories grouped in the dataframe, even the ones that do not have products.
+There is a lot going on in this *Select* instance. You used the *func()* method to add SQL functions to the query and you used the *join_from()* method to specify which table is on the left and right side of the join. You also performed an outer join so you get all categories from the *ProductCategory* table grouped in the dataframe, even the ones that do not have products associated with them.
 
 ```
 (41, 2)
