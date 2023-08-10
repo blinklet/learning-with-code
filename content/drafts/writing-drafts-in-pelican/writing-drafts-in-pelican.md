@@ -6,6 +6,9 @@ modified: 2023-05-15
 category: Blogging
 <!--status: draft-->
 
+(Maybe turn this into how I work in Pelican, in general)
+
+
 When you work on a post for your Pelican-based blog, you probably don't want the draft post to appear on your published blog. But, that could happen if, while you are working on a draft for your next post, you re-deploy your blog. Here are some tips for conveniently working on draft blog posts for your Pelican blog while keeping your work in progress from appearing on your published web site.
 
 this is a test of a draft image
@@ -141,3 +144,15 @@ If, while working on the draft, you need to update an existing blog post you mus
 
 
 
+
+
+
+### attaching images and organizing images in directories 
+
+https://deaddabe.fr/blog/2020/08/30/using-and-extending-the-attach-directive-in-pelican/
+https://docs.getpelican.com/en/3.6.3/content.html#attaching-static-files
+
+https://dev.to/thebouv/building-my-static-site-with-pelican-part-one-330i
+    --- uses Git submodules for output   https://git-scm.com/book/en/v2/Git-Tools-Submodules
+
+    

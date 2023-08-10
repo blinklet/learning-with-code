@@ -366,7 +366,7 @@ display(
 
 The following code displays the three longest tracks in the dataframe:
 
-![](./Images/pandas020.png)
+![image](./Images/pandas020.png)
 
 ```python
 print(f"Longest tracks, with artist name:")
@@ -377,7 +377,7 @@ display(
 )
 ```
 
-![](./Images/pandas021.png)
+![image](./Images/pandas021.png)
 
 The following code counts the number of tracks created by each artist artist, from a random sample of artists:
 
@@ -392,7 +392,7 @@ display(
 )
 ```
 
-![](./Images/pandas022.png)
+![image](./Images/pandas022.png)
 
 The following code lists the shortest tracks by the artist named "Guns N' Roses":
 
@@ -406,4 +406,4 @@ display(
 )   
 ```
 
-![](./Images/pandas023.png)
+![image](./Images/pandas023.png)

@@ -1,12 +1,11 @@
-title: Exploring the database schema using the *inspection* module
-slug: sqalchemy-database-schema-explore
-summary: Ese the SQLAlchemy *inspect* module to read SQL database schema information via a Python API. This post provides inspection examples that are relevant to users who read data from existing databases and who need to understand the data relationships within a database.
+title: Exploring relational database schema using SQLAlchemy's inspection module
+slug: sqalchemy-database-schema-explore-inspect
+summary: Use the SQLAlchemy *inspect* module to read SQL database schema information via a Python API. This post provides inspection examples that are relevant to users who read data from existing databases and who need to understand the data relationships within a database.
 date: 2023-08-31
 modified: 2023-08-31
 category: Databases
 <!--status: Published-->
 
-# Appendix A: Exploring the database schema using the *inspection* module
 
 One way to learn about the structure of an existing database is to use the [SQLAlchemy *inspect* module](https://docs.sqlalchemy.org/en/20/core/inspection.html#module-sqlalchemy.inspection). It provides a simple interface to read database schema information via a Python API. This appendix provides inspection examples that are relevant to users who read data into Pandas dataframes and who need to understand the [relationships](https://blog.devart.com/types-of-relationships-in-sql-server-database.html#self-referencing-relationships) within a database. Inspecting SQLAlchemy [relationship constraints](https://www.digitalocean.com/community/conceptual-articles/understanding-sql-constraints) may be more complex, but constraints are relevant only to users who want to update or delete information in a database so we will not inspect them in this document. See the [SQLAlchemy Inspect documentation](https://docs.sqlalchemy.org/en/20/core/reflection.html#fine-grained-reflection-with-inspector) for more ways to use the *inspect()* module.
 
