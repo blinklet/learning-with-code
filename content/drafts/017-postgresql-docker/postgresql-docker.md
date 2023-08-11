@@ -205,17 +205,31 @@ Commands for checking out DB
 https://www.postgresqltutorial.com/postgresql-administration/postgresql-show-tables/
 
 
+```
+$ sudo docker container inspect chinook-sample -f '{{index .NetworkSettings.Networks "bridge" "IPAddress"}}'
 
+
+```
+$ sudo docker container inspect chinook-sample -f '{{.NetworkSettings.Ports}}'
+
+map[5432/tcp:[]]
+```
 
 https://www.connectionstrings.com/postgresql/
 
 Driver={PostgreSQL};Server=IP address;Port=5432;Database=myDataBase;Uid=myUsername;Pwd=myPassword;
 
 ```
+$ sudo apt install libpq-dev python3-dev
 $ pip install psycopg2
+pip install tabulate
+pip install jupyterlab
+
 ```
 
 ```
+import psycopg2
+
 conn = psycopg2.connect(
     host="localhost",
     database="suppliers",
@@ -223,28 +237,93 @@ conn = psycopg2.connect(
     password="Abcd1234")
 
 cursor = conn.cursor()
+```
 
+```
+schema_set = set()
+for row in cursor.tables():
+    schema_set.add(row.table_schem)
+    
+print('Schema Name')
+print('-' * 11)
+print(*schema_set, sep='\n')
 
+cursor.close()
+```
+
+```python
+statement = """
+SELECT DISTINCT
+  TABLE_SCHEMA
+FROM INFORMATION_SCHEMA.TABLES
+ORDER BY TABLE_SCHEMA
+"""
+
+cursor = conn.cursor()
+cursor.execute(statement)
+print(cursor.fetchall())
+cursor.close()
+```
+
+```python
+from tabulate import tabulate
+
+statement = """
+SELECT 
+  TABLE_NAME, TABLE_TYPE
+FROM INFORMATION_SCHEMA.TABLES
+WHERE TABLE_SCHEMA = 'public'
+ORDER BY TABLE_NAME
+"""
+
+with conn.cursor() as cursor:
+    cursor.execute(statement)
+    headers = [h[0] for h in cursor.description]
+    tables = cursor.fetchall()
+
+print(tabulate(tables, headers=headers))
+```
+```
+table_name     table_type
+-------------  ------------
+Album          BASE TABLE
+Artist         BASE TABLE
+Customer       BASE TABLE
+Employee       BASE TABLE
+Genre          BASE TABLE
+Invoice        BASE TABLE
+InvoiceLine    BASE TABLE
+MediaType      BASE TABLE
+Playlist       BASE TABLE
+PlaylistTrack  BASE TABLE
+Track          BASE TABLE
 ```
 
 
+
+
+```python
+statement = """
+SELECT TOP 5
+    ProductID,
+    Product.Name,
+    ProductNumber AS ProdNum,
+    ProductCategory.Name AS Category,
+    ProductModel.Name AS Model
+FROM SalesLT.Product
+JOIN SalesLT.ProductCategory
+    ON Product.ProductCategoryID=ProductCategory.ProductCategoryID
+JOIN SalesLT.ProductModel
+    ON Product.ProductModelID=ProductModel.ProductModelID
+ORDER BY NEWID()
+"""
+
+with conn.cursor() as cursor:
+    cursor.execute(statement)
+    headers = [h[0] for h in cursor.description]
+    rows = cursor.fetchall()
+    print(tabulate(rows, headers=headers))
 ```
-import pyodbc
-conn_str = (
-    "DRIVER={PostgreSQL Unicode};"
-    "DATABASE=postgres;"
-    "UID=postgres;"
-    "PWD=whatever;"
-    "SERVER=localhost;"
-    "PORT=5432;"
-    )
-conn = pyodbc.connect(conn_str)
-crsr = conn.execute("SELECT 123 AS n")
-row = crsr.fetchone()
-print(row)
-crsr.close()
-conn.close()
-```
 
 
 
@@ -265,6 +344,7 @@ conn.close()
 
 
 
+sudo docker logs chinook-sample
 
 
 
