@@ -6,6 +6,273 @@ modified: 2023-08-31
 category: Databases
 <!--status: Published-->
 
+
+# Install Docker
+
+(in Ubuntu 22.04)
+
+from https://www.digitalocean.com/community/tutorials/how-to-install-and-use-docker-on-ubuntu-22-04
+
+```
+sudo apt update
+sudo apt install apt-transport-https ca-certificates curl software-properties-common
+curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo gpg --dearmor -o /usr/share/keyrings/docker-archive-keyring.gpg
+echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/docker-archive-keyring.gpg] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable" | sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
+sudo apt update
+apt-cache policy docker-ce
+sudo apt install docker-ce
+sudo systemctl status docker
+```
+
+(from https://www.digitalocean.com/community/tutorials/how-to-install-and-use-docker-compose-on-ubuntu-22-04)
+
+```
+mkdir -p ~/.docker/cli-plugins/
+cd ~/.docker/cli-plugins/
+wget https://github.com/docker/compose/releases/download/v2.20.2/docker-compose-linux-x86_64 -O docker-compose
+
+
+curl -SL https://github.com/docker/compose/releases/download/v2.20.2/docker-compose-linux-x86_64 -o ~/.docker/cli-plugins/docker-compose
+chmod +x ~/.docker/cli-plugins/docker-compose
+```
+
+# Get images
+
+Could use prepared image like *schemacrawler/chinook-database* but they are often old and not updated.
+
+```bash
+$ sudo docker pull postgres
+```
+
+
+
+# Get Chinook database files
+
+https://github.com/lerocha/chinook-database
+
+Go to github, get "raw" version of file
+
+```
+mkdir dbtest
+cd dbtest
+wget https://raw.githubusercontent.com/lerocha/chinook-database/master/ChinookDatabase/DataSources/Chinook_PostgreSql.sql
+```
+
+
+# Test container
+
+```
+$ ls
+Chinook_SqlServer.sql  postgres-chinook.yml
+```
+
+
+Below is the receipe for starting a container from the postgres image (see recipe in "How to use this image" in https://hub.docker.com/_/postgres)
+
+```
+$ sudo docker run --name chinook-sample -e POSTGRES_PASSWORD=abcd1234 -d postgres
+```
+
+try run command in https://wkrzywiec.medium.com/database-in-a-docker-container-how-to-start-and-whats-it-about-5e3ceea77e50
+
+https://hub.docker.com/_/postgres
+
+Then log in and test
+
+```
+$ sudo docker exec -it chinook-sample bash
+root@040f69388a6a:/# 
+```
+
+Then run the *psql* command on the container. Start it with the default username, "postgres":
+
+```
+root@040f69388a6a:/# psql -U postgres
+psql (15.3 (Debian 15.3-1.pgdg120+1))
+Type "help" for help.
+
+postgres=# 
+```
+
+Great. So, container is running and postgreSQL is working. Now we need a container that has the Chinook database in it.
+
+exit the container
+
+```
+postgres=# exit
+rroot@040f69388a6a:/# exit
+$
+```
+
+Delete the container
+
+```
+$ sudo docker stop chinook-sample
+$ sudo docker container prune
+```
+
+# add Chinook DB to image
+
+postgres initializes itself from a file called init.sql. The easiest way to create a container with the Chinook DB is to just build a new image with the Chinook SQL file renamed as init.sql
+
+
+
+Convert to UTF-8. See: https://github.com/morenoh149/postgresDBSamples/issues/1
+and save results as init.sql
+
+(The SQL script is stored in ISO-8859-1, you need to change your client_encoding to reflect that)  from https://stackoverflow.com/questions/39287814/how-to-load-chinook-database-in-postgresql
+
+```
+iconv -f ISO-8859-1 -t UTF-8 Chinook_PostgreSql.sql > init.sql
+```
+
+(or add the line `SET CLIENT_ENCODING TO 'LATIN1';` at the start of the init.sql file)
+
+To make a new image, first create a file containing docker commands that take the postgress image and copty the SQL file into a new image that will be created.
+
+
+```
+nano chinook.Dockerfile
+```
+
+add the following text and save the file
+
+```
+FROM postgres 
+ENV POSTGRES_PASSWORD abcd1234 
+COPY init.sql /docker-entrypoint-initdb.d/
+```
+
+Then create the new image
+
+```
+$sudo docker build -f chinook.Dockerfile -t postgres-chinook-image .
+```
+
+```
+[+] Building 1.3s (7/7) FINISHED                               docker:default
+ => [internal] load build definition from chinook.Dockerfile             0.1s
+ => => transferring dockerfile: 162B                                     0.0s
+ => [internal] load .dockerignore                                        0.2s
+ => => transferring context: 2B                                          0.0s
+ => [internal] load metadata for docker.io/library/postgres:latest       0.0s
+ => [internal] load build context                                        0.2s
+ => => transferring context: 8.68kB                                      0.0s
+ => [1/2] FROM docker.io/library/postgres                                0.8s
+ => [2/2] COPY init.sql /docker-entrypoint-initdb.d/                     0.1s
+ => exporting to image                                                   0.1s
+ => => exporting layers                                                  0.1s
+ => => writing image sha256:c2ffbc06e85b2d5fc910d8d701be77a7315532fa95a  0.0s
+ => => naming to docker.io/library/postgres-chinook-image    
+```
+
+```
+$ sudo docker image ls
+REPOSITORY               TAG       IMAGE ID       CREATED              SIZE
+postgres-chinook-image   latest    c2ffbc06e85b   About a minute ago   412MB
+postgres                 latest    8769343ac885   2 weeks ago          412MB
+```
+
+Run the new image
+
+```
+$ sudo docker run --name chinook-sample -e POSTGRES_PASSWORD=abcd1234 -d postgres-chinook-image
+$ sudo docker exec -it chinook-sample bash
+root@738afc4392fe:/# psql -U postgres
+psql (15.3 (Debian 15.3-1.pgdg120+1))
+Type "help" for help.
+
+postgres=# \dt
+             List of relations
+ Schema |     Name      | Type  |  Owner   
+--------+---------------+-------+----------
+ public | Album         | table | postgres
+ public | Artist        | table | postgres
+ public | Customer      | table | postgres
+ public | Employee      | table | postgres
+ public | Genre         | table | postgres
+ public | Invoice       | table | postgres
+ public | InvoiceLine   | table | postgres
+ public | MediaType     | table | postgres
+ public | Playlist      | table | postgres
+ public | PlaylistTrack | table | postgres
+ public | Track         | table | postgres
+(11 rows)
+
+```
+
+Commands for checking out DB
+https://www.postgresqltutorial.com/postgresql-administration/postgresql-show-tables/
+
+
+
+
+https://www.connectionstrings.com/postgresql/
+
+Driver={PostgreSQL};Server=IP address;Port=5432;Database=myDataBase;Uid=myUsername;Pwd=myPassword;
+
+```
+$ pip install psycopg2
+```
+
+```
+conn = psycopg2.connect(
+    host="localhost",
+    database="suppliers",
+    user="postgres",
+    password="Abcd1234")
+
+cursor = conn.cursor()
+
+
+```
+
+
+```
+import pyodbc
+conn_str = (
+    "DRIVER={PostgreSQL Unicode};"
+    "DATABASE=postgres;"
+    "UID=postgres;"
+    "PWD=whatever;"
+    "SERVER=localhost;"
+    "PORT=5432;"
+    )
+conn = pyodbc.connect(conn_str)
+crsr = conn.execute("SELECT 123 AS n")
+row = crsr.fetchone()
+print(row)
+crsr.close()
+conn.close()
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 https://www.postgresql.org/
 https://hub.docker.com/_/postgres/
 
@@ -60,20 +327,13 @@ Programmers who are have already mastered the SQL language could simply use the 
 
 (Docker does not work when on corp network. Connect to Cisco VPN)
 
-# Install Docker
 
-(in WSL)
 
-https://www.digitalocean.com/community/tutorials/how-to-install-and-use-docker-on-ubuntu-22-04
+(done)
 
-sudo apt update
-sudo apt install apt-transport-https ca-certificates curl software-properties-common
-curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo gpg --dearmor -o /usr/share/keyrings/docker-archive-keyring.gpg
-echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/docker-archive-keyring.gpg] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable" | sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
-sudo apt update
-apt-cache policy docker-ce
-sudo apt install docker-ce
-sudo systemctl status docker
+
+
+
 
 
 
@@ -154,3 +414,54 @@ uid = "Developer"?
 
 
 
+==================================
+# Garbage
+
+
+```
+$ docker-compose -f postgres-chinook.yml up -d
+ -d
+[+] Running 2/2
+ ✔ Network postgres_default    Created                                   0.1s 
+ ✔ Container postgres-chinook  Started    
+```
+```
+$ sudo docker exec -it postgres-chinook /bin/bash
+```
+
+BUT container is not running
+
+```
+$ sudo docker ps
+CONTAINER ID   IMAGE     COMMAND   CREATED   STATUS    PORTS     NAMES
+```
+
+did it crash??????
+
+user info:
+    root (or chinook)
+    p4ssw0rd
+
+
+
+
+
+
+
+
+dockerfile:  (still in dbtest directory)
+
+```
+nano postgres-chinook.yml
+```
+
+add following lines (from https://gist.github.com/onjin/2dd3cc52ef79069de1faa2dfd456c945), then save
+
+```
+services:
+  postgres:
+    image: postgres
+    container_name: postgres-chinook
+    volumes:
+      - ./Chinook_PostgreSql.sql:/docker-entrypoint-initdb.d/Chinook_PostgreSql.sql
+```
