@@ -24,6 +24,12 @@ sudo apt install docker-ce
 sudo systemctl status docker
 ```
 
+```
+sudo usermod -aG docker ${USER}
+```
+Then log out and log back in
+
+
 (from https://www.digitalocean.com/community/tutorials/how-to-install-and-use-docker-compose-on-ubuntu-22-04)
 
 ```
@@ -41,36 +47,15 @@ chmod +x ~/.docker/cli-plugins/docker-compose
 Could use prepared image like *schemacrawler/chinook-database* but they are often old and not updated.
 
 ```bash
-$ sudo docker pull postgres
+$ docker pull postgres
 ```
-
-
-
-# Get Chinook database files
-
-https://github.com/lerocha/chinook-database
-
-Go to github, get "raw" version of file
-
-```
-mkdir dbtest
-cd dbtest
-wget https://raw.githubusercontent.com/lerocha/chinook-database/master/ChinookDatabase/DataSources/Chinook_PostgreSql.sql
-```
-
 
 # Test container
-
-```
-$ ls
-Chinook_SqlServer.sql  postgres-chinook.yml
-```
-
 
 Below is the receipe for starting a container from the postgres image (see recipe in "How to use this image" in https://hub.docker.com/_/postgres)
 
 ```
-$ sudo docker run --name chinook-sample -e POSTGRES_PASSWORD=abcd1234 -d postgres
+$ docker run --name chinook-sample --network host -e POSTGRES_PASSWORD=abcd1234 -d postgres
 ```
 
 try run command in https://wkrzywiec.medium.com/database-in-a-docker-container-how-to-start-and-whats-it-about-5e3ceea77e50
@@ -80,7 +65,7 @@ https://hub.docker.com/_/postgres
 Then log in and test
 
 ```
-$ sudo docker exec -it chinook-sample bash
+$ docker exec -it chinook-sample bash
 root@040f69388a6a:/# 
 ```
 
@@ -107,23 +92,41 @@ $
 Delete the container
 
 ```
-$ sudo docker stop chinook-sample
-$ sudo docker container prune
+$ docker stop chinook-sample
+$ docker container prune
 ```
 
 # add Chinook DB to image
 
+## Get Chinook database files
+
+https://github.com/lerocha/chinook-database
+
+Go to github, get "raw" version of file
+
+```
+mkdir dbtest
+cd dbtest
+wget https://raw.githubusercontent.com/lerocha/chinook-database/master/ChinookDatabase/DataSources/Chinook_PostgreSql.sql
+```
+
+## init.sql file
+
 postgres initializes itself from a file called init.sql. The easiest way to create a container with the Chinook DB is to just build a new image with the Chinook SQL file renamed as init.sql
 
+```
+$ ls
+Chinook_SqlServer.sql
+```
 
 
-Convert to UTF-8. See: https://github.com/morenoh149/postgresDBSamples/issues/1
+Convert the downloaded to UTF-8. See: https://github.com/morenoh149/postgresDBSamples/issues/1
 and save results as init.sql
 
 (The SQL script is stored in ISO-8859-1, you need to change your client_encoding to reflect that)  from https://stackoverflow.com/questions/39287814/how-to-load-chinook-database-in-postgresql
 
 ```
-iconv -f ISO-8859-1 -t UTF-8 Chinook_PostgreSql.sql > init.sql
+$ iconv -f ISO-8859-1 -t UTF-8 Chinook_PostgreSql.sql > init.sql
 ```
 
 (or add the line `SET CLIENT_ENCODING TO 'LATIN1';` at the start of the init.sql file)
@@ -146,7 +149,7 @@ COPY init.sql /docker-entrypoint-initdb.d/
 Then create the new image
 
 ```
-$sudo docker build -f chinook.Dockerfile -t postgres-chinook-image .
+$ docker build -f chinook.Dockerfile -t postgres-chinook-image .
 ```
 
 ```
@@ -167,7 +170,7 @@ $sudo docker build -f chinook.Dockerfile -t postgres-chinook-image .
 ```
 
 ```
-$ sudo docker image ls
+$ docker image ls
 REPOSITORY               TAG       IMAGE ID       CREATED              SIZE
 postgres-chinook-image   latest    c2ffbc06e85b   About a minute ago   412MB
 postgres                 latest    8769343ac885   2 weeks ago          412MB
@@ -176,8 +179,8 @@ postgres                 latest    8769343ac885   2 weeks ago          412MB
 Run the new image
 
 ```
-$ sudo docker run --name chinook-sample -e POSTGRES_PASSWORD=abcd1234 -d postgres-chinook-image
-$ sudo docker exec -it chinook-sample bash
+$ docker run --name chinook-sample -e POSTGRES_PASSWORD=abcd1234 -d postgres-chinook-image
+$ docker exec -it chinook-sample bash
 root@738afc4392fe:/# psql -U postgres
 psql (15.3 (Debian 15.3-1.pgdg120+1))
 Type "help" for help.
@@ -204,52 +207,54 @@ postgres=# \dt
 Commands for checking out DB
 https://www.postgresqltutorial.com/postgresql-administration/postgresql-show-tables/
 
-
 ```
-$ sudo docker container inspect chinook-sample -f '{{index .NetworkSettings.Networks "bridge" "IPAddress"}}'
-
-
+postgres=# exit
+root@738afc4392fe:/# exit
+$
 ```
-$ sudo docker container inspect chinook-sample -f '{{.NetworkSettings.Ports}}'
-
+```
+$ docker container inspect chinook-sample -f '{{index .NetworkSettings.Networks "bridge" "IPAddress"}}'
+172.17.0.2
+```
+```
+$ docker container inspect chinook-sample -f '{{.NetworkSettings.Ports}}'
 map[5432/tcp:[]]
 ```
 
 https://www.connectionstrings.com/postgresql/
 
-Driver={PostgreSQL};Server=IP address;Port=5432;Database=myDataBase;Uid=myUsername;Pwd=myPassword;
+```
+$ python -m venv .venv
+$ source ./.venv/bin/activate
+(.venv) $
+```
 
 ```
-$ sudo apt install libpq-dev python3-dev
-$ pip install psycopg2
-pip install tabulate
-pip install jupyterlab
+(.venv) $ sudo apt update
+(.venv) $ sudo apt install libpq-dev python3-dev libpq-dev
+(.venv) $ sudo apt install build-essential
+(.venv) $ pip install wheel
+(.venv) $ pip install psycopg2-binary
+(.venv) $ pip install tabulate
+(.venv) $ pip install jupyterlab
+```
 
+```
+(.venv) $ jupyter-lab
 ```
 
 ```
 import psycopg2
 
 conn = psycopg2.connect(
-    host="localhost",
-    database="suppliers",
+    host="172.17.0.2",
+    database="postgres",
     user="postgres",
-    password="Abcd1234")
-
-cursor = conn.cursor()
+    password="abcd1234")
 ```
 
-```
-schema_set = set()
-for row in cursor.tables():
-    schema_set.add(row.table_schem)
-    
-print('Schema Name')
-print('-' * 11)
-print(*schema_set, sep='\n')
 
-cursor.close()
-```
+
 
 ```python
 statement = """
@@ -264,6 +269,11 @@ cursor.execute(statement)
 print(cursor.fetchall())
 cursor.close()
 ```
+```
+[('information_schema',), ('pg_catalog',), ('public',)]
+```
+
+
 
 ```python
 from tabulate import tabulate
@@ -304,25 +314,119 @@ Track          BASE TABLE
 
 ```python
 statement = """
-SELECT TOP 5
-    ProductID,
-    Product.Name,
-    ProductNumber AS ProdNum,
-    ProductCategory.Name AS Category,
-    ProductModel.Name AS Model
-FROM SalesLT.Product
-JOIN SalesLT.ProductCategory
-    ON Product.ProductCategoryID=ProductCategory.ProductCategoryID
-JOIN SalesLT.ProductModel
-    ON Product.ProductModelID=ProductModel.ProductModelID
-ORDER BY NEWID()
+SELECT "Album"."Title",
+       "Artist"."Name",
+       "Track"."Name",
+       "Track"."Composer", 
+       "Track"."Milliseconds" AS "Length"
+FROM "Album"
+JOIN "Track" ON "Album"."AlbumId" = "Track"."AlbumId"
+JOIN "Artist" ON "Album"."ArtistId" = "Artist"."ArtistId"
 """
 
+conn.rollback()
 with conn.cursor() as cursor:
     cursor.execute(statement)
     headers = [h[0] for h in cursor.description]
-    rows = cursor.fetchall()
-    print(tabulate(rows, headers=headers))
+    rows = cursor.fetchmany(5)
+
+print(tabulate(rows, headers))
+```
+```
+Title                                  Name    Name                                     Composer                                                                  Length
+-------------------------------------  ------  ---------------------------------------  ----------------------------------------------------------------------  --------
+For Those About To Rock We Salute You  AC/DC   For Those About To Rock (We Salute You)  Angus Young, Malcolm Young, Brian Johnson                                 343719
+Balls to the Wall                      Accept  Balls to the Wall                                                                                                  342562
+Restless and Wild                      Accept  Fast As a Shark                          F. Baltes, S. Kaufman, U. Dirkscneider & W. Hoffman                       230619
+Restless and Wild                      Accept  Restless and Wild                        F. Baltes, R.A. Smith-Diesel, S. Kaufman, U. Dirkscneider & W. Hoffman    252051
+Restless and Wild                      Accept  Princess of the Dawn                     Deaffy & R.A. Smith-Diesel  
+```
+
+
+
+
+
+(persistence: where are files created in the current container? They do not persist if you delete the container)
+
+https://www.baeldung.com/ops/docker-container-filesystem
+
+SHOW data_directory;
+
+/var/lib/postgresql/data
+
+try:
+```
+$ docker export -o files.tar chinook-sample
+$ tar -tvf files.tar | grep /var/lib/postgresql/data
+```
+
+# SQLAlechemy
+
+```
+(.venv) $ pip install sqlalchemy
+```
+```
+from sqlalchemy.engine import URL
+
+url_object = URL.create(
+    drivername='postgresql+psycopg2',
+    username='postgres',
+    password='abcd1234',
+    host='172.17.0.2',
+    port='5432',
+    database='postgres'
+)
+
+from sqlalchemy import create_engine
+
+engine = create_engine(url_object)
+
+from sqlalchemy.ext.automap import automap_base
+
+Base = automap_base()
+Base.prepare(autoload_with=engine, schema='public')
+
+print(Base.classes.keys())
+
+InvoiceLine = Base.classes.InvoiceLine
+Playlist = Base.classes.Playlist
+Album = Base.classes.Album
+Genre = Base.classes.Genre
+MediaType = Base.classes.MediaType
+Customer = Base.classes.Customer
+Employee = Base.classes.Employee
+Artist = Base.classes.Artist
+Track = Base.classes.Track
+Invoice = Base.classes.Invoice
+
+
+from tabulate import tabulate
+from sqlalchemy import select
+from sqlalchemy.orm import Session
+
+statement = (select(Album.Title.label("Album"),
+            Artist.Name.label("Artist"),
+            Track.Name.label("Track"),
+            Track.Composer, 
+            Track.Milliseconds.label("Length"))
+     .join(Track)
+     .join(Artist)
+     .limit(5)
+    )
+
+with Session(engine) as session:
+    result = 
+    print(tabulate(session.execute(statement)))
+```
+
+```
+-------------------------------------  ------  ---------------------------------------  ----------------------------------------------------------------------  ------
+For Those About To Rock We Salute You  AC/DC   For Those About To Rock (We Salute You)  Angus Young, Malcolm Young, Brian Johnson                               343719
+Balls to the Wall                      Accept  Balls to the Wall                                                                                                342562
+Restless and Wild                      Accept  Fast As a Shark                          F. Baltes, S. Kaufman, U. Dirkscneider & W. Hoffman                     230619
+Restless and Wild                      Accept  Restless and Wild                        F. Baltes, R.A. Smith-Diesel, S. Kaufman, U. Dirkscneider & W. Hoffman  252051
+Restless and Wild                      Accept  Princess of the Dawn                     Deaffy & R.A. Smith-Diesel                                              375418
+-------------------------------------  ------  ---------------------------------------  ----------------------------------------------------------------------  ------
 ```
 
 
@@ -340,39 +444,12 @@ with conn.cursor() as cursor:
 
 
 
-
-
-
-
-sudo docker logs chinook-sample
-
+docker logs chinook-sample
 
 
 
 
 
-
-
-https://www.postgresql.org/
-https://hub.docker.com/_/postgres/
-
-use Podman?
-https://mo8it.com/blog/containerized-postgresql-with-rootless-podman/
-use Podman because it can be used freely in Windows, Linux, and Mac
-https://blog.scottlogic.com/2022/02/15/replacing-docker-desktop-with-podman.html
-https://www.howtogeek.com/devops/getting-started-with-podman-desktop-an-open-source-docker-desktop-alternative/
-https://podman-desktop.io/
-
-Docker Desktop license:
-https://www.techrepublic.com/article/docker-launches-new-business-plan-with-changes-to-the-docker-desktop-license/
-
-
-use Docker?
-https://github.com/docker/awesome-compose/tree/master/postgresql-pgadmin
-https://www.docker.com/blog/how-to-use-the-postgres-docker-official-image/
-
-Use LXC?
-https://azizkandemir.github.io/en/blog/lxc-postgresql/
 
 
 
@@ -471,7 +548,7 @@ Get database script from https://github.com/cwoodruff/ChinookDatabase/tree/maste
 https://github.com/cwoodruff/ChinookDatabase/blob/master/Scripts/Chinook_PostgreSql.sql
 
 
-sudo docker pull postgres
+docker pull postgres
 
 
 
@@ -506,13 +583,13 @@ $ docker-compose -f postgres-chinook.yml up -d
  ✔ Container postgres-chinook  Started    
 ```
 ```
-$ sudo docker exec -it postgres-chinook /bin/bash
+$ docker exec -it postgres-chinook /bin/bash
 ```
 
 BUT container is not running
 
 ```
-$ sudo docker ps
+$ docker ps
 CONTAINER ID   IMAGE     COMMAND   CREATED   STATUS    PORTS     NAMES
 ```
 
