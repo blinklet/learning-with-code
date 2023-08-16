@@ -1,6 +1,6 @@
-title: Create a sample PostgreSQL database in a Docker container
-slug: postgressql-on-docker-container
-summary: Create a sample PostgreSQL database in a Docker container
+title: Create a sample MS SQL Server database in a Docker container
+slug: mssql-on-docker-container
+summary: Create a sample MS SQL Server database in a Docker container
 date: 2023-08-31
 modified: 2023-08-31
 category: Databases
@@ -32,20 +32,352 @@ Then log out and log back in
 
 (from https://www.digitalocean.com/community/tutorials/how-to-install-and-use-docker-compose-on-ubuntu-22-04)
 
+
+
+# Get AdventureWorks LT database backup file
+
+
+Get build from backup files available here
+https://github.com/microsoft/sql-server-samples/releases/tag/adventureworks
+Allows you to pick the DB for your container
+
+LT version:
+
 ```
-mkdir -p ~/.docker/cli-plugins/
-cd ~/.docker/cli-plugins/
-wget https://github.com/docker/compose/releases/download/v2.20.2/docker-compose-linux-x86_64 -O docker-compose
+$ wget https://github.com/Microsoft/sql-server-samples/releases/download/adventureworks/AdventureWorksLT2022.bak
+```
+
+Get docker image for SQL Server  https://learn.microsoft.com/en-us/sql/linux/quickstart-install-connect-docker?view=sql-server-ver16&pivots=cs1-bash
 
 
-curl -SL https://github.com/docker/compose/releases/download/v2.20.2/docker-compose-linux-x86_64 -o ~/.docker/cli-plugins/docker-compose
-chmod +x ~/.docker/cli-plugins/docker-compose
+```
+$ docker pull mcr.microsoft.com/mssql/server
+```
+
+```
+$ docker images
+REPOSITORY                       TAG           IMAGE ID       CREATED         SIZE
+postgres                         latest        1b05cc48b421   3 days ago      412MB
+mcr.microsoft.com/mssql/server   2022-latest   683d523cd395   2 weeks ago     2.9GB
+hello-world                      latest        9c7a54a9a43c   3 months ago    13.3kB
 ```
 
 
 
 
+(inspred by)
+https://learn.microsoft.com/en-us/sql/linux/tutorial-restore-backup-in-sql-server-container?view=sql-server-ver16
 
+
+
+
+
+
+# Create  container image
+
+Run the container, set the user SA password
+
+```
+$ docker run -e "ACCEPT_EULA=Y" \
+    --network=host \
+    --env "MSSQL_SA_PASSWORD=A8f%h45dx23a" \
+    --name sql1 \
+    --detach \
+    mcr.microsoft.com/mssql/server
+```
+
+Create a directoryt on the container for the backup file
+
+```
+$ docker exec -it sql1 mkdir /var/opt/mssql/backup
+```
+
+Copy the backup file to the new directory on the container
+
+```
+$ docker cp AdventureWorksLT2022.bak sql1:/var/opt/mssql/backup
+```
+
+Log connect to a Bash shell on teh container, in interactive mode
+
+```
+$ docker exec -it sql1 bash
+mssql@C-PF39JZFC:/$
+```
+
+Start the sqlcmd utility
+
+```
+mssql@C-PF39JZFC:/$ /opt/mssql-tools/bin/sqlcmd -S localhost -U SA -P "A8f%h45dx23a"
+1>
+```
+
+Run the following SQL command to see what files are included in the backup archive
+
+```
+1> RESTORE FILELISTONLY
+2> FROM DISK = "/var/opt/mssql/backup/AdventureWorksLT2022.bak";
+3> GO
+```
+
+You get a lot of info:
+
+```
+LogicalName
+                     PhysicalName
+
+                                                                  Type FileGroupName
+                                                                                            Size
+     MaxSize              FileId               CreateLSN                   DropLSN                     UniqueId                             ReadOnlyLSN                 ReadWriteLSN                BackupSizeInBytes    SourceBlockSize FileGroupId LogGroupGUID                         DifferentialBaseLSN         DifferentialBaseGUID                 IsReadOnly IsPresent TDEThumbprint                              SnapshotUrl
+
+
+
+-------------------------------------------------------------------------------------------------------------------------------- -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- ---- -------------------------------------------------------------------------------------------------------------------------------- -------------------- -------------------- -------------------- --------------------------- --------------------------- ------------------------------------ --------------------------- --------------------------- -------------------- --------------- ----------- ------------------------------------ --------------------------- ------------------------------------ ---------- --------- ------------------------------------------ ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+AdventureWorksLT2022_Data
+                     C:\Program Files\Microsoft SQL Server\MSSQL16.MSSQLSERVER\MSSQL\DATA\AdventureWorksLT2022.mdf
+                                                                  D    PRIMARY
+                                                                                                        23003136       35184372080640                    1                           0                           0 E71ABF3A-C63F-4BBB-9E72-90D1CEB90E9E                           0                           0              7143424            4096           1 NULL                                           51000000008000001 248B0D87-170D-4236-B424-F91C9CC62B61          0         1 NULL                                       NULL
+
+
+
+AdventureWorksLT2022_Log
+                     C:\Program Files\Microsoft SQL Server\MSSQL16.MSSQLSERVER\MSSQL\DATA\AdventureWorksLT2022_log.ldf
+                                                                  L    NULL
+                                                                                                         2097152       35184372080640                    2                           0                           0 26150932-FD10-42DB-9416-A0E0A1E77DBF                           0                           0                    0            4096           0 NULL                                                           0 00000000-0000-0000-0000-000000000000          0         1 NULL                                       NULL
+
+
+
+
+(2 rows affected)
+```
+
+The main info we need is the logical and physical file names. From the long set of fields for each row, we see the first two columns in each row have the information we need. I made note of it like below
+
+```
+AdventureWorksLT2022_Data    AdventureWorksLT2022.mdf
+AdventureWorksLT2022_Log     AdventureWorksLT2022_log.ldf
+```
+
+Run the following command in sqlcmd:
+
+```
+1> RESTORE DATABASE AdventureWorksLT
+2> FROM DISK = "/var/opt/mssql/backup/AdventureWorksLT2022.bak"
+3> WITH
+4>   MOVE "AdventureWorksLT2022_Data"
+5>     TO "/var/opt/mssql/data/AdventureWorksLT2022.mdf",
+6>   MOVE "AdventureWorksLT2022_Log"
+7>     TO "/var/opt/mssql/data/AdventureWorksLT2022_log.ldf";
+8> GO
+```
+
+The output looked good:
+
+```
+Processed 888 pages for database 'AdventureWorksLT', file 'AdventureWorksLT2022_Data' on file 1.
+Processed 2 pages for database 'AdventureWorksLT', file 'AdventureWorksLT2022_Log' on file 1.
+RESTORE DATABASE successfully processed 890 pages in 0.027 seconds (257.378 MB/sec).
+```
+
+Verify that the database is set up:
+
+Run teh following in sqlcmd:
+
+```
+1> SELECT name
+2> FROM sys.databases;
+3> GO
+```
+
+Shows that the AdventureWorksLT database was created
+
+```
+name
+----------------
+master
+tempdb
+model
+msdb
+AdventureWorksLT
+```
+
+Switch to the AdventureWorksLT database
+
+```
+1> USE AdventureWorksLT;
+2> GO
+Changed database context to 'AdventureWorksLT'.
+```
+
+Read the schemas in the database:
+
+```
+SELECT DISTINCT
+   TABLE_SCHEMA
+FROM INFORMATION_SCHEMA.VIEWS;
+GO
+```
+
+Se see teh SalesLT schema:
+
+```
+TABLE_SCHEMA
+--------------
+SalesLT
+```
+
+List the tables in the database
+
+```
+1> SELECT
+2>   TABLE_NAME, TABLE_SCHEMA, TABLE_TYPE
+3> FROM INFORMATION_SCHEMA.TABLES
+4> ORDER BY TABLE_SCHEMA;
+5> GO
+```
+
+It looks like all the tables are there
+
+```
+TABLE_NAME                       TABLE_SCHEMA TABLE_TYPE
+-------------------------------- ------------ ----------
+ErrorLog                         dbo          BASE TABLE
+BuildVersion                     dbo          BASE TABLE
+Address                          SalesLT      BASE TABLE
+Customer                         SalesLT      BASE TABLE
+CustomerAddress                  SalesLT      BASE TABLE
+Product                          SalesLT      BASE TABLE
+ProductCategory                  SalesLT      BASE TABLE
+ProductDescription               SalesLT      BASE TABLE
+ProductModel                     SalesLT      BASE TABLE
+ProductModelProductDescription   SalesLT      BASE TABLE
+SalesOrderDetail                 SalesLT      BASE TABLE
+SalesOrderHeader                 SalesLT      BASE TABLE
+vProductAndDescription           SalesLT      VIEW
+vProductModelCatalogDescription  SalesLT      VIEW
+vGetAllCategories                SalesLT      VIEW
+
+(15 rows affected)
+```
+
+Exit sqlcmd and the container
+
+```
+1> exit
+mssql@C-PF39JZFC:/$ exit
+exit
+(.venv) $
+```
+
+Create a new image based on teh container
+
+```
+(.venv) $ docker commit sql1 adventureworks-lt
+```
+
+```
+$ docker images
+REPOSITORY                       TAG           IMAGE ID       CREATED             SIZE
+adventureworks-lt                latest        c20d3e46f360   4 seconds ago       3.08GB
+mssql-adventureworks-lt          latest        c81310e62ade   About an hour ago   2.91GB
+postgres                         latest        1b05cc48b421   3 days ago          412MB
+mcr.microsoft.com/mssql/server   latest        683d523cd395   2 weeks ago         2.9GB
+```
+
+Stop the container and delete it
+
+```
+$ docker stop sql1
+$ docker container rm sql1
+```
+
+Start a new container from the image
+
+```
+$ docker run --name sql2 --network=host -d adventureworks-lt
+$ docker exec -it sql2 bash
+```
+
+See that the user SA still has the same password
+
+```
+mssql@C-PF39JZFC:/$ /opt/mssql-tools/bin/sqlcmd -S localhost -U SA -P "A8f%h45dx23a"
+```
+
+See that the AdventureWorks LT database is there
+
+
+```
+1> USE AdventureWorksLT;
+2> GO
+Changed database context to 'AdventureWorksLT'.
+```
+
+
+
+# Conclusion
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+# Automate in Dockerfile
+
+Now that we know the names of the files that need to be restored, we can automate the image build in a Dockerfile. This makes it easy to upgrade the base of your Docker image in the future
+
+```
+$ nano Dockerfile
+```
+
+The contents of teh file are:
+
+```
+FROM mcr.microsoft.com/mssql/server
+ENV ACCEPT_EULA Y
+ENV MSSQL_SA_PASSWORD A8f%h45dx23a
+RUN mkdir -p /var/opt/mssql/backup
+COPY AdventureWorksLT2022.bak /var/opt/mssql/backup
+RUN /opt/mssql-tools/bin/sqlcmd \
+  -S localhost -U SA -P 'A8f%h45dx23a' \
+  -Q 'RESTORE DATABASE AdventureWorksLT FROM DISK = "/var/opt/mssql/backup/AdventureWorksLT2022.bak" WITH MOVE "AdventureWorksLT2022_Data" TO "/var/opt/mssql/data/AdventureWorksLT2022.mdf", MOVE "AdventureWorksLT2022_Log" TO "/var/opt/mssql/data/AdventureWorksLT2022_log.ldf"'
+```
+
+```
+$ docker build -t mssql-adventureworks-lt1 .
+```
+
+```
+$ docker run --name ad2 --network=host -d mssql-adventureworks-lt1
+```
 
 
 
@@ -58,11 +390,7 @@ https://github.com/chriseaton/docker-adventureworks
 tag "postgres" as LT version running on postgres
 tag "light" has LT version on SQL Server
 
-Or install database backup file following these steps:
-https://gist.github.com/vanessaidenny/0966b3aab3af32fbdea1c74612f8cb1c
-Get build from backup files available here
-https://github.com/microsoft/sql-server-samples/releases/tag/adventureworks
-Allows you to pick the DB for your container
+
 
 Postgres
 ```
@@ -74,13 +402,14 @@ SQL Server
 ```
 docker run --name chinook2 --network=host -e 'ACCEPT_EULA=Y' -e 'SA_PASSWORD=A8f%h45dx23a' -d chriseaton/adventureworks:light
 ```
+(seems to have full version????)
 
 docker exec -it chinook2 bash
 /opt/mssql-tools/bin/sqlcmd -S localhost -U SA -P "A8f%h45dx23a"
 
 https://medium.com/codex/sql-server-unit-testing-with-tsqlt-docker-and-github-actions-9fa48a4072a6
 
-SELECT name, database_id, create_date  
+SELECT name
 FROM sys.databases;  
 GO
 
@@ -115,6 +444,7 @@ https://gist.github.com/sualeh/f80eccde37f8fef67ad138996fd4824d
 (also see: https://github.com/mgutz/postgres-chinook-image
      lower casing all tables and identifiers and using serial for primary keys to better conform with PostgreSQL conventions.
      This might be better because it is one container)
+     ((nimage not available???))
 
 
 docker run --name chinook-sample --network=host -e 'POSTGRES_PASSWORD=abcd1234' -d ghcr.io/mgutz/chinook:postgres-12
@@ -218,64 +548,7 @@ cd dbtest
 wget https://raw.githubusercontent.com/lerocha/chinook-database/master/ChinookDatabase/DataSources/Chinook_PostgreSql.sql
 ```
 
-## init.sql file
 
-postgres initializes itself from a file called init.sql. The easiest way to create a container with the Chinook DB is to just build a new image with the Chinook SQL file renamed as init.sql
-
-```
-$ ls
-Chinook_SqlServer.sql
-```
-
-
-Convert the downloaded to UTF-8. See: https://github.com/morenoh149/postgresDBSamples/issues/1
-and save results as init.sql
-
-(The SQL script is stored in ISO-8859-1, you need to change your client_encoding to reflect that)  from https://stackoverflow.com/questions/39287814/how-to-load-chinook-database-in-postgresql
-
-```
-$ iconv -f ISO-8859-1 -t UTF-8 Chinook_PostgreSql.sql > init.sql
-```
-
-(or add the line `SET CLIENT_ENCODING TO 'LATIN1';` at the start of the init.sql file)
-
-To make a new image, first create a file containing docker commands that take the postgress image and copty the SQL file into a new image that will be created.
-
-
-```
-nano chinook.Dockerfile
-```
-
-add the following text and save the file
-
-```
-FROM postgres 
-ENV POSTGRES_PASSWORD abcd1234 
-COPY init.sql /docker-entrypoint-initdb.d/
-```
-
-Then create the new image
-
-```
-$ docker build -f chinook.Dockerfile -t postgres-chinook-image .
-```
-
-```
-[+] Building 1.3s (7/7) FINISHED                               docker:default
- => [internal] load build definition from chinook.Dockerfile             0.1s
- => => transferring dockerfile: 162B                                     0.0s
- => [internal] load .dockerignore                                        0.2s
- => => transferring context: 2B                                          0.0s
- => [internal] load metadata for docker.io/library/postgres:latest       0.0s
- => [internal] load build context                                        0.2s
- => => transferring context: 8.68kB                                      0.0s
- => [1/2] FROM docker.io/library/postgres                                0.8s
- => [2/2] COPY init.sql /docker-entrypoint-initdb.d/                     0.1s
- => exporting to image                                                   0.1s
- => => exporting layers                                                  0.1s
- => => writing image sha256:c2ffbc06e85b2d5fc910d8d701be77a7315532fa95a  0.0s
- => => naming to docker.io/library/postgres-chinook-image    
-```
 
 ```
 $ docker image ls
@@ -731,4 +1004,68 @@ services:
     container_name: postgres-chinook
     volumes:
       - ./Chinook_PostgreSql.sql:/docker-entrypoint-initdb.d/Chinook_PostgreSql.sql
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+# mssql dockerfile
+
+To make a new image, first create a file containing docker commands that take the postgress image and copty the SQL file into a new image that will be created.
+
+
+```
+nano Dockerfile
+```
+
+add the following text and save the file
+
+(((need to make backup dir first))))
+```
+FROM mcr.microsoft.com/mssql/server 
+ENV ACCEPT_EULA Y
+ENV SA_PASSWORD A8f%h45dx23a
+COPY AdventureWorksLT2022.bak /var/opt/mssql/backup
+```
+
+Then create the new image
+
+```
+$ docker build -t mssql-adventureworks-lt .
+```
+
+```
+$ docker images
+REPOSITORY                       TAG           IMAGE ID       CREATED          SIZE
+mssql-adventureworks-lt          latest        c81310e62ade   18 seconds ago   2.91GB
+postgres                         latest        1b05cc48b421   3 days ago       412MB
+mcr.microsoft.com/mssql/server   2022-latest   683d523cd395   2 weeks ago      2.9GB
+hello-world                      latest        9c7a54a9a43c   3 months ago     13.3kB
+```
+
+
+
+
+
+
+
+Run the new image
+
+```
+$ docker run --name adventure1 --network=host -d mssql-adventureworks-lt
+```
+```
+$ docker exec -it adventure1 bash
 ```
