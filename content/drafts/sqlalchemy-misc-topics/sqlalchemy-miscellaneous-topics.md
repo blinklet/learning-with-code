@@ -559,7 +559,7 @@ display(df4.head())
 
 The resulting dataset will look like the following:
 
-![](./Images/pandas008.png)
+![stub](./Images/pandas008.png)
 
 
 You can see the columns, and the column names assigned by SQLAlchemy the query result. To get only the specific columns you need, create a new statement that will select each column by name, starting with the *Album.Title* column. Then, [rename the columns](https://devsheet.com/code-snippet/column-name-as-alias-name-sqlalchemy/) in the select statement using the *label* method.
@@ -586,7 +586,7 @@ display(dataframe.head().style.format(thousands=","))
 
 The result is shown below:
 
-![](./Images/pandas010.png)
+![stub](./Images/pandas010.png)
 
 
 You see that joining tables and selecting specific columns in an SQLAlchemy query can give you the data you need in one step. Reading that data into a Pandas dataframe makes it easy to analyze the results.
@@ -623,7 +623,7 @@ display(dataframe.head(5).style.format(thousands=","))
 
 See that the output looks like that below:
 
-![](./Images/pandas015.png)
+![stub](./Images/pandas015.png)
 
 
 I used the *join_from()* method to make the left and right sides of each join clearer to the program. normally it can infer the correct relationships but sometimes you need to be more specific.
@@ -649,7 +649,7 @@ display(dataframe.head(5))
 
 The result was a dataframe with 4 columns and 8,715 rows.
 
-![](./Images/pandas016.png)
+![stub](./Images/pandas016.png)
 
 ## Outer joins in SQLAlchemy
 
@@ -1033,7 +1033,7 @@ display(dataframe.tail())
 
 A sample of the data in the dataframe is shown below. You can see we have 3,759 rows and that some rows contain blank data where tracks have not sold.
 
-![](./Images/pandas030.png)
+![stub](./Images/pandas030.png)
 
 Next, create a new dataframe that groups track sales by quarter and plot the results
 
@@ -1050,7 +1050,7 @@ display(df.plot())
 
 You should see output like:
 
-![](./Images/pandas040.png)
+![stub](./Images/pandas040.png)
 
 
 Next, analyze total revenue per country:
@@ -1067,7 +1067,7 @@ display(df.plot(kind='bar'))
 
 You should see an output like:
 
-![](./Images/pandas041.png)
+![stub](./Images/pandas041.png)
 
 Finally, see how the total number of units sold in each genre correlates with the total number of units available in each genre:
 
@@ -1089,7 +1089,7 @@ display(df3.plot(kind='scatter', x='# Sold', y='# Tracks available'))
 
 As you can see in the scatter plot below, there appears to be a strong correlation between the number if tracks sold and the number of tracks available in each category:
 
-![](./Images/pandas042.png)
+![stub](./Images/pandas042.png)
 
 
 
