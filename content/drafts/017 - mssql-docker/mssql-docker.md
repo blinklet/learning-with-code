@@ -1,8 +1,8 @@
 title: Create a sample MS SQL Server database in a Docker container
 slug: mssql-on-docker-container
 summary: Create a Microsoft SQL Server on your local PC using Docker and load the AdventureWorks sample database so you can use it for experiments and other learning activities.
-date: 2023-08-31
-modified: 2023-08-31
+date: 2023-08-18
+modified: 2023-08-18
 category: Databases
 <!--status: Published-->
 
@@ -12,7 +12,7 @@ If you want to practice integrating a database into your Python programs but you
 
 ## Docker 
 
-Docker is a technology that allows you to create and run applications in isolated environments called containers. Docker also provides tools to manage your containers, images, and networks. You can use Docker to build, share, and run applications on any system, including Windows, Linux, Mac, and various cloud platforms so the procedures in this post will work on almost any operating system. There is a lot of [information available](https://docs.docker.com/get-started/resources/) about [using Docker](https://collabnix.com/9-best-docker-and-kubernetes-resources-for-all-levels/) for [data science applications](https://www.youtube.com/watch?v=EYNwNlOrpr0&list=PL3MmuxUbc_hJed7dXYoJw8DoCuVHhGEQb&index=5) so I will just list the commands needed to create a re-usable database server in a container on your PC and leave you to [learn more about Docker](https://www.docker.com/101-tutorial/) according to your own interest.
+Docker is a technology that allows you to create and run applications in isolated environments called containers. Docker also provides tools to manage your containers, images, and networks. You can use Docker to build, share, and run applications on any system, including Windows, Linux, Mac, and various cloud platforms so the procedures in this post will work on almost any operating system. There is a lot of [information available](https://docs.docker.com/get-started/resources/) about [using Docker](https://collabnix.com/9-best-docker-and-kubernetes-resources-for-all-levels/), including for [data science applications](https://www.youtube.com/watch?v=EYNwNlOrpr0&list=PL3MmuxUbc_hJed7dXYoJw8DoCuVHhGEQb&index=5), so I will just describe the commands needed to create a re-usable database server in a container on your PC and leave you to [learn more about Docker](https://www.docker.com/101-tutorial/) according to your own interest.
 
 ### Install Docker
 
@@ -40,13 +40,13 @@ Then, log out and log back in.
 
 ## Download the Microsoft SQL Server Docker image
 
-Use Docker to [download and store](https://learn.microsoft.com/en-us/sql/linux/quickstart-install-connect-docker?view=sql-server-ver16&pivots=cs1-bash) the official Microsoft SQL Server image from the [Microsoft Artifact Registry](https://mcr.microsoft.com/). Run the following Docker command:
+Use Docker to [download](https://learn.microsoft.com/en-us/sql/linux/quickstart-install-connect-docker?view=sql-server-ver16&pivots=cs1-bash) the official Microsoft SQL Server image from the [Microsoft Artifact Registry](https://mcr.microsoft.com/)(warning: it is almost 3 GB in size). Run the following Docker command:
 
 ```bash
 $ docker pull mcr.microsoft.com/mssql/server
 ```
 
-Verify that Docker has the image on your PC:
+Use the Docker *images* command to verify that Docker has the image on your PC:
 
 ```
 $ docker images
@@ -63,7 +63,7 @@ hello-world                      latest        9c7a54a9a43c   3 months ago    13
 
 ## Create a project directory
 
-While docker stores its images and volumes within its own system directories, we still need to create a project directory to store other files we will use in this project, like the Dockerfile, the database backup file, and Python virtual environment files. Create a new directory using the following commands.
+While docker stores its images and volumes within its own system directories, we still need to create a project directory to store other files we will use in this project, like the Dockerfile (if used), the database backup file, and the Python virtual environment files. Create a new directory using the following commands.
 
 ```bash
 $ mkdir mssql-project
@@ -215,7 +215,7 @@ Read the schemas in the database:
 ```sql
 1> SELECT DISTINCT
 2>    TABLE_SCHEMA
-3> FROM INFORMATION_SCHEMA.VIEWS;
+3> FROM INFORMATION_SCHEMA.TABLES;
 4> GO
 ```
 
@@ -223,8 +223,9 @@ The output lists the *SalesLT* schema:
 
 ```bash
 TABLE_SCHEMA
---------------
+------------
 SalesLT
+dbo
 ```
 
 List the tables in the database:
@@ -267,7 +268,7 @@ At this point, you can be confident that the database restore was successful.
 
 Create a new Docker image that contains the newly-restored database. You can use the new image to create database containers that are ready to use.
 
-First, exit *sqlcmd* and the container:
+First, exit the *sqlcmd* utility and the container:
 
 ```bash
 1> exit
@@ -308,7 +309,7 @@ $ docker run --name sql2 --network=host -d adventureworks-lt
 $ docker exec -it sql2 bash
 ```
 
-The user *SA* still has the same password that was configured when the container image was created. You should already know the password or you will not be able to use the database.
+The user *SA* still has the same password that you configured when you created the container image. You should already know the password or you will not be able to use the database.
 
 ```bash
 mssql@T480:/$ /opt/mssql-tools/bin/sqlcmd -S localhost -U SA -P "A8f%h45dx23a"
@@ -479,15 +480,7 @@ ORM Classes
 -------------
 Product
 ProductModel
-CustomerAddress
-ProductCategory
-Customer
-ProductModelProductDescription
-SalesOrderHeader
-ProductDescription
-Address
-SalesOrderDetail
-
+CustomerAddressy
 Table objects
 -------------
 SalesLT.Address
@@ -523,43 +516,20 @@ $ nano Dockerfile
 
 I won't explain the Docker [image build process](https://www.kosli.com/blog/docker-build-a-detailed-guide-with-examples/) in this post. The Docker documentation has a [good overview](https://docs.docker.com/build/) and many other resources are available on the Internet. 
 
-In this case, I created a Dockerfile that builds a new image based on the Microsoft SQL Server image. It sets the environment variables needed to start the SQL Server, then creates a backup directory for SQL Server and copies the backup file you previously downloaded into it. The backup file must be in the same directory on the host PC as the *Dockerfile* file. Then, starts the SQL server and waits 15 seconds to ensure it is running. It runs the *sqlcmd* utility with a SQL command that restores the database from the backup file and, finally, stops the SQL server [^3].
+In this case, I created a Dockerfile that builds a new image based on the Microsoft SQL Server image. Create a Dockerfile with the following contents:
 
-[^3]: The following StackOverflow answers were helpful in creating the Dockerfile: [46888045](https://stackoverflow.com/questions/46888045/docker-mssql-server-linux-how-to-launch-sql-file-during-build-from-dockerfi) and [51050590](https://stackoverflow.com/questions/51050590/run-sql-script-after-start-of-sql-server-on-docker)
-
-```dockerfile
-FROM mcr.microsoft.com/mssql/server
-ENV ACCEPT_EULA Y
-ENV MSSQL_SA_PASSWORD A8f%h45dx23a
-RUN mkdir -p /var/opt/mssql/backup
-COPY AdventureWorksLT2022.bak /var/opt/mssql/backup
-RUN /opt/mssql/bin/sqlservr --accept-eula & sleep 15 \
-    && /opt/mssql-tools/bin/sqlcmd \
-    -S localhost -U SA -P 'A8f%h45dx23a' \
-    -Q 'RESTORE DATABASE AdventureWorksLT \
-        FROM DISK = "/var/opt/mssql/backup/AdventureWorksLT2022.bak" \
-        WITH \
-        MOVE "AdventureWorksLT2022_Data" \
-        TO "/var/opt/mssql/data/AdventureWorksLT2022.mdf", \
-        MOVE "AdventureWorksLT2022_Log" \
-        TO "/var/opt/mssql/data/AdventureWorksLT2022_log.ldf"' \
-    && pkill sqlservr
-```
-
-Save the file.
-
-Alternatively, the following version does not rely on already having a backup file in the project directory. Instead, it runs a command on the container that downloads the backup file to the SQL Server backup directory.  
 
 ```dockerfile
 FROM mcr.microsoft.com/mssql/server
+ARG passwd
 ENV ACCEPT_EULA Y
-ENV MSSQL_SA_PASSWORD A8f%h45dx23a
+ENV MSSQL_SA_PASSWORD $passwd
 RUN mkdir -p /var/opt/mssql/backup \
     && wget -P /var/opt/mssql/backup \
           https://github.com/Microsoft/sql-server-samples/releases/download/adventureworks/AdventureWorksLT2022.bak \
     && /opt/mssql/bin/sqlservr --accept-eula & sleep 15 \
     && /opt/mssql-tools/bin/sqlcmd \
-    -S localhost -U SA -P 'A8f%h45dx23a' \
+    -S localhost -U SA -P "$passwd" \
     -Q 'RESTORE DATABASE AdventureWorksLT \
         FROM DISK = "/var/opt/mssql/backup/AdventureWorksLT2022.bak" \
         WITH \
@@ -570,10 +540,14 @@ RUN mkdir -p /var/opt/mssql/backup \
     && pkill sqlservr
 ```
 
-Use the [Docker *build* command](https://docs.docker.com/engine/reference/commandline/build/) to build a new image named *adventureworks-lt2*. The *build* command looks for a file in the current working directory named *Dockerfile* and runs the commands in it. 
+The Dockerfile [reads in an argument](https://vsupalov.com/docker-arg-env-variable-guide/#setting-arg-values) that specifies the password that will be configured in the image. Then, it passes the environment variables needed to start the SQL Server, then creates a backup directory for SQL Server and dowmloads the backup file into it. Then, it starts the SQL server and waits 15 seconds to ensure it is running. It runs the *sqlcmd* utility with a SQL command that restores the database from the backup file and, finally, stops the SQL server [^3].
+
+[^3]: The following StackOverflow answers were helpful in creating the Dockerfile: [46888045](https://stackoverflow.com/questions/46888045/docker-mssql-server-linux-how-to-launch-sql-file-during-build-from-dockerfi) and [51050590](https://stackoverflow.com/questions/51050590/run-sql-script-after-start-of-sql-server-on-docker)
+
+Use the [Docker *build* command](https://docs.docker.com/engine/reference/commandline/build/) with the *--build-arg* option to set teh *passwd* argument and build a new image named *adventureworks-lt2*. The *build* command looks for a file in the current working directory named *Dockerfile* and runs the commands in it. 
 
 ```bash
-$ docker build -t adventureworks-lt2 .
+$ docker build -t adventureworks-lt2 --build-arg passwd=A8f%h45dx23a .
 ```
 
 Test the new image by creating a new container with it.
@@ -582,7 +556,7 @@ Test the new image by creating a new container with it.
 $ docker run --name test1 --network=host -d adventureworks-lt2
 ```
 
-Run the same tests as you did before to see that the *AdventureWorksLT* database is working. Then, stop and delete the container.
+Run the same tests as you did previously. See that the *AdventureWorksLT* database is working. Then, stop and delete the container.
 
 ```bash
 $ docker stop test1
