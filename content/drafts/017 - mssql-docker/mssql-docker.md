@@ -8,9 +8,9 @@ status: Published
 
 If you want to practice integrating a database into your Python programs, but you don't want to install a database server on your PC, you can use [Docker](https://www.docker.com/) and a pre-configured Docker image, instead. This post will show you how to download  [Microsoft's official SQL Server Docker image](https://mcr.microsoft.com/en-us/product/mssql/server/about) and create a container that runs the [AdventureWorks sample database](https://learn.microsoft.com/en-us/sql/samples/adventureworks-install-configure).
 
-## Docker 
+## Docker
 
-Docker is a technology that allows you to create and run applications in isolated environments called containers. Docker also provides tools to manage your containers, images, and networks. You can use Docker to build, share, and run applications on any system, including Windows, Linux, Mac, and various cloud platforms. There is a lot of [information available](https://docs.docker.com/get-started/resources/) about [using Docker](https://collabnix.com/9-best-docker-and-kubernetes-resources-for-all-levels/), including for [data science applications](https://www.youtube.com/watch?v=EYNwNlOrpr0&list=PL3MmuxUbc_hJed7dXYoJw8DoCuVHhGEQb&index=5), so I will just describe the commands needed to create a re-usable database container on your PC and leave you to [learn more about Docker](https://www.docker.com/101-tutorial/) according to your own interest.
+Docker is a technology that allows you to create and run applications in isolated environments called containers. Docker also provides tools to manage your containers, images, and networks. You can use Docker to build, share, and run applications on any system, including Windows, Linux, Mac, and various cloud platforms. There is a lot of [information available](https://docs.docker.com/get-started/resources/) about [using Docker](https://collabnix.com/9-best-docker-and-kubernetes-resources-for-all-levels/), including for [data science applications](https://www.youtube.com/watch?v=EYNwNlOrpr0&list=PL3MmuxUbc_hJed7dXYoJw8DoCuVHhGEQb&index=5), so I will explain only what you need to know to create and use a database container on your PC. I will leave you to [learn more about Docker](https://www.docker.com/101-tutorial/) according to your own interest.
 
 ### Install Docker
 
@@ -59,20 +59,17 @@ mcr.microsoft.com/mssql/server   latest        683d523cd395   2 weeks ago     2.
 hello-world                      latest        9c7a54a9a43c   3 months ago    13.3kB
 ```
 
-## Create a project directory
-
-While docker stores its images and volumes within its own system directories, we still need to create a project directory to store other files we will use in this project, like the Dockerfile (if used), the database backup file, and the Python virtual environment files. Create a new directory using the following commands.
-
-```bash
-$ mkdir mssql-project
-$ cd mssql-project
-```
-
 ## Create the SQL Server container 
 
-Create a new Docker container that runs the downloaded SQL Server image [^2]. You need to set the SQL Server's administrative password by passing in the *MSSQL_SA_PASSWORD* environment variable when starting the container. You may also tell the container to use the host PC's loopback address, which is *localhost*, so you don't have to figure out which IP address the container is using.
+Create a new Docker container that runs the downloaded SQL Server image [^2]. 
+
+Configure the SQL Server's administrative password by setting the *MSSQL_SA_PASSWORD* environment variable in the container when starting it. The administrative password must be a "strong" password that meets the [SQL Server password policy](https://learn.microsoft.com/en-us/sql/relational-databases/security/password-policy?view=sql-server-ver16). **If you try to configure a simple password, SQL Server will stop.**
+
+You may also tell the container to use the host PC's loopback address, which is *localhost*, so you don't have to figure out which IP address the container is using.
 
 [^2]: The general procedure for restoring a SQL Server database from a backup file in a Docker container comes from the Microsoft tutorial, *[Restore a SQL Server database in a Linux container](https://learn.microsoft.com/en-us/sql/linux/tutorial-restore-backup-in-sql-server-container?view=sql-server-ver16)*
+
+The following command creates a new container from the Microsoft SQL Server Docker image:
 
 ```bash
 $ docker run \
@@ -84,9 +81,15 @@ $ docker run \
     mcr.microsoft.com/mssql/server
 ```
 
-The administrative password must be a "strong" password that meets the[SQL Server password policy](https://learn.microsoft.com/en-us/sql/relational-databases/security/password-policy?view=sql-server-ver16). **If you use a simple password, SQL Server will not start.**
+### Troubleshooting
 
-> **IMPORTANT:** The image you create from this container will now have the *SA* user's password "hard coded". When you use the image to create a new container, you cannot change the password using the *MSSQL_SA_PASSWORD* environment variable. You must save the password somewhere so you will have it when you need it later. You might use a password manager program like *Bitwarden*, for example.
+If you notice that your container disappears shortly after staring it, meaning it is no longer visible when you run the `docker ps` command, the SQL Server running on it crashed for some reason. Check its logs with the `docker logs <container name>` command. You will likely see the SQL Server encountered an error stating that your SA use password is not strong enough. 
+
+### Save the SA user's password
+
+The image you create from this container now has the *SA* user's password "hard coded" on the SQL Server. When you use the image to create a new container, you cannot change the password using the *MSSQL_SA_PASSWORD* environment variable. Containers created from the image will always start with the same SA user password. 
+
+You must save the password so you will have it when you need it later. You must provide the password to any users of the image. To ensure you do not lose the password, I suggest taht you use a password manager program like *Bitwarden*.
 
 ## Copy the database backup file to the container
 
@@ -114,7 +117,7 @@ $ docker cp AdventureWorksLT2022.bak sql1:/var/opt/mssql/backup
 
 To restore the [database backup file](https://learn.microsoft.com/en-us/sql/relational-databases/backup-restore/create-a-full-database-backup-sql-server?view=sql-server-ver16) to the SQL Server running in the container, you must examine the contents of the backup file and use that information to create the [T-SQL *RESTORE* statement](https://learn.microsoft.com/en-us/sql/t-sql/statements/restore-statements-transact-sql?view=sql-server-ver16). 
 
-Connect to a Bash shell on the container, in interactive mode
+Connect to a Bash shell on the container, in interactive mode:
 
 ```bash
 $ docker exec -it sql1 bash
@@ -204,7 +207,7 @@ msdb
 AdventureWorksLT
 ```
 
-Switch to the *AdventureWorksLT* database
+Switch to the *AdventureWorksLT* database:
 
 ```sql
 1> USE AdventureWorksLT;
@@ -240,7 +243,7 @@ List the tables in the database:
 5> GO
 ```
 
-It looks like all the tables are there
+You should see that all the tables are available:
 
 ```bash
 TABLE_NAME                       TABLE_SCHEMA TABLE_TYPE
@@ -268,7 +271,7 @@ At this point, you can be confident that the database restore was successful.
 
 ## Create a new Docker image
 
-Create a new Docker image that contains the newly-restored database. You can use the new image to create database containers that are ready to use.
+Create a new Docker image that contains the newly-restored database. You will use it to create database containers that are ready to use.
 
 First, exit the *sqlcmd* utility and the container:
 
@@ -339,62 +342,6 @@ $
 
 Now you have a container running a Microsoft SQL Server and the *AdventureWorksLT* database. 
 
-## Managing a container's lifecycle
-
-Docker provides commands that enable you to view the status of your containers, and to create, start, stop, or delete them.
-
-You can see which containers are running with the Docker *ps* command:
-
-```bash
-$ docker ps
-CONTAINER ID   IMAGE               COMMAND                  CREATED          STATUS         PORTS     NAMES
-e656dec6bb0b   adventureworks-lt   "/opt/mssql/bin/perm…"   54 minutes ago   Up 2 seconds             sql2
-```
-
-Use the *stop* command to stop the container when you are not using it:
-
-```bash
-$ docker stop sql2
-```
-
-you can see all containers, including stopped containers, with the Docker *ps --all* command
-
-```bash
-$ docker ps --all
-CONTAINER ID   IMAGE               COMMAND                  CREATED          STATUS                     PORTS     NAMES
-e656dec6bb0b   adventureworks-lt   "/opt/mssql/bin/perm…"   58 minutes ago   Exited (0) 3 seconds ago             sql2
-48e243953874   adventureworks-lt   "/opt/mssql/bin/perm…"   24 hours ago     Exited (0) 3 hours ago               test3
-```
-
-You can start an existing container whenever you need it again with the Docker *start* command:
-
-```bash
-$ docker start sql2
-```
-
-At some point, you may want to delete a container. Use the Docker *prune* command to delete all stopped containers:
-
-```bash
-$ docker container prune
-WARNING! This will remove all stopped containers.
-Are you sure you want to continue? [y/N] y
-Deleted Containers:
-48e2439538749cc8a41e079c46b9298c3c7666aaa467e3c532d5aaed40bbf17c
-
-Total reclaimed space: 178.4MB
-
-$ docker ps --all
-CONTAINER ID   IMAGE               COMMAND                  CREATED             STATUS          PORTS     NAMES
-e656dec6bb0b   adventureworks-lt   "/opt/mssql/bin/perm…"   About an hour ago   Up 40 seconds             sql2
-```
-
-Or, delete any single stopped container by name:
-
-```bash
-$ docker stop sql4
-$ docker rm sql4
-```
-
 ## Connect your Python program to a database container
 
 Use your new database as a sample data source for your Python programs. Before you can connect your Python program to the database, you must ensure your development environment is properly set up. You need to install the Microsoft ODBC driver, create a Python virtual environment, and add the necessary Python packages to it.
@@ -430,6 +377,8 @@ $ sudo apt install unixodbc
 Create a new Python virtual environment in your Project folder, start it, and then install the Python packages you need:
 
 ```bash
+$ mkdir mssql-project
+$ cd mssql-project
 $ python3 -m venv .venv
 $ source .venv/bin/activate
 (.venv) $
@@ -441,9 +390,9 @@ Install the Python packages you need:
 (.venv) $ pip install pyodbc sqlalchemy
 ```
 
-### Test database connection
+### Test the database connection
 
-Below, is a sample Python program showing how to connect to SQL Server running on a Docker container on your PC. In this example, we use SQLAlchemy to connect to the database [^3]. 
+Below, is a sample Python program showing how to connect to the SQL Server running on a Docker container on your PC. In this example, we use SQLAlchemy to connect to the database [^3].
 
 [^3]: The SQLAlchemy connection URL has some additional parameters, compared to my [previous posts]({filename}/articles/016-sqlalchemy-read-database/sqalchemy-read-database.md), because the Microsoft SQL Server Docker image comes pre-configured to use SSL certificates for authentication. I need to use the additional parameters to tell the server to use the password authentication, instead. 
 
@@ -524,7 +473,63 @@ $ docker run \
   --network=host adventureworks-lt
 ```
 
-## Appendix A: Automate Docker image creation using the *build* command
+## Appendix A: Managing a container's lifecycle
+
+Docker provides commands that enable you to view the status of your containers, and to create, start, stop, or delete them.
+
+You can see which containers are running with the Docker *ps* command:
+
+```bash
+$ docker ps
+CONTAINER ID   IMAGE               COMMAND                  CREATED          STATUS         PORTS     NAMES
+e656dec6bb0b   adventureworks-lt   "/opt/mssql/bin/perm…"   54 minutes ago   Up 2 seconds             sql2
+```
+
+Use the *stop* command to stop the container when you are not using it:
+
+```bash
+$ docker stop sql2
+```
+
+you can see all containers, including stopped containers, with the Docker *ps --all* command
+
+```bash
+$ docker ps --all
+CONTAINER ID   IMAGE               COMMAND                  CREATED          STATUS                     PORTS     NAMES
+e656dec6bb0b   adventureworks-lt   "/opt/mssql/bin/perm…"   58 minutes ago   Exited (0) 3 seconds ago             sql2
+48e243953874   adventureworks-lt   "/opt/mssql/bin/perm…"   24 hours ago     Exited (0) 3 hours ago               test3
+```
+
+You can start an existing container whenever you need it again with the Docker *start* command:
+
+```bash
+$ docker start sql2
+```
+
+At some point, you may want to delete a container. Use the Docker *prune* command to delete all stopped containers:
+
+```bash
+$ docker container prune
+WARNING! This will remove all stopped containers.
+Are you sure you want to continue? [y/N] y
+Deleted Containers:
+48e2439538749cc8a41e079c46b9298c3c7666aaa467e3c532d5aaed40bbf17c
+
+Total reclaimed space: 178.4MB
+
+$ docker ps --all
+CONTAINER ID   IMAGE               COMMAND                  CREATED             STATUS          PORTS     NAMES
+e656dec6bb0b   adventureworks-lt   "/opt/mssql/bin/perm…"   About an hour ago   Up 40 seconds             sql2
+```
+
+Or, delete any single stopped container by name:
+
+```bash
+$ docker stop sql4
+$ docker rm sql4
+```
+
+## Appendix B: Automate Docker image creation using the *build* command
 
 You can automate the image build process using the [Docker *build* command](https://docs.docker.com/engine/reference/commandline/build/) that reads instructions from a [Dockerfile](https://docs.docker.com/engine/reference/builder/). This makes it easy to upgrade your Docker image in the future. 
 
@@ -560,7 +565,7 @@ RUN mkdir -p /var/opt/mssql/backup \
         TO "/var/opt/mssql/data/AdventureWorksLT2022_log.ldf"' \
     && pkill sqlservr
 LABEL description="AdventureWorks LT database on Microsoft SQL \
-Server. SA password is 'A8f%h45dx23a'. August 18, 2023"
+Server. SA password is '$passwd'."
 ```
 
 The Dockerfile [reads in an argument](https://vsupalov.com/docker-arg-env-variable-guide/#setting-arg-values) that specifies the password that will be configured in the image. Then, it passes the environment variables needed to start the SQL Server, then creates a backup directory for SQL Server and dowmloads the backup file into it. Then, it starts the SQL server and waits 15 seconds to ensure it is running. It runs the *sqlcmd* utility with a SQL command that restores the database from the backup file and, finally, stops the SQL server [^4].
@@ -622,25 +627,21 @@ If you want to, you may delete the new image
 $ docker image rm adventureworks-lt2
 ```
 
-## Appendix B: Sharing the Docker image
+## Appendix C: Sharing the Docker image
 
-You can share the image that you created several different ways: save the image as a file, push the image to a remote Docker repository, or share the dockerfile.
+You can share the image that you created several different ways: share the dockerfile, push the image to a remote Docker repository, or save the image as a file.
 
 ### Share the Dockerfile
 
 The easiest way to share the image, in this case, is to just share the Dockerfile. The user can build their own image from it and can select their own SA user password.
 
-Store the Dockerfile in a Git repository on GitHub, or in a fileshare. In this example, I stored the image in GitHub. If you use GitHub, either share the [raw link](https://docs.github.com/en/repositories/working-with-files/using-files/viewing-a-file#viewing-or-copying-the-raw-file-content) to the file or tell users to clone the GitHub repository that contains the Dockerfile. In this case, I will share the raw link to the file. Then, the user will enter the following commands:
+Store the Dockerfile in a Git repository on [GitHub](https://github.com/), or on a file server. If you use GitHub, either share the [raw link](https://docs.github.com/en/repositories/working-with-files/using-files/viewing-a-file#viewing-or-copying-the-raw-file-content) to the file or tell users to clone the GitHub repository that contains the Dockerfile. In this case, I will share the raw link to the file on GitHub. Then, the user will enter the following commands:
 
 ```bash
 $ wget https://raw.githubusercontent.com/blinklet/docker-resources/main/dockerfiles/mssql/Dockerfile
 $ docker build \
-  --tag adventureworks-lt2 \
+  --tag adventureworks-lt \
   --build-arg passwd=A8f%h45dx23a .
-$ docker run \
-  --detach \
-  --name sql1 \
-  --network=host adventureworks-lt
 ```
 
 ### Push the image to Docker hub
@@ -679,7 +680,7 @@ Again, this is a 3GB image so it will take a while to upload to the Docker Hub b
 
 The last option is to save the image as a file and share it from your own fileshare or server. However, the image is 3GB. I doubt you will want to share a file that large from your own server. 
 
-To save one or more images, use the [Docker *save* command](https://docs.docker.com/engine/reference/commandline/save/), which will save the images in a *tarfile*. Post the tarfile on a file share and tell your users how to download it. They will download it and install it using the [Docker *load* command](https://docs.docker.com/engine/reference/commandline/load/). You will also have to tell them the password for the SA user.
+If you still want to do this, you can save one or more images with the [Docker *save* command](https://docs.docker.com/engine/reference/commandline/save/), which will save the images in a *tarfile*. Post the tarfile on a file share and tell your users how to download it. They will install it using the [Docker *load* command](https://docs.docker.com/engine/reference/commandline/load/). You will also have to tell them the SA user's password.
 
 To save the image as a normal file:
 
@@ -693,8 +694,7 @@ To load the saved image back into Docker:
 $ docker load --input imagefile.tar
 ```
 
-
-## Appendix C: Enable data persistence
+## Appendix D: Enable data persistence
 
 If you intend to write to a database, and if you are using a database container for more than just testing, you may want to [create a persistent Docker volume]((https://learn.microsoft.com/en-us/sql/linux/sql-server-linux-docker-container-configure?view=sql-server-ver16&pivots=cs1-bash#persist)) that will save the database's data files so they can be used again even if you delete the original container. 
 
@@ -733,7 +733,7 @@ $ docker exec -it sql3 bash
 mssql@T480:/$ /opt/mssql-tools/bin/sqlcmd -S localhost -U SA -P "A8f%h45dx23a"
 ```
 
-Then, create a new database and a table in that database on the server by running the following SQL commands in the *sqlcmd* prompt:
+Then, create a new database and table by running the following SQL commands in the *sqlcmd* prompt:
 
 ```sql
 1> create database TestDB;
@@ -796,6 +796,7 @@ $ docker run \
   --volume sql3:/var/opt/mssql adventureworks-lt
 ```
 
+Start a bash shell on the container and start the *sqlcmd* utility in interactive mode: 
 
 ```bash
 $ docker exec -it sql4 bash
@@ -849,7 +850,6 @@ TABLE_SCHEMA    TABLE_NAME
 dbo             testtble1
 
 (1 rows affected)
-1>
 ```
 
 ### Clean up 
