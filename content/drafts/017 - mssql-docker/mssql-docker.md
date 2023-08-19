@@ -14,7 +14,7 @@ Docker is a technology that allows you to create and run applications in isolate
 
 ### Install Docker
 
-The Docker documentation shows you how to [install it on any operating system](https://docs.docker.com/engine/install/). This post shows you how to [install Docker CLI on a system running Ubuntu Linux 22.04](https://docs.docker.com/engine/install/ubuntu/). Run the following commands in your terminal: [^1]
+The Docker documentation shows you how to [install it on any operating system](https://docs.docker.com/engine/install/). This post shows you how to [install Docker CLI on a system running Ubuntu Linux 22.04](https://docs.docker.com/engine/install/ubuntu/). Run the following commands [^1] in your terminal:
 
 [^1]: The Docker installation procedure for Ubuntu 22.04 comes from a DigitalOcean tutorial, [How to Install and Use Docker on Ubuntu 22-04](https://www.digitalocean.com/community/tutorials/how-to-install-and-use-docker-on-ubuntu-22-04)
 
@@ -70,7 +70,7 @@ $ cd mssql-project
 
 ## Create the SQL Server container 
 
-Create a new Docker container that runs the downloaded SQL Server image [^2]. You need to set the SQL Server's administrative password by passing in the *MSSQL_SA_PASSWORD* environment variable when starting the container. You may also tell the container to use the host PC's network address, which is *localhost*, so you don't have to figure out which IP address the container is using.
+Create a new Docker container that runs the downloaded SQL Server image [^2]. You need to set the SQL Server's administrative password by passing in the *MSSQL_SA_PASSWORD* environment variable when starting the container. You may also tell the container to use the host PC's loopback address, which is *localhost*, so you don't have to figure out which IP address the container is using.
 
 [^2]: The general procedure for restoring a SQL Server database from a backup file in a Docker container comes from the Microsoft tutorial, *[Restore a SQL Server database in a Linux container](https://learn.microsoft.com/en-us/sql/linux/tutorial-restore-backup-in-sql-server-container?view=sql-server-ver16)*
 
@@ -86,7 +86,7 @@ $ docker run \
 
 The administrative password must be a "strong" password that meets the[SQL Server password policy](https://learn.microsoft.com/en-us/sql/relational-databases/security/password-policy?view=sql-server-ver16). **If you use a simple password, SQL Server will not start.**
 
-> **IMPORTANT:** The images you create from this container will now have the *SA* user's password "hard coded". You cannot change it by passing in the password environment variable to a new container based on the new image. You must save the password somewhere so you will have it when you need it later. You might use a password manager program like *Bitwarden*, for example.
+> **IMPORTANT:** The image you create from this container will now have the *SA* user's password "hard coded". When you use the image to create a new container, you cannot change the password using the *MSSQL_SA_PASSWORD* environment variable. You must save the password somewhere so you will have it when you need it later. You might use a password manager program like *Bitwarden*, for example.
 
 ## Copy the database backup file to the container
 
@@ -515,7 +515,7 @@ SalesLT.vProductModelCatalogDescription
 
 ## Conclusion
 
-You successfully used Docker to install and configure a sample database on your PC that you can use to test your Python programs that connect to databases. The procedure is simple. After docker is installed on your PC, and you create the new Docker image with the restored database, called *adventureworks-lt* in the example below, you just perform the following command:
+You successfully used Docker to install and configure a sample database on your PC that you can use to test your Python programs that connect to databases. The procedure is simple. After docker is installed on your PC, and you create the new Docker image with the restored database, you just perform the following command:
 
 ```bash
 $ docker run \
@@ -559,6 +559,8 @@ RUN mkdir -p /var/opt/mssql/backup \
         MOVE "AdventureWorksLT2022_Log" \
         TO "/var/opt/mssql/data/AdventureWorksLT2022_log.ldf"' \
     && pkill sqlservr
+LABEL description="AdventureWorks LT database on Microsoft SQL \
+Server. SA password is 'A8f%h45dx23a'. August 18, 2023"
 ```
 
 The Dockerfile [reads in an argument](https://vsupalov.com/docker-arg-env-variable-guide/#setting-arg-values) that specifies the password that will be configured in the image. Then, it passes the environment variables needed to start the SQL Server, then creates a backup directory for SQL Server and dowmloads the backup file into it. Then, it starts the SQL server and waits 15 seconds to ensure it is running. It runs the *sqlcmd* utility with a SQL command that restores the database from the backup file and, finally, stops the SQL server [^4].
@@ -577,7 +579,7 @@ $ docker build \
 
 #### Troubleshooting
 
-If the build fails, it is probably because the SQL Server has not started when the *sqlcmd* utility tries to run. You can [see the build logs](https://www.freecodecamp.org/news/docker-cache-tutorial/) if you redirect the error output to standard output. Use the *tee* command so you can also see the logs on the terminal while the build runs. Also, use the *--no-cache* option when running the build command again so you get a clean build.
+If the build fails, it is probably because the SQL Server was not started when the *sqlcmd* utility tried to run. You can [see the build logs](https://www.freecodecamp.org/news/docker-cache-tutorial/) if you redirect the error output to standard output. Use the *tee* command so you can also save the logs to a file while the build runs. Use the *--no-cache* option when running the build command again so you get a clean build.
 
 ```bash
 $ docker build \
@@ -620,7 +622,79 @@ If you want to, you may delete the new image
 $ docker image rm adventureworks-lt2
 ```
 
-## Appendix B: Enable data persistence
+## Appendix B: Sharing the Docker image
+
+You can share the image that you created several different ways: save the image as a file, push the image to a remote Docker repository, or share the dockerfile.
+
+### Share the Dockerfile
+
+The easiest way to share the image, in this case, is to just share the Dockerfile. The user can build their own image from it and can select their own SA user password.
+
+Store the Dockerfile in a Git repository on GitHub, or in a fileshare. In this example, I stored the image in GitHub. If you use GitHub, either share the [raw link](https://docs.github.com/en/repositories/working-with-files/using-files/viewing-a-file#viewing-or-copying-the-raw-file-content) to the file or tell users to clone the GitHub repository that contains the Dockerfile. In this case, I will share the raw link to the file. Then, the user will enter the following commands:
+
+```bash
+$ wget https://raw.githubusercontent.com/blinklet/docker-resources/main/dockerfiles/mssql/Dockerfile
+$ docker build \
+  --tag adventureworks-lt2 \
+  --build-arg passwd=A8f%h45dx23a .
+$ docker run \
+  --detach \
+  --name sql1 \
+  --network=host adventureworks-lt
+```
+
+### Push the image to Docker hub
+
+You may share your image on [Docker hub](https://hub.docker.com) or you may create your own Docker registry and share the image from there. If you choose to use Docker hub, you need to login and then push the image to your account. 
+
+Tell users to pull the image from your account on Docker Hub. You will also have to tell them the password for the SA user.
+
+To push the image to Docker Hub, first login with your userid and password:
+
+```bash
+$ docker login
+```
+
+Tag the image so it has your user information. In this example, my case my username is *blinklet*. 
+
+```bash
+$ docker tag adventureworks-lt blinklet/adventureworks:latest
+```
+
+Then, push the tagged image to Docker Hub. Replace my userid with yours:
+
+```bash
+$ docker push blinklet/adventureworks
+```
+
+Tell your users to pull the image using the following command. Replace my userid with yours:
+
+```bash
+$ docker pull blinklet/adventureworks
+```
+
+Again, this is a 3GB image so it will take a while to upload to the Docker Hub but then you will not be using your own disk space and network bandwidth to share it with others.
+
+### Save the image as a file
+
+The last option is to save the image as a file and share it from your own fileshare or server. However, the image is 3GB. I doubt you will want to share a file that large from your own server. 
+
+To save one or more images, use the [Docker *save* command](https://docs.docker.com/engine/reference/commandline/save/), which will save the images in a *tarfile*. Post the tarfile on a file share and tell your users how to download it. They will download it and install it using the [Docker *load* command](https://docs.docker.com/engine/reference/commandline/load/). You will also have to tell them the password for the SA user.
+
+To save the image as a normal file:
+
+```bash
+$ docker save --output imagefile.tar
+```
+
+To load the saved image back into Docker:
+
+```bash
+$ docker load --input imagefile.tar
+```
+
+
+## Appendix C: Enable data persistence
 
 If you intend to write to a database, and if you are using a database container for more than just testing, you may want to [create a persistent Docker volume]((https://learn.microsoft.com/en-us/sql/linux/sql-server-linux-docker-container-configure?view=sql-server-ver16&pivots=cs1-bash#persist)) that will save the database's data files so they can be used again even if you delete the original container. 
 
