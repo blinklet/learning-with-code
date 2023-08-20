@@ -73,11 +73,11 @@ The following command creates a new container from the Microsoft SQL Server Dock
 
 ```bash
 $ docker run \
-    --network=host \
+    --detach \
+    --network host \
     --env "ACCEPT_EULA=Y" \
     --env "MSSQL_SA_PASSWORD=A8f%h45dx23a" \
     --name sql1 \
-    --detach \
     mcr.microsoft.com/mssql/server
 ```
 
@@ -85,11 +85,13 @@ $ docker run \
 
 If you notice that your container disappears shortly after staring it, meaning it is no longer visible when you run the `docker ps` command, the SQL Server running on it crashed for some reason. Check its logs with the `docker logs <container name>` command. You will likely see the SQL Server encountered an error stating that your SA use password is not strong enough. 
 
+Create the container again and set the *MSSQL_SA_PASSWORD* environment variable with a more complex password.
+
 ### Save the SA user's password
 
-The image you create from this container now has the *SA* user's password "hard coded" on the SQL Server. When you use the image to create a new container, you cannot change the password using the *MSSQL_SA_PASSWORD* environment variable. Containers created from the image will always start with the same SA user password. 
+The new container now has the *SA* user's password configured on the SQL Server. 
 
-You must save the password so you will have it when you need it later. You must provide the password to any users of the image. To ensure you do not lose the password, I suggest taht you use a password manager program like *Bitwarden*.
+You must save the password so you will have it when you need it later. Make a note of the password somewhere where you will not lose it. I suggest that you use a password manager program like *Bitwarden*.
 
 ## Copy the database backup file to the container
 
@@ -131,7 +133,8 @@ mssql@T480:/$ /opt/mssql-tools/bin/sqlcmd \
    -S localhost \
    -U SA \
    -P "A8f%h45dx23a" \
-   -Q 'RESTORE FILELISTONLY FROM DISK = "/var/opt/mssql/backup/AdventureWorksLT2022.bak"' \
+   -Q 'RESTORE FILELISTONLY \
+       FROM DISK = "/var/opt/mssql/backup/AdventureWorksLT2022.bak"' \
    | awk -F '[[:space:]][[:space:]]+' '{ print $1, $2}' | awk '!/^--/'
 ```
 
@@ -183,9 +186,14 @@ Processed 2 pages for database 'AdventureWorksLT', file 'AdventureWorksLT2022_Lo
 RESTORE DATABASE successfully processed 890 pages in 0.027 seconds (257.378 MB/sec).
 ```
 
-Now you have a sample database running on the container. Programs running on your computer can access the server at the *localhost* IP address (127.0.0.1) and TCP port *1433*.
+## Success
 
-### Verify the database
+At this point, you are done. You have a sample database running on the container. Programs running on your computer can access the server at the *localhost* IP address (127.0.0.1) and TCP port *1433*.
+
+The remainder of this post shows you how to test that the container is working as expected and how to create a new image so you do not have to repeat the above procedure every time you need a sample database container.
+
+
+## Verify the database
 
 Verify that the database is restored. Run the following in SQL statement in the *sqlcmd* utility:
 
@@ -305,6 +313,12 @@ $ docker stop sql1
 $ docker container rm sql1
 ```
 
+### Share the SA user's password
+
+The image you create from this container now has the *SA* user's password "hard coded" on the SQL Server. When you use the image to create a new container, you cannot change the password using the *MSSQL_SA_PASSWORD* environment variable. Containers created from the image will always start with the same SA user password. 
+
+You must provide the password to any users of the image. 
+
 ### Test the new Docker image
 
 To test that your new image contains a working database, start a new container from it and connect to a shell on the container:
@@ -313,7 +327,8 @@ To test that your new image contains a working database, start a new container f
 $ docker run \
   --detach \
   --name sql2 \
-  --network=host adventureworks-lt
+  --network host \
+  adventureworks-lt
 $ docker exec -it sql2 bash
 ```
 
@@ -470,7 +485,8 @@ You successfully used Docker to install and configure a sample database on your 
 $ docker run \
   --detach \
   --name sql1 \
-  --network=host adventureworks-lt
+  --network host \
+  adventureworks-lt
 ```
 
 ## Appendix A: Managing a container's lifecycle
@@ -491,7 +507,7 @@ Use the *stop* command to stop the container when you are not using it:
 $ docker stop sql2
 ```
 
-you can see all containers, including stopped containers, with the Docker *ps --all* command
+You can see all containers, including stopped containers, with the Docker *ps --all* command
 
 ```bash
 $ docker ps --all
@@ -605,7 +621,8 @@ Test the new image by creating a new container with it.
 $ docker run  \
   --detach \
   --name test1 \
-  --network=host adventureworks-lt2
+  --network host \
+  adventureworks-lt2
 ```
 
 Run the same tests as you did previously. See that the *AdventureWorksLT* database is working. 
