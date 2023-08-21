@@ -1,6 +1,6 @@
 title: Exploring relational database schema using SQLAlchemy's inspection module
 slug: sqalchemy-database-schema-explore-inspect
-summary: Use the SQLAlchemy *inspect* module to read SQL database schema information via a Python API. This post provides inspection examples that are relevant to users who read data from existing databases and who need to understand the data relationships within a database.
+summary: One way to learn about the structure of an existing database is to use the SQLAlchemy *inspect* module. It provides a simple interface to read database schema information.
 date: 2023-08-31
 modified: 2023-08-31
 category: Databases

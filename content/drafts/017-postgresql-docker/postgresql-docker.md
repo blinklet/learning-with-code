@@ -1,299 +1,120 @@
-title: Create a sample PostgreSQL database in a Docker container
+title: Create a PostgreSQL database in a Docker container
 slug: postgressql-on-docker-container
-summary: Create a sample PostgreSQL database in a Docker container
+summary: Create the Chinook sample database on a PostgreSQL database server running in a Docker container.
 date: 2023-08-31
 modified: 2023-08-31
 category: Databases
 <!--status: Published-->
 
+This post will show you how user Docker to easily create a PostgreSQL database server loaded with the Chinook sample database that you can use to test your Python programs.
 
-# Install Docker
+[PostgreSQL](https://www.postgresql.org/) is an open-source database that is very popular with Python developers. It is simple to configure and offers many advanced features.
 
-(in Ubuntu 22.04)
+The [Chinook database](https://github.com/lerocha/chinook-database) is a sample database available for most mainstream database servers such as PostgreSQL, SQL Server, and MySQL. The database emulates the data used by an imaginary media store that sells music and video files over the Internet. It is easy to set up because it can be installed by running a single SQL script.
 
-from https://www.digitalocean.com/community/tutorials/how-to-install-and-use-docker-on-ubuntu-22-04
+[Docker](https://www.docker.com/) provides a convenient way to create a PostgreSQL database server that you can use to test your Python programs locally.
 
-```
-sudo apt update
-sudo apt install apt-transport-https ca-certificates curl software-properties-common
-curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo gpg --dearmor -o /usr/share/keyrings/docker-archive-keyring.gpg
-echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/docker-archive-keyring.gpg] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable" | sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
-sudo apt update
-apt-cache policy docker-ce
-sudo apt install docker-ce
-sudo systemctl status docker
-```
+## Installing software
 
-```
-sudo usermod -aG docker ${USER}
-```
-Then log out and log back in
+If you have not yet [installed Docker](https://docs.docker.com/engine/install/), see my previous post about [creating an MS SQL Server container]({filename}/articles/017-mssql-docker/mssql-docker.md) to see the procedure I followed.
 
+## Get the PostgreSQL image
 
-(from https://www.digitalocean.com/community/tutorials/how-to-install-and-use-docker-compose-on-ubuntu-22-04)
-
-```
-mkdir -p ~/.docker/cli-plugins/
-cd ~/.docker/cli-plugins/
-wget https://github.com/docker/compose/releases/download/v2.20.2/docker-compose-linux-x86_64 -O docker-compose
-
-
-curl -SL https://github.com/docker/compose/releases/download/v2.20.2/docker-compose-linux-x86_64 -o ~/.docker/cli-plugins/docker-compose
-chmod +x ~/.docker/cli-plugins/docker-compose
-```
-
-
-
-
-
-
-
-
-# Run container
-
-## AdventureWorks LT
-
-https://github.com/chriseaton/docker-adventureworks
-
-tag "postgres" as LT version running on postgres
-tag "light" has LT version on SQL Server
-
-Or install database backup file following these steps:
-https://gist.github.com/vanessaidenny/0966b3aab3af32fbdea1c74612f8cb1c
-Get build from backup files available here
-https://github.com/microsoft/sql-server-samples/releases/tag/adventureworks
-Allows you to pick the DB for your container
-
-Postgres
-```
-docker run --name chinook-sample --network=host -e 'POSTGRES_PASSWORD=A8f%h45dx23a' -d chriseaton/adventureworks:postgres
-```
-(has no tables????)
-
-SQL Server
-```
-docker run --name chinook2 --network=host -e 'ACCEPT_EULA=Y' -e 'SA_PASSWORD=A8f%h45dx23a' -d chriseaton/adventureworks:light
-```
-
-docker exec -it chinook2 bash
-/opt/mssql-tools/bin/sqlcmd -S localhost -U SA -P "A8f%h45dx23a"
-
-https://medium.com/codex/sql-server-unit-testing-with-tsqlt-docker-and-github-actions-9fa48a4072a6
-
-SELECT name, database_id, create_date  
-FROM sys.databases;  
-GO
-
-1> select distinct
-2>   TABLE_SCHEMA
-3> from INFORMATION_SCHEMA.VIEWS
-4> GO
-
-above command lists 
-HumanResources
-Person
-Production
-Purchasing
-Sales
-
-
-docker pull chriseaton/adventureworks:light
-
-
-So looks like we have the full database, not the LT database???
-
-1> exit
-mssql@C-PF39JZFC:/$ exit
-$
-
-
-
-
-## Chinook 
-
-https://gist.github.com/sualeh/f80eccde37f8fef67ad138996fd4824d
-(also see: https://github.com/mgutz/postgres-chinook-image
-     lower casing all tables and identifiers and using serial for primary keys to better conform with PostgreSQL conventions.
-     This might be better because it is one container)
-
-
-docker run --name chinook-sample --network=host -e 'POSTGRES_PASSWORD=abcd1234' -d ghcr.io/mgutz/chinook:postgres-12
-
-
-## 
-
-
-
-
-
-
-
-
-
-
-
-
-# Persistence
-
-The following link shows how to sert up a container that points to a persistent file
-
-https://www.howtogeek.com/devops/how-to-deploy-postgresql-as-a-docker-container/
-
-
-
-
-
-
-
-
-
-
-
-
-# Get images
-
-Could use prepared image like *schemacrawler/chinook-database* but they are often old and not updated.
+The official [PostgreSQL Docker image](https://hub.docker.com/_/postgres) is available on Docker Hub. Open a terminal on your Linux PC and run the Docker *pull* command to download the image to your local Docker repository:
 
 ```bash
 $ docker pull postgres
 ```
 
-# Test container
+## Get the Chinook database script
 
-Below is the receipe for starting a container from the postgres image (see recipe in "How to use this image" in https://hub.docker.com/_/postgres)
+Download the [Chinook database](https://github.com/lerocha/chinook-database) installation script from GitHub:
 
-```
-$ docker run --name chinook-sample --network host -e POSTGRES_PASSWORD=abcd1234 -d postgres
-```
-
-try run command in https://wkrzywiec.medium.com/database-in-a-docker-container-how-to-start-and-whats-it-about-5e3ceea77e50
-
-https://hub.docker.com/_/postgres
-
-Then log in and test
-
-```
-$ docker exec -it chinook-sample bash
-root@040f69388a6a:/# 
+```bash
+$ wget https://raw.githubusercontent.com/lerocha/chinook-database/master/ChinookDatabase/DataSources/Chinook_PostgreSql.sql
 ```
 
-Then run the *psql* command on the container. Start it with the default username, "postgres":
+### Fix the file encoding issue
 
-```
-root@040f69388a6a:/# psql -U postgres
-psql (15.3 (Debian 15.3-1.pgdg120+1))
-Type "help" for help.
+The [text](https://man7.org/linux/man-pages/man7/charsets.7.html) in the Chinook SQL script is encoded in [LATIN1](https://en.wikipedia.org/wiki/ISO/IEC_8859-1). The official Postgres image was built on a base that only supports [UTF-8](https://en.wikipedia.org/wiki/UTF-8) text. The *Chinook_PostgreSql.sql* script will cause an [error](https://github.com/morenoh149/postgresDBSamples/issues/1) if you run it on a container created from the oficial PostgreSQL Docker image.
 
-postgres=# 
-```
+To solve this problem, convert the text in the SQL script file to text encoded as UTF-8. Use the *iconv* command, as shown below:
 
-Great. So, container is running and postgreSQL is working. Now we need a container that has the Chinook database in it.
-
-exit the container
-
-```
-postgres=# exit
-rroot@040f69388a6a:/# exit
-$
+```bash
+$ iconv -f ISO-8859-1 -t UTF-8 Chinook_PostgreSql.sql > Chinook_PostgreSql_utf8.sql
+$ rm Chinook_PostgreSql.sql
 ```
 
-Delete the container
+### Other Chinook database issues in Postgres
 
-```
-$ docker stop chinook-sample
-$ docker container prune
-```
+Postgres is case-sensitive, where many other database engines are not. Postgres expects that database object names will be in lower case. However, the Chinook database object names are in "proper" case, and "camel" case so they contain a mix of upper- and lower-case characters.
 
-# add Chinook DB to image
+This is not a big problem. It only means that, if you write SQL statements to query the database, you will have to use quotes around the database object names. You will see this in the examples below.
 
-## Get Chinook database files
+## Build a Chinook database image
 
-https://github.com/lerocha/chinook-database
+The easiest way to create the Chinook database image is to add a layer to the official Postgres image. The [Postgress Docker image](https://hub.docker.com/_/postgres) documentation states that a container starting from the image will run any SQL scripts stored in the image's *docker-entrypoint-initdb.d* directory. And, it states that we can initialize the container's default database by setting the *POSTGRES_DB* environment variable.
 
-Go to github, get "raw" version of file
+To create a postgres image that will initialize a container with the Chinook database, first create a dockerfile with the necessary build commands. Edit a file named "Dockerfile" in your favorite text editor:
 
-```
-mkdir dbtest
-cd dbtest
-wget https://raw.githubusercontent.com/lerocha/chinook-database/master/ChinookDatabase/DataSources/Chinook_PostgreSql.sql
+```bash
+$ nano Dockerfile
 ```
 
-## init.sql file
+Add the following information to the file:
 
-postgres initializes itself from a file called init.sql. The easiest way to create a container with the Chinook DB is to just build a new image with the Chinook SQL file renamed as init.sql
-
-```
-$ ls
-Chinook_SqlServer.sql
-```
-
-
-Convert the downloaded to UTF-8. See: https://github.com/morenoh149/postgresDBSamples/issues/1
-and save results as init.sql
-
-(The SQL script is stored in ISO-8859-1, you need to change your client_encoding to reflect that)  from https://stackoverflow.com/questions/39287814/how-to-load-chinook-database-in-postgresql
-
-```
-$ iconv -f ISO-8859-1 -t UTF-8 Chinook_PostgreSql.sql > init.sql
-```
-
-(or add the line `SET CLIENT_ENCODING TO 'LATIN1';` at the start of the init.sql file)
-
-To make a new image, first create a file containing docker commands that take the postgress image and copty the SQL file into a new image that will be created.
-
-
-```
-nano chinook.Dockerfile
-```
-
-add the following text and save the file
-
-```
+```dockerfile
 FROM postgres 
-ENV POSTGRES_PASSWORD abcd1234 
-COPY init.sql /docker-entrypoint-initdb.d/
+ENV POSTGRES_DB chinook
+COPY Chinook_PostgreSql_utf8.sql /docker-entrypoint-initdb.d/
 ```
 
-Then create the new image
+Save the file. 
 
-```
-$ docker build -f chinook.Dockerfile -t postgres-chinook-image .
-```
+Make sure that the *Chinook_PostgreSql_utf8.sql* file you previously created is in the same directory as the dockerfile. Then run the following *build* command. Choose your own password for the container's *postgres* user.
 
-```
-[+] Building 1.3s (7/7) FINISHED                               docker:default
- => [internal] load build definition from chinook.Dockerfile             0.1s
- => => transferring dockerfile: 162B                                     0.0s
- => [internal] load .dockerignore                                        0.2s
- => => transferring context: 2B                                          0.0s
- => [internal] load metadata for docker.io/library/postgres:latest       0.0s
- => [internal] load build context                                        0.2s
- => => transferring context: 8.68kB                                      0.0s
- => [1/2] FROM docker.io/library/postgres                                0.8s
- => [2/2] COPY init.sql /docker-entrypoint-initdb.d/                     0.1s
- => exporting to image                                                   0.1s
- => => exporting layers                                                  0.1s
- => => writing image sha256:c2ffbc06e85b2d5fc910d8d701be77a7315532fa95a  0.0s
- => => naming to docker.io/library/postgres-chinook-image    
+```bash
+$ docker build \
+    --tag postgres-chinook-image \
+    --file Dockerfile .
 ```
 
-```
-$ docker image ls
-REPOSITORY               TAG       IMAGE ID       CREATED              SIZE
-postgres-chinook-image   latest    c2ffbc06e85b   About a minute ago   412MB
-postgres                 latest    8769343ac885   2 weeks ago          412MB
+Check that the image is in your Docker local repository:
+
+```bash
+$ docker images
+REPOSITORY                       TAG       IMAGE ID       CREATED             SIZE
+postgres-chinook-image           latest    503246416dbf   About an hour ago   414MB
+postgres                         latest    43677b39c446   4 days ago          412MB
+mcr.microsoft.com/mssql/server   latest    683d523cd395   3 weeks ago         2.9GB
 ```
 
-Run the new image
+## Create a database container
 
+Create a new database container called *chinook1* from the new image you created. Run the following command:
+
+```bash
+$ docker run \
+    --detach \
+    --env POSTGRES_PASSWORD=abcd1234 \
+    --network host \
+    --name chinook1\
+    postgres-chinook-image
 ```
-$ docker run --name chinook-sample -e POSTGRES_PASSWORD=abcd1234 -d postgres-chinook-image
-$ docker exec -it chinook-sample bash
-root@738afc4392fe:/# psql -U postgres
-psql (15.3 (Debian 15.3-1.pgdg120+1))
-Type "help" for help.
 
-postgres=# \dt
+### Verify the database 
+
+Quickly use the *psql* utility to check that the database initialized as expected. Start the *psql* utility in interactive mode on the container. Use the default username, "postgres", and connect it to the database, "chinook":
+
+```bash
+$ docker exec -it chinook1 psql -U postgres -d chinook
+chinook=#
+```
+
+Then [list the tables](https://www.postgresqltutorial.com/postgresql-administration/postgresql-show-tables/) in the database with the *\d* command:
+
+```text
+chinook=# \d
              List of relations
  Schema |     Name      | Type  |  Owner   
 --------+---------------+-------+----------
@@ -309,62 +130,77 @@ postgres=# \dt
  public | PlaylistTrack | table | postgres
  public | Track         | table | postgres
 (11 rows)
-
 ```
 
-Commands for checking out DB
-https://www.postgresqltutorial.com/postgresql-administration/postgresql-show-tables/
+If you see a similar list of tables, you know that the database initialized. Test a table to see that there is data in it. For example, list some information from the *Employee* table [^3]:
 
-```
-postgres=# exit
-root@738afc4392fe:/# exit
-$
-```
-```
-$ docker container inspect chinook-sample -f '{{index .NetworkSettings.Networks "bridge" "IPAddress"}}'
-172.17.0.2
-```
-```
-$ docker container inspect chinook-sample -f '{{.NetworkSettings.Ports}}'
-map[5432/tcp:[]]
+[^3]: You can also run this directly from teh host using the command: `docker exec chinook1 psql -U postgres -d chinook -c 'select * from "Employee" limit 2'`
+
+
+```text
+chinook=# SELECT * FROM "Employee" LIMIT 2;
+
+ EmployeeId | LastName | FirstName |      Title      | ReportsTo |      BirthDate      |      HireDate       |       Address       |   City   | State | Country | PostalCode |       Phone       |        Fax        |         Email          
+------------+----------+-----------+-----------------+-----------+---------------------+---------------------+---------------------+----------+-------+---------+------------+-------------------+-------------------+------------------------
+          1 | Adams    | Andrew    | General Manager |           | 1962-02-18 00:00:00 | 2002-08-14 00:00:00 | 11120 Jasper Ave NW | Edmonton | AB    | Canada  | T5K 2N1    | +1 (780) 428-9482 | +1 (780) 428-3457 | andrew@chinookcorp.com
+          2 | Edwards  | Nancy     | Sales Manager   |         1 | 1958-12-08 00:00:00 | 2002-05-01 00:00:00 | 825 8 Ave SW        | Calgary  | AB    | Canada  | T2P 2T3    | +1 (403) 262-3443 | +1 (403) 262-3322 | nancy@chinookcorp.com
+(2 rows)
 ```
 
-https://www.connectionstrings.com/postgresql/
+Now you can be confident that the database is ready to use. Quit the *psql* utility:
 
+```text
+chinook=# \q
+$ 
 ```
+
+## Success
+
+At this point, you are done. You have a sample database running on the container. Programs running on your computer can access the server at the *localhost* IP address (127.0.0.1) and TCP port *5432*.
+
+## Python
+
+### Create the environment
+
+
+```bash
+$ sudo apt update
+$ sudo apt install libpq-dev python3-dev libpq-dev
+$ sudo apt install build-essential
 $ python -m venv .venv
-$ source ./.venv/bin/activate
+$ source .venv/bin/activate
 (.venv) $
 ```
-
-```
-(.venv) $ sudo apt update
-(.venv) $ sudo apt install libpq-dev python3-dev libpq-dev
-(.venv) $ sudo apt install build-essential
+```bash
 (.venv) $ pip install wheel
 (.venv) $ pip install psycopg2
 (.venv) $ pip install tabulate
 (.venv) $ pip install jupyterlab
 ```
-
+```bash
+(.venv) $ pip install sqlalchemy
 ```
+```bash
 (.venv) $ jupyter-lab
 ```
 
-```
+### The *psycopg2* library
+
+Create a connection to the postgres database running on the container using the *psycopg2* library. Use the [connectionstrings.com](https://www.connectionstrings.com/postgresql/) web site to see the information needed by Postgres.
+
+```python
 import psycopg2
 
 conn = psycopg2.connect(
     host="localhost",
-    database="postgres",
+    database="chinook",
     user="postgres",
     password="abcd1234")
 ```
 
+First find the schema available in the database.
 
-
-
-```python
+```
 statement = """
 SELECT DISTINCT
   TABLE_SCHEMA
@@ -377,23 +213,27 @@ cursor.execute(statement)
 print(cursor.fetchall())
 cursor.close()
 ```
+
+The output shows that, in addition to the system schemas, there is a schema called *public*. 
+
 ```
 [('information_schema',), ('pg_catalog',), ('public',)]
 ```
 
+And, we know from the results of the *psql* command we ran earlier that the Chinook database tables are in the *public* schema. The following code will list all the tables:
 
-
-```python
+```
 from tabulate import tabulate
 
 statement = """
 SELECT 
-  TABLE_NAME, TABLE_TYPE
+  TABLE_CATALOG, TABLE_SCHEMA, TABLE_NAME, TABLE_TYPE
 FROM INFORMATION_SCHEMA.TABLES
-WHERE TABLE_SCHEMA = 'public'
-ORDER BY TABLE_NAME
+WHERE TABLE_SCHEMA != 'pg_catalog'
+  AND TABLE_SCHEMA != 'information_schema'          
+ORDER BY TABLE_NAME;
 """
-
+#conn.rollback()
 with conn.cursor() as cursor:
     cursor.execute(statement)
     headers = [h[0] for h in cursor.description]
@@ -401,32 +241,34 @@ with conn.cursor() as cursor:
 
 print(tabulate(tables, headers=headers))
 ```
+
+We see that tables listed, below:
+
 ```
-table_name     table_type
--------------  ------------
-Album          BASE TABLE
-Artist         BASE TABLE
-Customer       BASE TABLE
-Employee       BASE TABLE
-Genre          BASE TABLE
-Invoice        BASE TABLE
-InvoiceLine    BASE TABLE
-MediaType      BASE TABLE
-Playlist       BASE TABLE
-PlaylistTrack  BASE TABLE
-Track          BASE TABLE
+table_catalog    table_schema    table_name     table_type
+---------------  --------------  -------------  ------------
+chinook          public          Album          BASE TABLE
+chinook          public          Artist         BASE TABLE
+chinook          public          Customer       BASE TABLE
+chinook          public          Employee       BASE TABLE
+chinook          public          Genre          BASE TABLE
+chinook          public          Invoice        BASE TABLE
+chinook          public          InvoiceLine    BASE TABLE
+chinook          public          MediaType      BASE TABLE
+chinook          public          Playlist       BASE TABLE
+chinook          public          PlaylistTrack  BASE TABLE
+chinook          public          Track          BASE TABLE
 ```
 
+Finally, try a query that joins data from multiple tables. You can see in this example that we had to use quotes around each name in the database because they are not all in lower case. This is not a big deal, but some people have opinions about it. As John Atten mentioned in his blog post, *[A More Useful Port of the Chinook Database to Postgresql](http://johnatten.com/2015/04/05/a-more-useful-port-of-the-chinook-database-to-postgresql/)*:
 
-> NOTE: Postgresql (“Postgres” or “pg”) has its roots in the Unix world. Database object names are case-sensitive, and in fact the convention is to use lower-case names, and where needed, separate with underscores. It is possible to use proper-cased object names in Postges by escaping them with double-quotes. However, this makes for some atrocious-looking SQL. [^1]
-
-[^1]: From http://johnatten.com/2015/04/05/a-more-useful-port-of-the-chinook-database-to-postgresql/
+"Postgresql has its roots in the Unix world. Database object names are case-sensitive and the convention is to use lower-case names and, where needed, separate with underscores. It is possible to use proper-cased object names in Postges by escaping them with double-quotes. However, this makes for some atrocious-looking SQL."
 
 ```python
 statement = """
-SELECT "Album"."Title",
-       "Artist"."Name",
-       "Track"."Name",
+SELECT "Album"."Title" AS "Album",
+       "Artist"."Name" AS "Artist",
+       "Track"."Name" AS "Track",
        "Track"."Composer", 
        "Track"."Milliseconds" AS "Length"
 FROM "Album"
@@ -442,61 +284,44 @@ with conn.cursor() as cursor:
 
 print(tabulate(rows, headers))
 ```
-```
-Title                                  Name    Name                                     Composer                                                                  Length
--------------------------------------  ------  ---------------------------------------  ----------------------------------------------------------------------  --------
-For Those About To Rock We Salute You  AC/DC   For Those About To Rock (We Salute You)  Angus Young, Malcolm Young, Brian Johnson                                 343719
-Balls to the Wall                      Accept  Balls to the Wall                                                                                                  342562
-Restless and Wild                      Accept  Fast As a Shark                          F. Baltes, S. Kaufman, U. Dirkscneider & W. Hoffman                       230619
-Restless and Wild                      Accept  Restless and Wild                        F. Baltes, R.A. Smith-Diesel, S. Kaufman, U. Dirkscneider & W. Hoffman    252051
-Restless and Wild                      Accept  Princess of the Dawn                     Deaffy & R.A. Smith-Diesel  
-```
 
-
-
-
-
-(persistence: where are files created in the current container? They do not persist if you delete the container)
-
-https://www.baeldung.com/ops/docker-container-filesystem
-
-SHOW data_directory;
-
-/var/lib/postgresql/data
-
-try:
-```
-$ docker export -o files.tar chinook-sample
-$ tar -tvf files.tar | grep /var/lib/postgresql/data
-```
-
-# SQLAlechemy
+The results create a table showing information about the song tracks in the database:
 
 ```
-(.venv) $ pip install sqlalchemy
+Album                                  Artist    Track                                    Composer                                                                  Length
+-------------------------------------  --------  ---------------------------------------  ----------------------------------------------------------------------  --------
+For Those About To Rock We Salute You  AC/DC     For Those About To Rock (We Salute You)  Angus Young, Malcolm Young, Brian Johnson                                 343719
+Balls to the Wall                      Accept    Balls to the Wall                                                                                                  342562
+Restless and Wild                      Accept    Fast As a Shark                          F. Baltes, S. Kaufman, U. Dirkscneider & W. Hoffman                       230619
+Restless and Wild                      Accept    Restless and Wild                        F. Baltes, R.A. Smith-Diesel, S. Kaufman, U. Dirkscneider & W. Hoffman    252051
+Restless and Wild                      Accept    Princess of the Dawn                     Deaffy & R.A. Smith-Diesel                                                375418   
 ```
-```
+
+### Python SQLAlchemy
+
+If you use SQLAlchemy, you abstract away the particularities of SQL and do not need to worry about whether you should use quotes or not.
+
+
+```python
 from sqlalchemy.engine import URL
+from sqlalchemy import select 
+from sqlalchemy import create_engine
+from sqlalchemy.orm import Session
+from sqlalchemy.ext.automap import automap_base
+from tabulate import tabulate
 
 url_object = URL.create(
     drivername='postgresql+psycopg2',
     username='postgres',
     password='abcd1234',
-    host='172.17.0.2',
+    host='localhost',
     port='5432',
-    database='postgres'
+    database='chinook'
 )
 
-from sqlalchemy import create_engine
-
 engine = create_engine(url_object)
-
-from sqlalchemy.ext.automap import automap_base
-
 Base = automap_base()
 Base.prepare(autoload_with=engine, schema='public')
-
-print(Base.classes.keys())
 
 InvoiceLine = Base.classes.InvoiceLine
 Playlist = Base.classes.Playlist
@@ -509,11 +334,6 @@ Artist = Base.classes.Artist
 Track = Base.classes.Track
 Invoice = Base.classes.Invoice
 
-
-from tabulate import tabulate
-from sqlalchemy import select
-from sqlalchemy.orm import Session
-
 statement = (select(Album.Title.label("Album"),
             Artist.Name.label("Artist"),
             Track.Name.label("Track"),
@@ -525,189 +345,26 @@ statement = (select(Album.Title.label("Album"),
     )
 
 with Session(engine) as session:
-    result = 
-    print(tabulate(session.execute(statement)))
+    query = session.execute(statement)
+    result = query.fetchall()
+    print(tabulate(result, headers=q.keys()))
 ```
 
-```
--------------------------------------  ------  ---------------------------------------  ----------------------------------------------------------------------  ------
-For Those About To Rock We Salute You  AC/DC   For Those About To Rock (We Salute You)  Angus Young, Malcolm Young, Brian Johnson                               343719
-Balls to the Wall                      Accept  Balls to the Wall                                                                                                342562
-Restless and Wild                      Accept  Fast As a Shark                          F. Baltes, S. Kaufman, U. Dirkscneider & W. Hoffman                     230619
-Restless and Wild                      Accept  Restless and Wild                        F. Baltes, R.A. Smith-Diesel, S. Kaufman, U. Dirkscneider & W. Hoffman  252051
-Restless and Wild                      Accept  Princess of the Dawn                     Deaffy & R.A. Smith-Diesel                                              375418
--------------------------------------  ------  ---------------------------------------  ----------------------------------------------------------------------  ------
-```
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-docker logs chinook-sample
-
-
-
-
-
-
-
-
-Northwind via docker?
-* https://github.com/pthom/northwind_psql
-  * just clone and run docker compose up
-* https://github.com/piotrpersona/sql-server-northwind
-  * Shell script could be good script to follow manually?
-
-
-
-
-  Northwind via docker?
-* https://github.com/pthom/northwind_psql
-  * just clone and run docker compose up
-* https://github.com/piotrpersona/sql-server-northwind
-  * Shell script could be good script to follow manually?
-
-Chinook:  
-* https://github.com/arjunchndr/Analyzing-Chinook-Database-using-SQL-and-Python/blob/master/Analyzing%20Chinook%20Database%20using%20SQL%20and%20Python.ipynb
-* https://m-soro.github.io/Business-Analytics/SQL-for-Data-Analysis/L4-Project-Query-Music-Store/
-* https://data-xtractor.com/knowledgebase/chinook-database-sample/
-
-Chinook on Docker
-* https://gist.github.com/sualeh/f80eccde37f8fef67ad138996fd4824d
-  * 
-
-
-
-
-Programmers who are have already mastered the SQL language could simply use the appropriate driver that is compatible with the SQL database they are using, such as [psycopg](https://www.psycopg.org/) for PostgreSQL, or [mysql-connector-python](https://dev.mysql.com/doc/connector-python/en/) for MySQL. Since we are using an SQLite database, we could use the [sqlite package](https://www.sqlite.org/index.html), which is part of the Python standard library. But, remember, you need to know the SQL query language when writing programs that use these Python database drivers.
-
-(Docker does not work when on corp network. Connect to Cisco VPN)
-
-
-
-(done)
-
-
-
-
-
-
-
-## (on Windows WSL)
-https://stackoverflow.com/questions/52604068/using-wsl-ubuntu-app-system-has-not-been-booted-with-system-as-init-system-pi
-$ sudo nano /etc/wsl.conf
-
-[boot]
-systemd=true
-
-in Windows Powershell
-> wsl.exe --shutdown
-
-Press Enter in WSL to restart
-
-
-run without sudo:
-
-
-sudo usermod -aG docker ${USER}
-su - ${USER}
-sudo usermod -aG docker username
-
-
-docker run hello-world
-
-
-docker proxy
-
-sudo su -
-
-mkdir -p /etc/systemd/system/docker.service.d
-
-cat <<'EOF' > /etc/systemd/system/docker.service.d/http-proxy.conf
-[Service]
-Environment="HTTP_PROXY=http://caottx01-proxy001.americas.nsn-net.net:8080"
-Environment="HTTPS_PROXY=http://caottx01-proxy001.americas.nsn-net.net:8080"
-Environment="NO_PROXY=localhost,127.0.0.1"
-EOF
-
-(use IP addresses in above proxy file)
-(restart docker)
-
-sudo systemctl daemon-reload
-sudo systemctl restart docker
-
-# postgress on docker
-
-https://www.docker.com/blog/how-to-use-the-postgres-docker-official-image/
-https://dev.to/andre347/how-to-easily-create-a-postgres-database-in-docker-4moj#:~:text=In%20our%20example%20we%20want%20to%20do%20the,the%20table%20schema%20and%20populate%20it%20with%20data
-
-https://github.com/lorint/AdventureWorks-for-Postgres
-
-Get database script from https://github.com/cwoodruff/ChinookDatabase/tree/master/Scripts
-https://github.com/cwoodruff/ChinookDatabase/blob/master/Scripts/Chinook_PostgreSql.sql
-
-
-docker pull postgres
-
-
-
-
-# Try this!
-
-AdventureWorks -- should work (also look at build instructions for step-by-step process)
-https://github.com/chriseaton/docker-adventureworks
-
-
-docker run -p 1433:1433 -e 'ACCEPT_EULA=Y' -e 'SA_PASSWORD=abcd1234' -d chriseaton/adventureworks:light
-
-uid = "Developer"?
-
-
-# set up Podman on Windows
-
-
-
-
-
-
-==================================
-# Garbage
-
+The code listed above connects to the database and generates the same table we previously created using the *psycopg2* library.
 
 ```
-$ docker-compose -f postgres-chinook.yml up -d
- -d
-[+] Running 2/2
- ✔ Network postgres_default    Created                                   0.1s 
- ✔ Container postgres-chinook  Started    
-```
-```
-$ docker exec -it postgres-chinook /bin/bash
-```
-
-BUT container is not running
-
-```
-$ docker ps
-CONTAINER ID   IMAGE     COMMAND   CREATED   STATUS    PORTS     NAMES
+Album                                  Artist    Track                                    Composer                                                                  Length
+-------------------------------------  --------  ---------------------------------------  ----------------------------------------------------------------------  --------
+For Those About To Rock We Salute You  AC/DC     For Those About To Rock (We Salute You)  Angus Young, Malcolm Young, Brian Johnson                                 343719
+Balls to the Wall                      Accept    Balls to the Wall                                                                                                  342562
+Restless and Wild                      Accept    Fast As a Shark                          F. Baltes, S. Kaufman, U. Dirkscneider & W. Hoffman                       230619
+Restless and Wild                      Accept    Restless and Wild                        F. Baltes, R.A. Smith-Diesel, S. Kaufman, U. Dirkscneider & W. Hoffman    252051
+Restless and Wild                      Accept    Princess of the Dawn                     Deaffy & R.A. Smith-Diesel                                                375418
 ```
 
-did it crash??????
+## Conclusion
 
-user info:
-    root (or chinook)
-    p4ssw0rd
+You created a Docker image that lets you create containers that run the sample Chinook database on the PostgreSQL database server. You saw how you could integrate the database into your Python programs. 
 
 
 
@@ -716,19 +373,169 @@ user info:
 
 
 
-dockerfile:  (still in dbtest directory)
+## Appendix A: Persistence
+
+If you intend to write to a database, and if you are using a database container for more than just testing, you may want to [create a persistent Docker volume]((https://learn.microsoft.com/en-us/sql/linux/sql-server-linux-docker-container-configure?view=sql-server-ver16&pivots=cs1-bash#persist)) that will save the database's data files so they can be used again even if you delete the original container. 
+
+### Create a volume
+
+Create a new [Docker volume](https://docs.docker.com/storage/volumes/) that you will use for storing persistent data. Give it the same name you will use when you create the container, to make it easy to know which volume is used with which container.
+
+```bash
+$ docker volume create chinook2
+```
+
+List the available Docker volumes:
+
+```bash
+$ docker volume ls
+DRIVER    VOLUME NAME
+local     chinook2
+```
+
+### Connect volume to container directory
+
+Create a new container, named *chinook2* that connects the SQL server's data directory, */var/lib/postgresql/data/*, with the Docker volume named *chinook2*.
+
+```bash
+$ docker run \
+  --detach \
+  --name chinook2 \
+  --network host \
+  --volume chinook2:/var/lib/postgresql/data \
+  postgres-chinook-image
+```
+
+### Test data persistence
+
+Create a second Chinook database named *chinook2*. Use the Docker *cp* command to copy the original Chinook SQL script to the container. Just throw it in the container's */tmp* directory.
+
+```bash
+$ docker cp Chinook_PostgreSql_utf8.sql chinook1:/tmp
+```
+
+Use the *psql* utility to create a new database and run the script on that database:
+
+```bash
+$ docker exec chinook2 createdb \
+    --username postgres \
+    chinook2
+$ docker exec chinook1 psql \
+    --username postgres \
+    --dbname chinook2 \
+    --single-transaction \
+    --file /tmp/Chinook_PostgreSql_utf8.sql
+```
+
+List the available dtabases and see that the *chinook2* database was added.
 
 ```
-nano postgres-chinook.yml
+$ docker exec chinook4 psql \
+    --username postgres \
+    --list
+                                                List of databases
+   Name    |  Owner   | Encoding |  Collate   |   Ctype    | ICU Locale | Locale Provider |   Access privileges   
+-----------+----------+----------+------------+------------+------------+-----------------+-----------------------
+ chinook   | postgres | UTF8     | en_US.utf8 | en_US.utf8 |            | libc            | 
+ chinook2  | postgres | UTF8     | en_US.utf8 | en_US.utf8 |            | libc            | 
+ postgres  | postgres | UTF8     | en_US.utf8 | en_US.utf8 |            | libc            | 
+ template0 | postgres | UTF8     | en_US.utf8 | en_US.utf8 |            | libc            | =c/postgres          +           |          |          |            |            |            |                 | postgres=CTc/postgres
+ template1 | postgres | UTF8     | en_US.utf8 | en_US.utf8 |            | libc            | =c/postgres          +           |          |          |            |            |            |                 | postgres=CTc/postgres
+(5 rows)
 ```
 
-add following lines (from https://gist.github.com/onjin/2dd3cc52ef79069de1faa2dfd456c945), then save
+
+
+You can add more databases and run additional scripts, as you wish.
+
+Stop the container and delete it
+
+```bash
+$ docker stop chinook2
+$ docker rm chinook2
+```
+
+Create a new container from the original image but connect its data directory to the volume you previously created for the *chinook2* container.
+
+
+
+```bash
+$ docker run \
+  --detach \
+  --name chinook_test \
+  --env POSTGRES_PASSWORD=abcd1234 \
+  --network host \
+  --volume chinook2:/var/lib/postgresql/data \
+  postgres-chinook-image
+```
+
+According to the Postgres container documentation, the install script we copied to the image's *docker-entrypoint-initdb.d* directory will only run if the data directory is empty. But, this contaoner's data directory is mapped to teh Docker volume that already contains several databases. So the install script will not run and the container will use the databases in the attached volume. 
+
+List the available databases. You can see that the new database you previouslt created persisted because it was saved in the volume that was attached to the new container.
 
 ```
-services:
-  postgres:
-    image: postgres
-    container_name: postgres-chinook
-    volumes:
-      - ./Chinook_PostgreSql.sql:/docker-entrypoint-initdb.d/Chinook_PostgreSql.sql
+$ docker exec chinook_test psql \
+    --username postgres \
+    --list
+
+                                                List of databases
+   Name    |  Owner   | Encoding |  Collate   |   Ctype    | ICU Locale | Locale Provider |   Access privileges   
+-----------+----------+----------+------------+------------+------------+-----------------+-----------------------
+ chinook   | postgres | UTF8     | en_US.utf8 | en_US.utf8 |            | libc            |
+ 
+ chinook2  | postgres | UTF8     | en_US.utf8 | en_US.utf8 |            | libc            |
+ 
+ postgres  | postgres | UTF8     | en_US.utf8 | en_US.utf8 |            | libc            |
+ 
+ template0 | postgres | UTF8     | en_US.utf8 | en_US.utf8 |            | libc            | =c/postgres          +           |          |          |            |            |            |                 | postgres=CTc/postgres
+ template1 | postgres | UTF8     | en_US.utf8 | en_US.utf8 |            | libc            | =c/postgres          +           |          |          |            |            |            |                 | postgres=CTc/postgres
+(5 rows)
 ```
+
+Look at tables in the second database
+
+```psql
+$ docker exec chinook_test psql \
+    --username postgres \
+    --dbname chinook2 \
+    --command " \
+        SELECT schemaname, tablename \
+        FROM pg_catalog.pg_tables \
+        WHERE schemaname != 'pg_catalog' 
+          AND schemaname != 'information_schema';"
+```
+
+This output the tables in the database named *chinook2*:
+
+```psql
+ schemaname |   tablename   
+------------+---------------
+ public     | Artist
+ public     | Album
+ public     | Employee
+ public     | Customer
+ public     | Invoice
+ public     | InvoiceLine
+ public     | Track
+ public     | Playlist
+ public     | PlaylistTrack
+ public     | Genre
+ public     | MediaType
+(11 rows)
+```
+
+This proves data was persistent
+
+### Clean up 
+
+Now you may stop and delete the container and, if you wish, [delete the volume](https://www.digitalocean.com/community/tutorials/how-to-remove-docker-images-containers-and-volumes).
+
+```bash
+$ docker stop chinook_test
+$ docker container prune
+$ docker volume rm chinook2
+```
+
+
+
+
