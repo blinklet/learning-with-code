@@ -225,7 +225,7 @@ conn = psycopg2.connect(
 
 First find the schemas available in the *chinook* database.
 
-```
+```python
 statement = """
 SELECT DISTINCT
   TABLE_SCHEMA
@@ -241,13 +241,13 @@ cursor.close()
 
 The output shows that, in addition to the system schemas, there is a schema called *public*. 
 
-```
+```python
 [('information_schema',), ('pg_catalog',), ('public',)]
 ```
 
 And, we know from the results of the *psql* command we ran earlier that the Chinook database tables are in the *public* schema. The following code will list all the tables:
 
-```
+```python
 from tabulate import tabulate
 
 statement = """
@@ -258,7 +258,7 @@ WHERE TABLE_SCHEMA != 'pg_catalog'
   AND TABLE_SCHEMA != 'information_schema'          
 ORDER BY TABLE_NAME;
 """
-#conn.rollback()
+
 with conn.cursor() as cursor:
     cursor.execute(statement)
     headers = [h[0] for h in cursor.description]
@@ -269,7 +269,7 @@ print(tabulate(tables, headers=headers))
 
 We see that tables listed, below:
 
-```
+```text
 table_catalog    table_schema    table_name     table_type
 ---------------  --------------  -------------  ------------
 chinook          public          Album          BASE TABLE
@@ -301,7 +301,6 @@ JOIN "Track" ON "Album"."AlbumId" = "Track"."AlbumId"
 JOIN "Artist" ON "Album"."ArtistId" = "Artist"."ArtistId"
 """
 
-conn.rollback()
 with conn.cursor() as cursor:
     cursor.execute(statement)
     headers = [h[0] for h in cursor.description]
@@ -312,7 +311,7 @@ print(tabulate(rows, headers))
 
 The results create a table showing information about the media tracks in the database:
 
-```
+```text
 Album                                  Artist    Track                                    Composer                                                                  Length
 -------------------------------------  --------  ---------------------------------------  ----------------------------------------------------------------------  --------
 For Those About To Rock We Salute You  AC/DC     For Those About To Rock (We Salute You)  Angus Young, Malcolm Young, Brian Johnson                                 343719
@@ -377,7 +376,7 @@ with Session(engine) as session:
 
 The program uses *SQLAlchemy* to generate the same table we previously created using the *psycopg2* library.
 
-```
+```text
 Album                                  Artist    Track                                    Composer                                                                  Length
 -------------------------------------  --------  ---------------------------------------  ----------------------------------------------------------------------  --------
 For Those About To Rock We Salute You  AC/DC     For Those About To Rock (We Salute You)  Angus Young, Malcolm Young, Brian Johnson                                 343719
@@ -446,7 +445,7 @@ $ docker exec chinook1 psql \
 
 List the available databases and see that the *chinook2* database was added.
 
-```
+```text
 $ docker exec chinook4 psql \
     --username postgres \
     --list
@@ -487,7 +486,7 @@ According to the Postgres container documentation, the install script we copied 
 
 List the available databases. You can see that the *chinook2* database you previously created exists on the new container because it was saved in the volume that was attached to the new container.
 
-```
+```text
 $ docker exec chinook_test psql \
     --username postgres \
     --list
