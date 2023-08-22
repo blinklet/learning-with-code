@@ -31,6 +31,23 @@ The output is shown below
 ['sample_schema',  'another_schema', 'sys', 'views']
 ```
 
+
+## View names
+
+Use the Inspector instance's *get_view_names()* method to list views defined in the database.
+
+```python
+print(insp.get_view_names(schema='public'))
+```
+
+Since there are no views in the Chinook sample database, this method returns an empty list.
+
+```
+[]
+```
+
+
+
 The schema list is different than when you used the *pyodbc* driver because we looked through the INFORMATION_SCHEMA.VIEWS table or the *cursor* object when we used the ODBC driver so, in that case, you saw only the views that you have permission to read. In this case, you see all schemas in the Database, even the ones you do not have permission to read.
 
 There [does not seem to be a way to read the](https://stackoverflow.com/questions/64260249/how-to-read-a-table-from-information-schema-using-sql-alchemy) [INFORMATION_SCHEMA.VIEWS table](https://github.com/sqlalchemy/sqlalchemy/blob/main/lib/sqlalchemy/dialects/mssql/information_schema.py) using SQLAlchemy's *inspect()* function.
@@ -88,7 +105,7 @@ print(table_list)
 This outputs a list of seventeen views.
 
 ```
-['Basic Employment Details All', 'Basic Employment Details Current', 'Externals', 'Flexible Working', 'Global_Mobility_AssigDetail', 'Monitoring of Tasks', 'New Line Managers', 'Organizational Data All', 'Organizational Data Current', 'Other IDs', 'Snapshot Non P24 Headcount', 'Snapshot Non P24 Last Close', 'Snapshot P24 Employee Master', 'Sample View Name', 'Snapshot P24 Organizational Data', 'Snapshot P24 Workforce Delta', 'Snapshot P24 Workforce Delta mapping view']
+[]
 ```
 
 ### Read column information from a database table
@@ -260,15 +277,15 @@ You will notice that the reflection took much less time; about 30 seconds, this 
 Now, you can access tables using the *Base.metadata* object. For example, the *Sample View Name* table can be accessed with the statement, `Base.metadata.tables['sample_schema.Sample View Name']`. You can assign tables to new variables to make them easier to work with in your code:
 
 ```python
-snapshot_p24_last_close = Base.metadata.tables['sample_schema.Sample View Name']
-snapshot_p24_job_catalog = Base.metadata.tables['another_schema.Another View']
+big_view = Base.metadata.tables['sample_schema.Sample View Name']
+another_big_view = Base.metadata.tables['another_schema.Another View']
 ```
 
 Now, you can get table data from the new table variable. For example:
 
 ```python
-print(snapshot_p24_last_close.name)
-print(snapshot_p24_job_catalog.name)
+print(big_view.name)
+print(another_big_view.name)
 ```
 
 The above code lists the name of each table. So, we know the variable points to the correct table information in the *Base.metadata* object.
@@ -281,7 +298,7 @@ Another View
 You can access table column information from the table variable you just created. For example, you can get column names:
 
 ```python
-print(snapshot_p24_last_close.columns.keys())
+print(big_view.columns.keys())
 ```
 
 The *columns.key()* method listed the column names in the *Sample View Name* table. 
@@ -294,9 +311,9 @@ It is possible to build select statements by indexing table columns. For example
 
 ```python
 stmt = select(
-    snapshot_p24_last_close.columns['Column One'], 
-    snapshot_p24_last_close.columns['Column Two'],
-    snapshot_p24_last_close.columns['Column Three']
+    big_view.columns['Column One'], 
+    big_view.columns['Column Two'],
+    big_view.columns['Column Three']
 ).limit(5)
 ```
 
