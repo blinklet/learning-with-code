@@ -347,16 +347,9 @@ engine = create_engine(url_object)
 Base = automap_base()
 Base.prepare(autoload_with=engine, schema='public')
 
-InvoiceLine = Base.classes.InvoiceLine
-Playlist = Base.classes.Playlist
 Album = Base.classes.Album
-Genre = Base.classes.Genre
-MediaType = Base.classes.MediaType
-Customer = Base.classes.Customer
-Employee = Base.classes.Employee
 Artist = Base.classes.Artist
 Track = Base.classes.Track
-Invoice = Base.classes.Invoice
 
 statement = (select(Album.Title.label("Album"),
             Artist.Name.label("Artist"),
