@@ -27,7 +27,7 @@ This tutorial covers a different type of use-case than is usually demonstrated i
 
 I will show you how to use the Flask framework to build a web app that re-uses code from my [Usermapper program](https://github.com/blinklet/usermapper) and enables users to run it on a website, instead of installing and running it locally on their PC. You will create a "usermapper-as-a-service" application, served as a responsive web app that looks good on computer screens, tablets, and mobile phones.
 
-I wrote this tutorial while I was learning Flask and developing my [*usermapper-web* Flask application](https://github.com/blinklet/usermapper-web). It was written by a beginner, for other beginners. It walks through topics in the order in which I learned them. I hope you find this approach to be readable and informative.
+I wrote this tutorial while I was learning Flask and developing my [*usermapper-web* Flask application](https://github.com/blinklet/usermapper-web). I wrote it from the point of view of a beginner who is trying to help other beginners. It walks through topics in the order in which I needed to learn them. I hope you find this approach to be readable and informative.
 
 <!--more-->
 
@@ -1100,13 +1100,12 @@ In the *Usermapper* project repository, I added the following Issues:
 1. To improve efficiency, create the contents of the user-mapping.xml as a list in memory and return it to the flask app. The Flask app will save it to temporary storage. This decouples the *usermapper.mapperdata* module from the filesystem. 
 
 2. Add more error checking code on the loaded configuration file (example: so we do not create crazy-large xml files if someone says there are one million students). Some ideas for config file restrictions:
-
-  * Only two user type allowed (trainer and student)
-    * Maybe three for flexibility
-  * Up to 4 trainers allowed
-  * up to 12 of any other type allowed
-  * Up to 10 device types allowed
-  * up to 10 devices per type
+    * Only two user type allowed (trainer and student)
+        * Maybe three for flexibility
+    * Up to 4 trainers allowed
+    * up to 12 of any other type allowed
+    * Up to 10 device types allowed
+    * up to 10 devices per type
 
 In the *Usermapper-web* project repository, I added the following issues:
 
@@ -1114,7 +1113,7 @@ In the *Usermapper-web* project repository, I added the following issues:
 
 2. Add more input checking, such as for configuration file size, on the client side using JavaScript.
 
-3. New user interface: Create a set of dynamic forms that allow the user to build the configuration in the browser and submit it -- instead of perparing a yaml configuration file in advance.
+3. New user interface: Create a set of dynamic forms that allow the user to build the configuration in the browser and submit it -- instead of preparing a yaml configuration file in advance.
 
 4. Use session cookies instead of passing variables between routes using dynamic urls. It is more secure and more flexible. See: Flask-Session.
 
