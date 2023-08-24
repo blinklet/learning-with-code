@@ -145,11 +145,85 @@ Press CTRL+C to quit
 127.0.0.1 - - [23/Aug/2023 22:46:21] "GET /download/tmpamu28g3y/user-mapping.xml HTTP/1.1" 200 -
 ```
 
+
+# Push image to a provate repo
+
+Because image contains secrets
+
+<!--
 ```bash
 $ docker tag usermap blinklet/usermap
 $ docker login
 $ docker push blinklet/usermap
 ```
+-->
+
+Azure OCI
+
+https://learn.microsoft.com/en-us/azure/container-registry/container-registry-get-started-azure-cli
+
+```
+az acr create --resource-group myResourceGroup \
+  --name mycontainerregistry --sku Basic
+```
+
+Login https://learn.microsoft.com/en-us/azure/container-registry/container-registry-authentication?tabs=azure-cli#individual-login-with-azure-ad
+
+```
+az acr login --name mycontainerregistry
+```
+
+Tag and push
+
+```
+docker tag mcr.microsoft.com/hello-world mycontainerregistry.azurecr.io/hello-world:v1
+
+docker push <login-server>/hello-world:v1
+```
+
+List images
+
+```
+az acr repository list --name <registry-name> --output table
+```
+
+# Run on ACI???
+
+Azure Container Instances
+
+https://docs.docker.com/cloud/aci-integration/
+
+looks simple but is not in free tier. All contianer deployment options in Azure are discussed here, wrt to pricing
+https://jussiroine.com/2021/12/running-a-single-docker-container-in-azure-cost-effectively/
+
+
+# web app for containers
+
+https://learn.microsoft.com/en-us/azure/app-service/quickstart-custom-container?tabs=dotnet&pivots=container-windows-cli
+
+
+https://learn.microsoft.com/en-us/azure/devops/pipelines/apps/cd/deploy-docker-webapp?view=azure-devops&tabs=python%2Cyaml
+
+```
+az login
+
+az group create --name myResourceGroup --location eastus
+
+az appservice plan create \
+  --resource-group myResourceGroup \
+  --location eastus \
+  --name myAppServicePlan \
+  --hyper-v --sku p1v3
+
+az webapp create \
+  --name myContainerApp \
+  --plan myAppServicePlan \
+  --location eastus \
+  --resource-group myResourceGroup \
+  --deployment-container-image-name mcr.microsoft.com/azure-app-service/windows/parkingpage:latest
+```
+
+After deployment, your app is available at http://<app-name>.azurewebsites.net.
 
 
 # Run on VPS
@@ -169,6 +243,16 @@ or run on a VPS that is free for 12 months, about $5 per month after that
 Azure B1s burstable VM
 
 https://learn.microsoft.com/en-us/azure/virtual-machines/linux/quick-create-cli
+
+
+<!--
+securely deploy docker container to server
+
+https://jfrog.com/devops-tools/article/3-steps-to-securing-your-docker-container-deployments/#:~:text=3%20Essential%20Steps%20to%20Securing%20Your%20Docker%20Container,3%203.%20Keep%20Your%20Images%20Lean%20and%20Clean
+
+https://stackoverflow.com/questions/39855304/how-to-add-user-with-dockerfile
+-->
+
 
 ```
 export RESOURCE_GROUP_NAME=usermapRG
@@ -203,4 +287,11 @@ az vm open-port --port 80 --resource-group $RESOURCE_GROUP_NAME --name $VM_NAME
 export IP_ADDRESS=$(az vm show --show-details --resource-group $RESOURCE_GROUP_NAME --name $VM_NAME --query publicIps --output tsv)
 
 az group delete --name usermaprg --no-wait --yes --verbose
+
+
+
+
+# Add domain name
+
+https://learn.microsoft.com/en-us/azure/app-service/tutorial-secure-domain-certificate
 
