@@ -50,40 +50,23 @@ Copy the output and create *.env* file
 
 ```python
 FLASK_APP=application
-FLASK_ENV=development
+FLASK_ENV=production
 SECRET_KEY=D9Oci7p2l9bqM8_uChJKA09tqXFOK7Db-FxKr6rGoDk
 ```
 
 Docker image
 
-<!--
-```dockerfile
-# Use the Python Docker image's bookwork tag
-# because we need an image that also has git installed
-FROM python:bookworm
-WORKDIR /usr/src/app
-COPY ./requirements.txt ./
-RUN pip install --no-cache-dir -r requirements.txt
-COPY . .
-# The application expects a "downloads" directory
-RUN mkdir ./downloads
-ENTRYPOINT [ "flask" ]
-CMD ["run" ]
-```
--->
-
 
 ```dockerfile
 FROM python:alpine
-WORKDIR /usr/src/app
-COPY ./requirements.txt ./
-RUN apk update && apk add git
-RUN pip install --no-cache-dir -r requirements.txt
+EXPOSE 8080
+WORKDIR /app
 COPY . .
-# The application expects a "downloads" directory
-RUN mkdir ./downloads
-ENTRYPOINT [ "flask" ]
-CMD ["run" ]
+RUN apk update && \
+    apk add git && \
+    pip install --no-cache-dir -r requirements.txt && \
+    mkdir ./downloads
+ENTRYPOINT ["gunicorn", "--bind", "0.0.0.0:8080", "application:app"]
 ```
 
 ```bash
@@ -123,30 +106,137 @@ user-mapping.xml
 user-mapping.xml
 ```
 
+# Tutorial
 
-```
-$ docker logs usermap1
-/usr/src/app/application.py:13: UserWarning: For Bootstrap 4, please import and use "Bootstrap4" class, the "Bootstrap" class is deprecated and will be removed in 3.0.
-  bootstrap = Bootstrap(app)
- * Serving Flask app 'application'
- * Debug mode: off
-WARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.
- * Running on http://127.0.0.1:5000
-Press CTRL+C to quit
-/usr/local/lib/python3.11/site-packages/flask_bootstrap/templates/bootstrap/form.html:14: UserWarning: For Bootstrap 4, please import macros from "bootstrap4/" path (e.g. "from 'bootstrap4/form.html' import render_form"), the "bootstrap/" path is deprecated and will be removed in version 3.0.
-127.0.0.1 - - [23/Aug/2023 22:37:08] "GET / HTTP/1.1" 200 -
-127.0.0.1 - - [23/Aug/2023 22:37:08] "GET /favicon.ico HTTP/1.1" 404 -
-127.0.0.1 - - [23/Aug/2023 22:39:09] "POST / HTTP/1.1" 302 -
-127.0.0.1 - - [23/Aug/2023 22:39:09] "GET /download_page/tmp6qa2trde HTTP/1.1" 200 -
-127.0.0.1 - - [23/Aug/2023 22:40:18] "GET /download/tmp6qa2trde/user-mapping.xml HTTP/1.1" 200 -
-127.0.0.1 - - [23/Aug/2023 22:41:25] "GET / HTTP/1.1" 200 -
-127.0.0.1 - - [23/Aug/2023 22:45:26] "POST / HTTP/1.1" 302 -
-127.0.0.1 - - [23/Aug/2023 22:45:26] "GET /download_page/tmpamu28g3y HTTP/1.1" 200 -
-127.0.0.1 - - [23/Aug/2023 22:46:21] "GET /download/tmpamu28g3y/user-mapping.xml HTTP/1.1" 200 -
-```
+https://learn.microsoft.com/en-us/azure/app-service/tutorial-custom-container?tabs=azure-cli&pivots=container-linux
 
 
-# Push image to a provate repo
+
+az group create --name containers-rg --location eastus
+
+<!--is this needed here? or in the identity section below?
+az identity create --name brianID --resource-group containers-rg
+-->
+
+az acr create --name registorium --resource-group containers-rg --sku Basic --admin-enabled true
+
+az acr credential show --resource-group containers-rg --name registorium
+
+(The JSON output of this command provides two passwords along with the registry's user name.)
+
+    username is "registorium"
+    password is "Yb72ZpxhUUuUnadLlz+3wqGmsGJEJpTLf9fVbHfxQZ+ACRBfE+2P"
+    password2 is "DCgNAqCue5M/d+IqeES0wYnm9+kQOaqDap6OkHHRlv+ACRDa1of+"
+
+
+(usename is, by default, the same as the registry name)
+
+docker login registorium.azurecr.io --username registorium
+
+(will ask for a password. Use one of the passwords from the previous step)
+
+<!-- try the following
+
+PASSWD=$(az acr credential show --resource-group containers-rg --name registorium --output tsv --query passwords[0].value)
+
+docker login registorium.azurecr.io --username registorium --password-stdin <<< $PASSWD
+-->
+
+docker tag usermap registorium.azurecr.io/usermap:latest
+
+docker push registorium.azurecr.io/usermap:latest
+
+
+
+(create web app)
+
+az group create --name webapp-rg --location eastus
+
+az appservice plan create --name brian-web-app-plan --resource-group webapp-rg --is-linux
+
+az appservice plan create --name brian-web-app-plan --resource-group webapp-rg --is-linux
+
+(configure app)
+
+az webapp config appsettings set --resource-group webapp-rg --name usermapper0001 --settings WEBSITES_PORT=8080
+
+https://usermapper0001.azurewebsites.net
+
+
+
+
+NOTE: if accesss expires, is it renewed with the command:
+az acr update --name registorium --admin-enabled true
+?
+
+
+
+
+
+
+
+
+
+
+
+
+clean up
+az group delete --name webapp-rg --no-wait --yes --verbose
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+(the rest enables easy updates using CI/CD and web hook)
+
+(create Principle)
+
+principalId=$(az identity show --resource-group containers-rg --name brianID --query principalId --output tsv)
+
+registryId=$(az acr show --resource-group containers-rg --name registorium --query id --output tsv)
+
+az role assignment create --assignee $principalId --scope $registryId --role "AcrPull"
+
+(enable identity)
+
+
+id=$(az identity show --resource-group msdocs-custom-container-tutorial --name brianID --query id --output tsv)
+az webapp identity assign --resource-group msdocs-custom-container-tutorial --name <app-name> --identities $id
+
+(anable app to pull container)
+
+appConfig=$(az webapp config show --resource-group msdocs-custom-container-tutorial --name <app-name> --query id --output tsv)
+az resource update --ids $appConfig --set properties.acrUseManagedIdentityCreds=True
+
+clientId=$(az identity show --resource-group msdocs-custom-container-tutorial --name brianID --query clientId --output tsv)
+az resource update --ids $appConfig --set properties.AcrUserManagedIdentityID=$clientId
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+# Push image to a private repo
 
 Because image contains secrets
 
@@ -163,29 +253,40 @@ Azure OCI
 https://learn.microsoft.com/en-us/azure/container-registry/container-registry-get-started-azure-cli
 
 ```
-az acr create --resource-group myResourceGroup \
-  --name mycontainerregistry --sku Basic
+az login
+
+az group create --location eastus --name artifactsRG
+
+az acr create --resource-group artifactsRG \
+  --name registorium --sku Standard
 ```
 
 Login https://learn.microsoft.com/en-us/azure/container-registry/container-registry-authentication?tabs=azure-cli#individual-login-with-azure-ad
 
+Login and get token (used for docker login later with admin user)
 ```
-az acr login --name mycontainerregistry
+TOKEN=$(az acr login --name registorium --expose-token --output tsv --query accessToken)
 ```
 
 Tag and push
 
 ```
-docker tag mcr.microsoft.com/hello-world mycontainerregistry.azurecr.io/hello-world:v1
+docker tag usermap registorium.azurecr.io/usermap
 
-docker push <login-server>/hello-world:v1
+docker push registorium.azurecr.io/usermap
 ```
 
 List images
 
 ```
-az acr repository list --name <registry-name> --output table
+az acr repository list --name registorium --output table
 ```
+```
+Result
+--------
+usermap
+```
+
 
 # Run on ACI???
 
@@ -205,26 +306,38 @@ https://learn.microsoft.com/en-us/azure/app-service/quickstart-custom-container?
 https://learn.microsoft.com/en-us/azure/devops/pipelines/apps/cd/deploy-docker-webapp?view=azure-devops&tabs=python%2Cyaml
 
 ```
-az login
-
-az group create --name myResourceGroup --location eastus
+az group create --name usermapRG --location eastus
 
 az appservice plan create \
-  --resource-group myResourceGroup \
+  --resource-group usermapRG \
   --location eastus \
-  --name myAppServicePlan \
-  --hyper-v --sku p1v3
+  --name usermapPlan2 \
+  --sku F1 \
+  --is-linux
+```
+
+Need admin user to deploy container to app service
+https://learn.microsoft.com/en-us/azure/container-registry/container-registry-authentication?tabs=azure-cli#admin-account
+
+
+az acr update -n registorium --admin-enabled true
+
+$ docker login registorium.azurecr.io --username 00000000-0000-0000-0000-000000000000 --password-stdin <<< $TOKEN
+
+
 
 az webapp create \
-  --name myContainerApp \
-  --plan myAppServicePlan \
-  --location eastus \
-  --resource-group myResourceGroup \
-  --deployment-container-image-name mcr.microsoft.com/azure-app-service/windows/parkingpage:latest
+  --name usermapApp \
+  --plan usermapPlan \
+  --resource-group usermapRG \
+  --deployment-container-image-name registorium.azurecr.io/usermap
 ```
 
 After deployment, your app is available at http://<app-name>.azurewebsites.net.
 
+```
+az webapp delete --name usermapApp --resource-group usermapRG
+```
 
 # Run on VPS
 
@@ -249,6 +362,8 @@ https://learn.microsoft.com/en-us/azure/virtual-machines/linux/quick-create-cli
 securely deploy docker container to server
 
 https://jfrog.com/devops-tools/article/3-steps-to-securing-your-docker-container-deployments/#:~:text=3%20Essential%20Steps%20to%20Securing%20Your%20Docker%20Container,3%203.%20Keep%20Your%20Images%20Lean%20and%20Clean
+
+https://www.equalexperts.com/blog/tech-focus/quick-wins-to-secure-your-docker-containers/
 
 https://stackoverflow.com/questions/39855304/how-to-add-user-with-dockerfile
 -->
@@ -286,7 +401,7 @@ az vm open-port --port 80 --resource-group $RESOURCE_GROUP_NAME --name $VM_NAME
 
 export IP_ADDRESS=$(az vm show --show-details --resource-group $RESOURCE_GROUP_NAME --name $VM_NAME --query publicIps --output tsv)
 
-az group delete --name usermaprg --no-wait --yes --verbose
+az group delete --name usermapRG --no-wait --yes --verbose
 
 
 
