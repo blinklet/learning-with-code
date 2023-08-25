@@ -6,6 +6,59 @@ modified: 2023-09-31
 category: Docker
 <!--status: Published-->
 
+Take an existing Flask application, then test and deploy it using Docker containers.
+
+First get the first version of my [usermapper-web application]({filename}\articles\003-flask-web-app-tutorial\flask-web-app-tutorial.md) from Github
+
+```
+$ wget https://github.com/blinklet/usermapper-web/archive/refs/tags/v0.1.tar.gz
+$ tar -xvf v0.1.tar.gz
+```
+
+Create a virtual environment:
+
+```bash
+$ cd usermapper-web-0.1
+$ python3 -m venv env
+$ source env/bin/activate
+(env) $
+```
+
+Install the dependencies
+
+```bash
+(env) $ pip install -r requirements.txt
+```
+
+The application needs two more things: a dotenv file and a *downloads* directory. The both the dotenv file and the *downloads* directory must be in the same location as the *application.py* file.
+
+Create the dotenv file, named *.env*, using your favorite text editor:
+
+```bash
+$ nano .env
+```
+
+Add the following environment variables to the file:
+
+```
+FLASK_APP=application
+FLASK_ENV=development
+SECRET_KEY=temporarykey
+```
+
+Save .env file
+
+```bash
+$ mkdir downloads
+```
+
+
+Run the Flask app
+
+```
+(env) $ python3 application.py
+```
+
 
 
 ## Deploy existing application to Docker container
@@ -19,7 +72,11 @@ $ git clone https://github.com/blinklet/usermapper-web.git
 ```
 ### Add gunicorn
 
-Dont use dev server in web deployment so run gunicorn, Add it to requirements.txt
+git tag -a v0.1 cf41112 -m "First development release"
+
+
+
+Don't use dev server in web deployment so run gunicorn, Add it to requirements.txt
 
 ```text
 wheel
@@ -153,8 +210,8 @@ docker push registorium.azurecr.io/usermap:latest
 az group create --name webapp-rg --location eastus
 
 az appservice plan create --name brian-web-app-plan --resource-group webapp-rg --is-linux
-
-az appservice plan create --name brian-web-app-plan --resource-group webapp-rg --is-linux
+'
+az webapp create --resource-group msdocs-custom-container-tutorial --plan myAppServicePlan --name usermapper0001 --deployment-container-image-name registorium.azurecr.io/usermap:latest
 
 (configure app)
 
@@ -165,16 +222,31 @@ https://usermapper0001.azurewebsites.net
 
 
 
-NOTE: if accesss expires, is it renewed with the command:
+NOTE: if access expires, is it renewed with the command:
 az acr update --name registorium --admin-enabled true
 ?
 
 
+try
+
+az appservice plan create --name brian-web-app-plan --resource-group webapp-rg --is-linux
+
+(configure app)
+
+az webapp config appsettings set --resource-group webapp-rg --name usermapper0001 --settings WEBSITES_PORT=8080
 
 
 
 
+# Troubleshooting
 
+Turn on logs
+
+az webapp log config --name usermapping0001 --resource-group webapp-rg --docker-container-logging filesystem
+
+Get logs at:
+
+https://usermapping0001.scm.azurewebsites.net/api/logs/docker
 
 
 
@@ -409,4 +481,12 @@ az group delete --name usermapRG --no-wait --yes --verbose
 # Add domain name
 
 https://learn.microsoft.com/en-us/azure/app-service/tutorial-secure-domain-certificate
+
+
+
+
+
+on server, use sample compose file:
+
+https://github.com/docker/awesome-compose/blob/master/nginx-wsgi-flask/compose.yaml
 
