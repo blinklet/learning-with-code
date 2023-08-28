@@ -231,19 +231,24 @@ Notice how Docker labels what you might think is the image name as the "reposito
 To test that the image was built correctly and that the application will run correctly, create a new container from it. 
 
 ```bash
-$ docker run --detach --publish 127.0.0.1:80:8080/tcp --name user1 usermap
+$ docker run --detach --publish 80:8080 --name user1 usermap
 ```
 
-The new container should start serving the web app, via the Gunicorn WSGI server which includes a basic HTTP server, 
-Connect your browser to http://localhost
+The image you previously created runs Gunicorn when it starts in a container. The new container should start serving the web app via the Gunicorn server which includes a basic HTTP server. The Docker *run* command's *publish* parameter maps the HTTP traffic that Gunicorn serves on TCP port 8080 to the host computer's loopback address at the default HTTP TCP port 80.
+
+To test this, connect your browser to `http://localhost`. You should see the web app in the browser window. Test the web app by copying the example configuration file from the app's instructions to a file named *config.yaml* and the uploading that file to the app.
 
 ![]({attach}usermapper-01.png)
 
+The app should return an XML file named *user-mapping-xml*, in the format used by the Guacamole server.
+
 ![]({attach}usermapper-02.png)
 
+If you read the post that described my process of developing the app while I learned Flask, you will see that I used the filesystem to cache the generated XMP file. The temporary directories are in the container's *downloads* directory. You can check this by listing the contents of the downloads directory.
 
 ```
-docker exec -it usermap1 ls -R ./downloads
+$ docker exec -it user1 ls -R ./downloads
+
 ./downloads:
 tmp6qa2trde  tmpamu28g3y
 
@@ -254,330 +259,191 @@ user-mapping.xml
 user-mapping.xml
 ```
 
-# Tutorial
+Now that I am revisiting this project, I will use what I have learned over the past year and improve it by creating a more sustainable way to cache information shared between Flask views. I will try a couple of different cacheing ideas, including using a database. I will write about that in future posts.
 
-https://learn.microsoft.com/en-us/azure/app-service/tutorial-custom-container?tabs=azure-cli&pivots=container-linux
+Clean up the test container by stoppingit and then deleting it.
 
-
-
-az group create --name containers-rg --location eastus
-
-<!--is this needed here? or in the identity section below?
-az identity create --name brianID --resource-group containers-rg
--->
-
-az acr create --name registorium --resource-group containers-rg --sku Basic --admin-enabled true
-
-az acr credential show --resource-group containers-rg --name registorium
-
-(The JSON output of this command provides two passwords along with the registry's user name.)
-
-    username is "registorium"
-    password is "Yb72ZpxhUUuUnadLlz+3wqGmsGJEJpTLf9fVbHfxQZ+ACRBfE+2P"
-    password2 is "DCgNAqCue5M/d+IqeES0wYnm9+kQOaqDap6OkHHRlv+ACRDa1of+"
-
-
-(usename is, by default, the same as the registry name)
-
-docker login registorium.azurecr.io --username registorium
-
-(will ask for a password. Use one of the passwords from the previous step)
-
-<!-- try the following
-
-PASSWD=$(az acr credential show --resource-group containers-rg --name registorium --output tsv --query passwords[0].value)
-
-docker login registorium.azurecr.io --username registorium --password-stdin <<< $PASSWD
--->
-
-docker tag usermap registorium.azurecr.io/usermap:latest
-
-docker push registorium.azurecr.io/usermap:latest
-
-
-
-(create web app)
-
-az group create --name webapp-rg --location eastus
-
-az appservice plan create --name brian-web-app-plan --resource-group webapp-rg --is-linux
-'
-az webapp create --resource-group msdocs-custom-container-tutorial --plan myAppServicePlan --name usermapper0001 --deployment-container-image-name registorium.azurecr.io/usermap:latest
-
-(configure app)
-
-az webapp config appsettings set --resource-group webapp-rg --name usermapper0001 --settings WEBSITES_PORT=8080
-
-https://usermapper0001.azurewebsites.net
-
-
-
-
-NOTE: if access expires, is it renewed with the command:
-az acr update --name registorium --admin-enabled true
-?
-
-
-try
-
-az appservice plan create --name brian-web-app-plan --resource-group webapp-rg --is-linux
-
-(configure app)
-
-az webapp config appsettings set --resource-group webapp-rg --name usermapper0001 --settings WEBSITES_PORT=8080
-
-
-
-
-# Troubleshooting
-
-Turn on logs
-
-az webapp log config --name usermapping0001 --resource-group webapp-rg --docker-container-logging filesystem
-
-Get logs at:
-
-https://usermapping0001.scm.azurewebsites.net/api/logs/docker
-
-
-
-
-
-clean up
-az group delete --name webapp-rg --no-wait --yes --verbose
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-(the rest enables easy updates using CI/CD and web hook)
-
-(create Principle)
-
-principalId=$(az identity show --resource-group containers-rg --name brianID --query principalId --output tsv)
-
-registryId=$(az acr show --resource-group containers-rg --name registorium --query id --output tsv)
-
-az role assignment create --assignee $principalId --scope $registryId --role "AcrPull"
-
-(enable identity)
-
-
-id=$(az identity show --resource-group msdocs-custom-container-tutorial --name brianID --query id --output tsv)
-az webapp identity assign --resource-group msdocs-custom-container-tutorial --name <app-name> --identities $id
-
-(anable app to pull container)
-
-appConfig=$(az webapp config show --resource-group msdocs-custom-container-tutorial --name <app-name> --query id --output tsv)
-az resource update --ids $appConfig --set properties.acrUseManagedIdentityCreds=True
-
-clientId=$(az identity show --resource-group msdocs-custom-container-tutorial --name brianID --query clientId --output tsv)
-az resource update --ids $appConfig --set properties.AcrUserManagedIdentityID=$clientId
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-# Push image to a private repo
-
-Because image contains secrets
-
-<!--
 ```bash
-$ docker tag usermap blinklet/usermap
-$ docker login
-$ docker push blinklet/usermap
-```
--->
-
-Azure OCI
-
-https://learn.microsoft.com/en-us/azure/container-registry/container-registry-get-started-azure-cli
-
-```
-az login
-
-az group create --location eastus --name artifactsRG
-
-az acr create --resource-group artifactsRG \
-  --name registorium --sku Standard
+$ docker stop user1
+$ docker rm user1
 ```
 
-Login https://learn.microsoft.com/en-us/azure/container-registry/container-registry-authentication?tabs=azure-cli#individual-login-with-azure-ad
+## Create a private repository on Docker Hub
 
-Login and get token (used for docker login later with admin user)
-```
-TOKEN=$(az acr login --name registorium --expose-token --output tsv --query accessToken)
-```
+To deploy your image on a remote virtual private server, you will find it most convenient to publish your image to a repository from which you can pull it to the server. However, you need to be careful about exposing sensitive information on a public repository.
 
-Tag and push
+The dotenv file you copied to the Docker image contains a secret key that should not be made public. If you post your image in a [public repository like Docker Hub](https://docs.docker.com/docker-hub/), anyone who pulls the image can inspect it and find the secret key. There are multiple ways to manage secrets when deploying applications, that range from simple to complex. In this case, we will keep it simple and protect the secret key by pushing the Docker image to a private repository.
 
-```
-docker tag usermap registorium.azurecr.io/usermap
+The Docker Hub allows one free private repository per user. You need to use the Docker Hub website to [create](https://docs.docker.com/docker-hub/repos/create/) a private repository on your Docker Hub account. Do the following:
 
-docker push registorium.azurecr.io/usermap
-```
+* Log in to your account at *hub.docker.com*.
+* Click the *Create repository* button
+* Fill in the information about the repository and set it to *private*
+* Click the *Create* button
 
-List images
+The Docker Hub information should look similar to the screenshot below:
 
-```
-az acr repository list --name registorium --output table
-```
-```
-Result
---------
-usermap
-```
+![Create a private repo on Docker Hub]({attach}docker-hub-01.png){width=80%}
 
+For the rest of this post, we will use the *user-mapping* repository I created on my account, *blinklet*.
 
-# Run on ACI???
+## Push your image to Docker Hub
 
-Azure Container Instances
+Now that you have a private repository on Docker Hub, rename your image so it aligns with the new repository and give it a meaningful tag, like *v1* for version one. Then, push your image to it using the Docker *push* command, as shown below:
 
-https://docs.docker.com/cloud/aci-integration/
-
-looks simple but is not in free tier. All contianer deployment options in Azure are discussed here, wrt to pricing
-https://jussiroine.com/2021/12/running-a-single-docker-container-in-azure-cost-effectively/
-
-
-# web app for containers
-
-https://learn.microsoft.com/en-us/azure/app-service/quickstart-custom-container?tabs=dotnet&pivots=container-windows-cli
-
-
-https://learn.microsoft.com/en-us/azure/devops/pipelines/apps/cd/deploy-docker-webapp?view=azure-devops&tabs=python%2Cyaml
-
-```
-az group create --name usermapRG --location eastus
-
-az appservice plan create \
-  --resource-group usermapRG \
-  --location eastus \
-  --name usermapPlan2 \
-  --sku F1 \
-  --is-linux
+```bash
+$ docker tag usermap blinklet/user-mapping:v1
 ```
 
-Need admin user to deploy container to app service
-https://learn.microsoft.com/en-us/azure/container-registry/container-registry-authentication?tabs=azure-cli#admin-account
+Now, when you list local images, you see the *usermap:latest* image is also called *user-mapping:v1*. See teh image ID to verify it is the same image under two different names:
 
-
-az acr update -n registorium --admin-enabled true
-
-$ docker login registorium.azurecr.io --username 00000000-0000-0000-0000-000000000000 --password-stdin <<< $TOKEN
-
-
-
-az webapp create \
-  --name usermapApp \
-  --plan usermapPlan \
-  --resource-group usermapRG \
-  --deployment-container-image-name registorium.azurecr.io/usermap
+```bash
+$ docker images
+REPOSITORY                       TAG       IMAGE ID       CREATED       SIZE
+blinklet/user-mapping            v1        9ce0b76c0af7   3 days ago    113MB
+usermap                          latest    9ce0b76c0af7   3 days ago    113MB
+postgres                         latest    43677b39c446   12 days ago   412MB
+mcr.microsoft.com/mssql/server   latest    683d523cd395   4 weeks ago   2.9GB
 ```
 
-After deployment, your app is available at http://<app-name>.azurewebsites.net.
+Push the image to your new private repository:
 
+```bash
+$ docker push blinklet/user-mapping:v1
 ```
-az webapp delete --name usermapApp --resource-group usermapRG
+
+## Start a virtual private server
+
+Many cloud-based virtual private servers are available. Some examples for popular VPS providers are: Linode, Digital Ocean, Microsoft Azure, Amazon AWS, and Google Cloud. Most services offer free trials and also offer small servers for around five dollars a month. In this case, I will use Microsoft Azure because I already started a free trial with them, which includes one small VPS for 12 months.
+
+Every service offers a web interface and most offer a command-line interface. The process for creating a VPS will be different on each service but the general steps should be similar. They are:
+
+* Create the VPS. Choose the VPS specifications like CPU, memory, and storage sizes; location; and operating system
+* Configure networking for the VPS. Select which IP's are allowed to connect or open it to the entire world. Choose the TCP port that will accept traffic. In this case, choose Port 80 for HTTP, which is good enough for this demonstration, assuming you will stop the web app after you verify it is deployed. 
+    * Running a web app like *usermapper-web* on HTTP in the year 2023 is asking for trouble. In a future post, will cover how to secure your app using SSL encryption and HTTPS.
+
+Create the VPS. I am using Microsoft Azure so teh commands below use the Azure CLI. Microsoft Azure lets you run a [virtual machine with size *B1s* free for 12 months](https://azure.microsoft.com/en-us/pricing/free-services). The usual process for creating an Azure VPS using Azure CLI is as follows:
+
+Create a resource group for the VPS and all its resources. I chose to name my reource group *vm-group* and use Azure's *eastus* location.
+
+```bash
+az group create --name vm-group --location eastus
 ```
 
-# Run on VPS
 
-web apps are always free
+Create the virtual network that the VPS will use
 
-https://learn.microsoft.com/en-us/training/modules/deploy-run-container-app-service/2-build-store-images
+Create the VPS. Use the [Ubuntu Server](https://ubuntu.com/azure) image. Set the size to *Standard_B1s*, which is the size allowed in teh free service tire.
 
-but, every service will do it differently. VPS's require more responsibility but work relativbely the same in most services.
-
-However, this is the easiest way to securely assign secrets (VPS would need Docker Swarm or Kubernetes to securely inject environment variables at run time, which is overkill for our simple web app.)
-
-
-
-or run on a VPS that is free for 12 months, about $5 per month after that
-
-Azure B1s burstable VM
-
-https://learn.microsoft.com/en-us/azure/virtual-machines/linux/quick-create-cli
-
-
-<!--
-securely deploy docker container to server
-
-https://jfrog.com/devops-tools/article/3-steps-to-securing-your-docker-container-deployments/#:~:text=3%20Essential%20Steps%20to%20Securing%20Your%20Docker%20Container,3%203.%20Keep%20Your%20Images%20Lean%20and%20Clean
-
-https://www.equalexperts.com/blog/tech-focus/quick-wins-to-secure-your-docker-containers/
-
-https://stackoverflow.com/questions/39855304/how-to-add-user-with-dockerfile
--->
-
-
-```
-export RESOURCE_GROUP_NAME=usermapRG
-export LOCATION=eastus
-export VM_NAME=usermapVM
-export VM_IMAGE=Ubuntu2204
-export VM_SIZE=Standard_B1s
-export ADMIN_USERNAME=usermap67
-
-az group create --name $RESOURCE_GROUP_NAME --location $LOCATION
-
+```bash
 az vm create \
-  --resource-group $RESOURCE_GROUP_NAME \
-  --name $VM_NAME \
-  --size $VM_SIZE
-  --image $VM_IMAGE \
-  --admin-username $ADMIN_USERNAME \
+  --resource-group vm-group \
+  --name usermap-vm \
+  --image Ubuntu2204 \
+  --size Standard_B1s \
+  --admin-username brian \
   --generate-ssh-keys \
   --public-ip-sku Standard
+```
 
-az vm run-command invoke \
-   --resource-group $RESOURCE_GROUP_NAME \
-   --name $VM_NAME \
-   --command-id RunShellScript \
-   --scripts "sudo apt-get update && sudo apt-get install -y nginx"
+Make a note of the information provided in the command output. You need to know the VM's public IP address:
+
+```bash
+SSH key files '/home/brian/.ssh/id_rsa' and '/home/brian/.ssh/id_rsa.pub' have been generated under ~/.ssh to allow SSH access to the VM. If using machines without permanent storage, back up your keys to a safe location.
+
+{
+  "fqdns": "",
+  "id": "/subscriptions/e0892a48-576e-4aa9-a2d3-b7490707ccfb/resourceGroups/vm-group/providers/Microsoft.Compute/virtualMachines/usermap-vm",
+  "location": "eastus",
+  "macAddress": "00-22-48-27-03-C3",
+  "powerState": "VM running",
+  "privateIpAddress": "10.0.0.4",
+  "publicIpAddress": "40.71.28.95",
+  "resourceGroup": "vm-group",
+  "zones": ""
+}
+```
+
+Set the allowed TCP port. In this case, I allow only connections that request TCP posrt 80. Criminals know the IP address blocks used by Azure virtual machines and constantly scan them for vulnerable machines so, unless you have properly secured your VM, which we have not in this case, do not run it indefinitely. 
+
+```bash
+$ az vm open-port --port 80 --resource-group vm-group --name usermap-vm
+```
+
+## Install the web app on the server
+
+Next, login to the VM using SSH. By default, Azure set up the VM to accept SSH connections using the key pair it automatically configured when you created it.
+
+```bash
+$ ssh -i ~/.ssh/id_rsa brian@40.71.28.95
+```
+
+On the VM, install Docker
+
+```bash
+brian@usermap-vm:~$ snap install docker
+```
+
+Then, login to Docker Hub and pull the application image from your private repository:
+
+```bash
+brian@usermap-vm:~$ sudo docker login
+brian@usermap-vm:~$ sudo docker pull blinklet/user-mapping:v1
+```
+
+Run the docker container and map its application port 8080 to the VM's TCP port 80.
+
+```bash
+brian@usermap-vm:~$ sudo docker run \
+  --detach \
+  --publish 80:8080 \
+  --name user1 \
+  blinklet/user-mapping:v1
+```
+
+Exit the VM:
+
+```bash
+brian@usermap-vm:~$ exit
+```
+
+## Test the application
+
+Test the app. Open a browser to the virtual machine's IP address.
+
+```text
+http://40.71.28.95
+```
+
+You should see that the web app is working on your remote server:
+
+![Web app running on Azure VPS at IP address 40.71.28.95]({attach}azure-app-01.png)
 
 
-az vm open-port --port 80 --resource-group $RESOURCE_GROUP_NAME --name $VM_NAME
+## Clean up
 
-#### Get IP address
+It is easy to clean up your Azure services. Just delete the entire resource group.
 
-export IP_ADDRESS=$(az vm show --show-details --resource-group $RESOURCE_GROUP_NAME --name $VM_NAME --query publicIps --output tsv)
+```bash
+az group delete --resource-group vm-group
+```
 
-az group delete --name usermapRG --no-wait --yes --verbose
+It may take more than a few minutes to delete all resources and the resource group.
+
+## More deployment options
+
+Now that you have a container that you tested and that you know works, you can deploy it almost anywhere. Azure offers several other deployment options, depending on the level of responsibility you want to take and the amount you want to pay. [Azure Web App for Containers](https://azure.microsoft.com/en-ca/products/app-service/containers?activetab=pivot:deploytab), for example, will let you run a container on a platform that Microsoft has already secured. All other cloud service providers offer similar container-based web app services.
+
+## Conclusion
+
+You took an existing Python web app, and containerized it so it is easy to test locally and deploy anywhere. Once you start using containers for application deployment, you will want to start using more automation in your development process. You can implement CI/CD processes and use WebHooks to automate the application updte process. 
 
 
 
 
-# Add domain name
-
-https://learn.microsoft.com/en-us/azure/app-service/tutorial-secure-domain-certificate
 
 
 
 
 
-on server, use sample compose file:
-
-https://github.com/docker/awesome-compose/blob/master/nginx-wsgi-flask/compose.yaml
 
