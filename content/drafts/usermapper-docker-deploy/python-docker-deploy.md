@@ -1,36 +1,49 @@
 title: Use Docker to Test and Deploy Python Web Apps
 slug: python-web-docker-deploy
 summary: Use Docker to test apps on your local PC and then use Docker to easily deploy them to a virtual private server (VPS)
-date: 2023-09-31
-modified: 2023-09-31
+date: 2023-09-30
+modified: 2023-09-30
 category: Docker
 <!--status: Published-->
 
-Take an existing Flask application, then test and deploy it using Docker containers.
+Using Docker containers to test an existing Flask application locally, and then use Docker to deploy it to a remote server.
 
-First get the first version of my [usermapper-web application]({filename}\articles\003-flask-web-app-tutorial\flask-web-app-tutorial.md) from Github
+## Test the existing web app
+
+First, get the first version of my [usermapper-web application]({filename}\articles\003-flask-web-app-tutorial\flask-web-app-tutorial.md) from Github. It's tagged as vesion 0.1 so run the following commands to get the application files.
 
 ```
 $ wget https://github.com/blinklet/usermapper-web/archive/refs/tags/v0.1.tar.gz
 $ tar -xvf v0.1.tar.gz
 ```
 
-Create a virtual environment:
+The application files will be uncompressed into a folder named *usermapper-web-0.1/*.
 
 ```bash
 $ cd usermapper-web-0.1
+$ ls
+application.py
+LICENSE
+README.md
+requirements.txt
+templates
+```
+
+Create a Python virtual environment in the same folder:
+
+```bash
 $ python3 -m venv env
 $ source env/bin/activate
 (env) $
 ```
 
-Install the dependencies
+Install the application's dependencies:
 
 ```bash
 (env) $ pip install -r requirements.txt
 ```
 
-The application needs two more things: a dotenv file and a *downloads* directory. The both the dotenv file and the *downloads* directory must be in the same location as the *application.py* file.
+The application needs two more things: a [dotenv file]({filename}/articles/011-use-environment-variables/use-environment-variables.md) and a *downloads* directory. The both the dotenv file and the *downloads* directory must be in the same location as the *application.py* file.
 
 Create the dotenv file, named *.env*, using your favorite text editor:
 
@@ -56,27 +69,56 @@ $ mkdir downloads
 Run the Flask app
 
 ```
-(env) $ python3 application.py
+(env) $ flask run
 ```
 
+Test the application. Enter the application's URL in a browser window. A Flask app like this should be running on the *localhost* loopback address on TCP port 5000:
+
+```text
+http://localhost:5000
+```
+
+The browser window should show the web app's first page:
+
+![Usermapper Web App running on local PC in development mode]({attach}usermapper-01.png)
+
+For more information about the web app and how to use it, either refer to the instructions on the web page or read [my web app tutorial post]({filename}/articles/003-flask-web-app-tutorial/flask-web-app-tutorial.md).
+
+After you finish testing the *usermapper-web* application, quit the Flask app by typing *CTRL-C* in the terminal window.
+
+And, deactivate the virtual environment:
+
+```bash
+(env) $ deactivate
+```
 
 
 ## Deploy existing application to Docker container
 
-Use Python container?
+
+
+In my webapp tutorial post, I described how to deploy the application to a Microsoft Azure web app service simply by copying a projects files and directories to an Azure web app. That remains a great way to deploy web apps, if you want to use Microsoft Azure's proprietary tools.
+
+In this post, I will show you a more general-purpose way to deploy a web app that will run anywhere, including on a virtual private server (VPS) started on any cloud provider. This requires that you take more responsibility for the way to package your application and for running other services that help serve and secure your application. You will have to add a production-ready WSGI server to your application's environment, add some Docker files in our project directory, and set up production environment variables.
+
+you will copy the application code to a Docker image that can be deployed either to a container running locally or one running on a remote server.
 
 ### Get files and set up virtual environment
 
+Create a new project directory and then copy the *usermapper-web* files into it:
+
 ```bash
-$ git clone https://github.com/blinklet/usermapper-web.git
+$ mkdir ../usermapper-web
+$ cp -r . ../usermapper-web
+$ cd ../usermapper-web
 ```
+
+
 ### Add gunicorn
 
-git tag -a v0.1 cf41112 -m "First development release"
+The current program uses the Flask development server to run the web app. You should not use the Flask development server on a real web deployment. Install a [production-ready WSGI server](https://flask.palletsprojects.com/en/2.3.x/deploying/), like [Gunicorn](https://gunicorn.org/). I like Gunicorn because it is a Python package, is easy to install, and is lightweight. 
 
-
-
-Don't use dev server in web deployment so run gunicorn, Add it to requirements.txt
+To install Gunicorn in the container image, add it to *requirements.txt* file. The contents of the file should now be the same as shown below.
 
 ```text
 wheel
@@ -88,22 +130,24 @@ gunicorn
 git+https://github.com/blinklet/usermapper.git@v0.3#egg=usermapper
 ```
 
-### Create .env file
+### Create a *.env* file
 
-Look at *.env.example* for inspiration
+The Flask frameworks needs some information from its environment so it knows which file to run. You can set environment variables on a server manually or you can store them in a file and access them using the Python *dotenv* package. If you cloned the *usermapper-web* project, you did not get the file, named *.env* that contains the environment variables for my version of the project. I do not keep the file in my repository because it contains a secret key.
+
+Flask uses a secret key, that should not be shared, to help secure functions like reading inputs from Flask forms. To create a random key for yourself, run the following commands. 
 
 ```bash
 $ cd usermapper-web
 $ python3 -c 'import secrets; print(secrets.token_urlsafe(32))'
 ```
 
-Output
+The command requested a random key that is 32 bytes long. It shoud display on your terminal like the one shown below. 
 
 ```
 D9Oci7p2l9bqM8_uChJKA09tqXFOK7Db-FxKr6rGoDk
 ```
 
-Copy the output and create *.env* file
+Copy the secrte key and add it to your *.env* file. The new file should look like the following:
 
 ```python
 FLASK_APP=application
@@ -111,8 +155,15 @@ FLASK_ENV=production
 SECRET_KEY=D9Oci7p2l9bqM8_uChJKA09tqXFOK7Db-FxKr6rGoDk
 ```
 
-Docker image
+It's a good idea to create an example dotenv file so, when you revisit your project in teh future, you can remember which environment variables you need. If you like, copy the *.env* file to a file named *dotenv.example* and replace the secret key with some dummy data.
 
+### Create the Dockerfile
+
+To create a Docker image that contains the Python packages we need and the *usermapper-web* application, write a Dockerfile that contains the commands needed to build the image. If you need more information, please see my previous post where I cover [building a Docker image]({filename}/articles/018-postgresql-docker/postgresql-docker.md).
+
+In the Dockerfile, choose a base image. I chose an official Python image based on the *Alpine* Linux distribution, which is a very lightweight image. Then [document](https://stackoverflow.com/questions/22111060/what-is-the-difference-between-expose-and-publish-in-docker/47594352#47594352) the TCP port that the application expects to use. Create the app's working directory on the container. Copy the files from the current directory on your PC, which contains the Dockerfile and all the application files and directories, to the working directory on the container. Run Linux commands that install software needed by the application. Finally, set the command that the container will run when it starts up.
+
+Create the Dockerfile using your favorite text editor. It's contents should look like those below:
 
 ```dockerfile
 FROM python:alpine
@@ -121,30 +172,70 @@ WORKDIR /app
 COPY . .
 RUN apk update && \
     apk add git && \
-    pip install --no-cache-dir -r requirements.txt && \
-    mkdir ./downloads
+    pip install --no-cache-dir -r requirements.txt
 ENTRYPOINT ["gunicorn", "--bind", "0.0.0.0:8080", "application:app"]
 ```
 
-```bash
-$ docker build -t usermap .
+Save the file and name it *Dockerfile*, which is a default name for a Dockerfile.
+
+### Docker Ignore file
+
+Next, create a *.dockerignore* file that tells Docker which files in the current directory should not be copied to the Docker image when you build it. You want to avoid copying Git repositories, Python cache files, Python virtual enironments, and unneeded project files.
+
+Create a new file in your text editor, name it *.dockerignore*, and add the following contents to it:
+
+```text
+# Git files
+.git
+.gitignore
+
+# Unneeded project files
+.env.example
+README*
+
+# Python files
+__pycache__
+*.pyc
+*.pyo
+*.pyd
+
+# Docker files
+.dockerignore
+Dockerfile
 ```
+
+Note that the *downloads* sub-directory is needed for the application to work correctly. When Docker copies all files to the container, it also copies directories. 
+
+### Build the application image
+
+Build the new image by running the Docker *build* command and pointing it to the current directory (the final "dot" in the command). Tag the new image. I chose to tag my image with the name, *usermap:v1*.
+
+```bash
+$ docker build -t usermap:v1 .
+```
+
+After the build is completed, you should see it in your local images repository:
 
 ```
 $ docker images
 REPOSITORY                       TAG       IMAGE ID       CREATED          SIZE
-usermap                          latest    e80b2504dcab   13 minutes ago   112MB
+usermap                          v1        e80b2504dcab   13 minutes ago   112MB
 postgres                         latest    43677b39c446   7 days ago       412MB
 mcr.microsoft.com/mssql/server   latest    683d523cd395   3 weeks ago      2.9GB
 ```
 
-(Python:Alpine is only 52 MB but I had to add Git. If I properly package *usermapper* and upload it to PyPI, I could avoid installing Git and have an even smaller image. Or, if I copy the usermapper modules into the usermapper-web directory, I get the same effect but I don't want to mix up the two projects)
+Notice how Docker labels what you might think is the image name as the "repository". The real image name is the combination of repository and tag. This will be important later when you want to create a private repository on Docker Hub.
+
+### Test the image
+
+To test that the image was built correctly and that the application will run correctly, create a new container from it. 
 
 ```bash
-$ docker run --detach -rm --network host --port 5000:5000 --name usermap1 usermap
+$ docker run --detach --publish 127.0.0.1:80:8080/tcp --name user1 usermap
 ```
 
-Connect browser to http://localhost:5000
+The new container should start serving the web app, via the Gunicorn WSGI server which includes a basic HTTP server, 
+Connect your browser to http://localhost
 
 ![]({attach}usermapper-01.png)
 

@@ -1883,7 +1883,7 @@ A browser window will open and prompt you to login. Follow the instructions in t
 
 You already have a *usermapper-web* Git repository on your PC. Use the Azure CLI to deploy your web app to an Azure Web App by following the steps outlined below. 
 
-Deploy the *usermapper-web* web app with the command:
+Deploy the *usermapper-web* web app with the *[az webapp up](https://learn.microsoft.com/en-us/cli/azure/webapp?view=azure-cli-latest#az-webapp-up)* command, which create an Azure webapp and deploys code from the current folder to the webapp. The command also uploads code in subdirectories and empty subdirectories like the *downloads* directory used by the application to the Azure webapp:
 
 ```bash
 (env) $ cd ~/Projects/usermapper-web
