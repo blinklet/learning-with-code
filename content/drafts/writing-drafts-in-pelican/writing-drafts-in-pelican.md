@@ -4,7 +4,7 @@ summary: Here are some tips for conveniently working on draft blog posts for you
 date: 2023-05-15
 modified: 2023-05-15
 category: Blogging
-<!--status: draft-->
+status: draft
 
 (Maybe turn this into how I work in Pelican, in general)
 

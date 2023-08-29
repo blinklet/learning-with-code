@@ -1,3 +1,11 @@
+title: unknown3
+slug: unknown3
+summary: tbd
+date: 2023-08-07
+modified: 2023-08-07
+category: Databases
+status: draft
+
 maybe use Redis, which can automatically timeout data?
 
 json-ify the usermapper xml?

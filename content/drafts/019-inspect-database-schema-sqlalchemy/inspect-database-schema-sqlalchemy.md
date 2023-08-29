@@ -41,7 +41,7 @@ $ source .venv/bin/activate
 (.venv) $ pip install tabulate
 ```
 
-In this post, I create a container running the Chinook sample database on a PostgreSQL server. I described how I created a local Docker image named *postgres-chinook-image* in my [previous post]({filename}\articles\018-postgresql-docker\postgresql-docker.md).
+In this post, I create a container running the Chinook sample database on a PostgreSQL server. I described how I created a local Docker image named *postgres-chinook-image* in my [previous post]({filename}/content/articles/018-postgresql-docker/postgresql-docker.md).
 
 ```bash
 $ docker run \
