@@ -661,11 +661,11 @@ $ docker build \
   --build-arg passwd=A8f%h45dx23a .
 ```
 
-### Push the image to Docker hub
+### Push the image to a Docker repository
 
-You may share your image on [Docker hub](https://hub.docker.com) or you may create your own Docker registry and share the image from there. If you choose to use Docker hub, you need to login and then push the image to your account. 
+You may share your image on a repository like [Docker hub](https://hub.docker.com) or you may create your own Docker registry and share the image from there. If you choose to use Docker hub, you need to login and then push the image to your account. 
 
-Tell users to pull the image from your account on Docker Hub. You will also have to tell them the password for the SA user.
+> **IMPORTANT:** If this image is intended to be used in production, ensure your Docker Hub repository is *private* because it is easy for anyone to inspect the Docker image and read the SQL SA password. Or, create your own private Docker repository on your own server.
 
 To push the image to Docker Hub, first login with your userid and password:
 
@@ -685,17 +685,19 @@ Then, push the tagged image to Docker Hub. Replace my userid with yours:
 $ docker push blinklet/adventureworks
 ```
 
+To share the image, tell users to pull the image from your repository. You will also have to tell them the password for the SA user, or they can run the `docker image inspect` command and see the value assigned to the *MSSQL_SA_PASSWORD* environment variable.
+
 Tell your users to pull the image using the following command. Replace my userid with yours:
 
 ```bash
 $ docker pull blinklet/adventureworks
 ```
 
-Again, this is a 3GB image so it will take a while to upload to the Docker Hub but then you will not be using your own disk space and network bandwidth to share it with others.
+Again, this is a 3GB image so it will take a while to download.
 
 ### Save the image as a file
 
-The last option is to save the image as a file and share it from your own fileshare or server. However, the image is 3GB. I doubt you will want to share a file that large from your own server. 
+The last option is to save the image as a file and share it from your own fileshare or server. However, the image is 3GB. However, you don't have to pay for a private repository on Docker Hub.
 
 If you still want to do this, you can save one or more images with the [Docker *save* command](https://docs.docker.com/engine/reference/commandline/save/), which will save the images in a *tarfile*. Post the tarfile on a file share and tell your users how to download it. They will install it using the [Docker *load* command](https://docs.docker.com/engine/reference/commandline/load/). You will also have to tell them the SA user's password.
 
