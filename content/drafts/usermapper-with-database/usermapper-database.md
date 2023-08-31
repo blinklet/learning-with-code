@@ -1,5 +1,5 @@
-title: unknown3
-slug: unknown3
+title: Web app with database
+slug: web-app-database-python
 summary: tbd
 date: 2023-08-07
 modified: 2023-08-07
@@ -18,6 +18,9 @@ https://stackoverflow.com/questions/60499958/what-is-the-best-way-to-store-an-xm
 https://realpython.com/flask-connexion-rest-api/
 https://realpython.com/flask-connexion-rest-api-part-2/
 https://realpython.com/flask-connexion-rest-api-part-3/
+
+multiple-container apps
+https://docs.docker.com/get-started/07_multi_container/
 
 
 using capriver paas
