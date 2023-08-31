@@ -1,10 +1,10 @@
 title: Use Docker to Test and Deploy Python Web Apps
 slug: python-web-docker-deploy
 summary: Use Docker to containerize and test an existing Python app on your local PC. Then, use Docker to easily deploy the containerized app to a virtual private server (VPS).
-date: 2023-09-30
-modified: 2023-09-30
+date: 2023-08-29
+modified: 2023-08-29
 category: Docker
-<!--status: Published-->
+status: Published
 
 <!--
 A bit of extra CSS code to center all images in the post
@@ -284,7 +284,6 @@ $ docker rm user1
 
 ## Publish the image
 
-
 To deploy your image on a remote virtual private server, you will find it most convenient to publish your image to a repository from which you can pull it to the server. However, you need to be careful about exposing sensitive information on a public repository.
 
 The dotenv file you copied to the Docker image contains a secret key that should not be made public. If you post your image in a [public repository like Docker Hub](https://docs.docker.com/docker-hub/), anyone who pulls the image can inspect it and find the secret key. There are multiple ways to manage secrets when deploying applications, that range from simple to complex. In this case, we will keep it simple and protect the secret key by pushing the Docker image to a private repository.
@@ -344,9 +343,9 @@ Many cloud-based virtual private servers are available. Some examples for popula
 
 ### Create the VPS
 
-Create the VPS. I am using Microsoft Azure so the commands below use the Azure CLI. Microsoft Azure lets you run a [virtual machine with size *B1s* free for 12 months](https://azure.microsoft.com/en-us/pricing/free-services). The usual process for creating an Azure VPS using Azure CLI is as follows:
+Create the virtual private server (VPS), which is usually a virtual machine running on a cloud service provider's infrastructure. We are using Microsoft Azure so the commands below use the Azure CLI. Microsoft Azure lets you run a [virtual machine with size *B1s* free for 12 months](https://azure.microsoft.com/en-us/pricing/free-services). The usual process for creating an Azure VPS using Azure CLI is as follows:
 
-Create a resource group for the VPS and all its resources. I chose to name my reource group *vm-group* and use Azure's *eastus* location.
+Create a resource group for the VPS and all its resources. I chose to name my reource group *vm-group* and use Azure's *eastus* location. You may choose amy name that you like and any one of [Microsoft Azure's regions](https://azure.microsoft.com/en-ca/explore/global-infrastructure/geographies/).
 
 ```bash
 $ az group create \
@@ -354,7 +353,7 @@ $ az group create \
     --location eastus
 ```
 
-Create the VPS. Use the [Ubuntu Server](https://ubuntu.com/azure) image. Set the size to *Standard_B1s*, which is the size allowed in teh free service tire.
+Create a virtual machine. Use the [Ubuntu Server](https://ubuntu.com/azure) image. Set the size to *Standard_B1s*, which is the size allowed in the free service tire.
 
 ```bash
 $ az vm create \
@@ -384,6 +383,8 @@ SSH key files '/home/brian/.ssh/id_rsa' and '/home/brian/.ssh/id_rsa.pub' have b
   "zones": ""
 }
 ```
+
+In this case, the virtual machine's public IP address is `40.71.28.95`. In this example, we use only IPv4 addresses.
 
 Set the allowed TCP port. In this case, I allow only connections that request TCP posrt 80. Criminals know the IP address blocks used by Azure virtual machines and constantly scan them for vulnerable machines so, unless you have properly secured your VM, which we have not in this case, do not run it indefinitely. 
 
@@ -440,7 +441,7 @@ You should see that the web app is working on your remote server:
 
 ![Web app running on Azure VPS at IP address 40.71.28.95]({attach}azure-app-01.png){width=90%}
 
-I do not cover how to set up your VPS to use a domain name like *user-mapping.com*. I'll cover that in a future post.
+In this post, I don't cover how to set up your VPS to use a domain name like *user-mapping.com*. I'll cover that in a future post.
 
 ## Clean up
 
@@ -459,7 +460,7 @@ You took an existing Python web app, and containerized it so it is easy to test 
 
 Now that you have a containerized application, you can deploy it almost anywhere. Azure offers several other deployment options, depending on the level of responsibility you want to take and the amount you want to pay. [Azure Web App for Containers](https://azure.microsoft.com/en-ca/products/app-service/containers?activetab=pivot:deploytab), for example, will let you run a container on a platform that Microsoft has already secured. All other cloud service providers offer similar container-based web app services.
 
-Once you start using containers for application deployment, you will want to start using more automation in your development process. You can implement CI/CD processes and use WebHooks to automate the application update process. 
+Once you start using containers for application deployment, you will want to start using more automation in your development process. You can use Docker Compose to automatically run multi-container applications. You can implement CI/CD processes and use WebHooks to automate the application update process. 
 
 
 
