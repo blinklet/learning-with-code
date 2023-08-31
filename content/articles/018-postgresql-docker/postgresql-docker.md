@@ -1,7 +1,7 @@
 title: Create a PostgreSQL database in a Docker container
 slug: postgressql-on-docker-container
 summary: For the purpose of local testing, create a Docker container that runs the Chinook sample database on a PostgreSQL database server.
-date: 2023-08-21
+date: 2023-08-01
 modified: 2023-08-21
 category: Databases
 status: Published

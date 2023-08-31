@@ -1,7 +1,7 @@
 title: Use Python to read data from a database
 slug: python-program-read-database-data
 summary: Leverage Python and the *pyodbc* library to efficiently read data from an SQL database
-date: 2023-06-30
+date: 2023-06-02
 modified: 2023-06-30
 category: Databases
 status: published

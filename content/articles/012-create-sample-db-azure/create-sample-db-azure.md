@@ -1,7 +1,7 @@
 title: Create a sample database on Azure cloud
 slug: create-sample-db-azure
 summary: For the purpose of practicing data analytics programming, create your own personal database server on Microsoft's Azure cloud, populate it with sample data, and run the server on Azure's free service tier
-date: 2023-05-30
+date: 2023-05-03
 modified: 2023-06-26
 category: Databases
 status: published

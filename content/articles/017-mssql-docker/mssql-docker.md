@@ -1,7 +1,7 @@
 title: Create a SQL Server database in a Docker container
 slug: mssql-on-docker-container
 summary: Create a Microsoft SQL Server on your local PC using Docker and load the AdventureWorks sample database so you can use it for experiments and other learning activities.
-date: 2023-08-18
+date: 2023-07-18
 modified: 2023-08-18
 category: Databases
 status: Published

@@ -1,7 +1,7 @@
 title: Explore SQL database schemas with Python
 slug: read-db-python-odbc-driver
 summary: Write Python programs that model a SQL database schema and read data from it, using the *pyodbc* driver
-date: 2023-06-14
+date: 2023-05-18
 modified: 2023-06-29
 category: Databases
 status: published

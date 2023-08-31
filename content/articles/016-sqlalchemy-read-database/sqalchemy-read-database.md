@@ -1,7 +1,7 @@
 title: SQLAlchemy queries: The minimum you need to know
 slug: sqlalchemy-read-database
 summary: The minimum you need to know about using SQLAlchemy to build powerful SQL queries that you can use with the Pandas *read_sql_query()* function.
-date: 2023-08-07
+date: 2023-07-02
 modified: 2023-08-07
 category: Databases
 status: Published
