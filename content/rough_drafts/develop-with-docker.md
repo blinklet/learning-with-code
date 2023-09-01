@@ -20,3 +20,28 @@ https://medium.com/rate-engineering/using-docker-containers-as-development-machi
 https://medium.com/rate-engineering/using-docker-containers-to-run-a-distributed-application-locally-eeabd360bca3
 
 
+
+
+
+
+using capriver paas
+https://levelup.gitconnected.com/using-docker-and-digitalocean-to-host-a-simple-flask-app-5d78c9f50ba4
+
+https://www.linode.com/docs/guides/flask-and-gunicorn-on-ubuntu/
+
+https://blog.logrocket.com/build-deploy-flask-app-using-docker/
+
+https://learn.microsoft.com/en-us/azure/devops/pipelines/apps/cd/deploy-docker-webapp?view=azure-devops&tabs=python%2Cyaml
+
+https://www.digitalocean.com/community/tutorials/how-to-deploy-a-go-web-application-with-docker-and-nginx-on-ubuntu-18-04
+
+process seems to be:
+1) develop locally in virtual environment
+2) create requirements file
+3) dockerfile copies code to image, runs python app
+4) push image hub
+5) web service gets image from hub and compose file via scp and runs "compose up"
+
+ensure system works if vps is restarted:
+https://stackoverflow.com/questions/30449313/how-do-i-make-a-docker-container-start-automatically-on-system-boot
+

@@ -1,14 +1,23 @@
-title: unknown2
-slug: unknown2
-summary: tbd
-date: 2023-08-07
-modified: 2023-08-07
+title: Working with database views
+slug: sqlalchemy-database-views
+summary: Data scientists often read data from database views, in addition to database tables. Views offer a different challenge to developers working with SQLAlchemy because database views usually do not have primary key relationships defined.
+date: 2023-10-07
+modified: 2023-10-07
 category: Databases
 status: draft
 
 <!--
 This all comes from my "big database doc. It is mostly about using database views so use it with AdventureWorks LT on Azure and the view tables there
 -->
+
+Database Views are virtual tables that derive data dynamically, unlike static database tables [^1]. 
+
+[^1]: From https://aristeksystems.com/blog/database-views-what-you-need-to-know/
+
+Reasons for views:
+- limit access to the data. Provide only what is needed by the user. This is often the way data scientists who work with sensitive data will work. This limits the risk that the data scientist's employer or client may incur if a data scientist mishandled other sensitive data from the database.
+- being helpful by presenting results of queries, already prepared. For example, creating a view made up of selected columns from several different tables.
+
 
 ## Use SQLAlchemy to read schemas in a database
 
