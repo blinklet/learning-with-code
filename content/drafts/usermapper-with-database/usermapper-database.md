@@ -1,6 +1,6 @@
 title: Add a database to a web app
 slug: web-app-database-python
-summary: Most web applications need to store data so it can be passed between the application's routes or views. Many developers choose to use a database to solve this problem. This post shows how I added a database to my *usermapper-web* web app.
+summary: Most web applications need to store data. Even if they do not store user data, they need to temporarily cache data so it can be passed between the application's routes or views. Many developers choose to use a database to solve this problem. This post shows how I added a database to my *usermapper-web* web app.
 date: 2023-09-07
 modified: 2023-09-07
 category: Databases
