@@ -1294,7 +1294,7 @@ The *index.html* template now looks like:
 {% endblock %}
 ```
 
-This is a good example that shows how Flask extensions can make things simpler. Bootstrap-Flask's *render_form* macro takes the *form* object that was passed into the template from application.py's *index* view and renders all the form fields by in the *form* object.
+This is a good example that shows how Flask extensions can make things simpler. Bootstrap-Flask's *render_form* macro takes the *form* object that was passed into the template from application.py's *index* view and renders all the form fields in the *form* object.
 
 Refresh the browser to see the changes. The form looks different because it is rendered by Bootstrap-Flask using CSS style classes provided by Bootstrap. Using Flask-Bootstrap macros makes development easier, but it forces you to lose some control over appearance.
 

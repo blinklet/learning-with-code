@@ -12,6 +12,15 @@ I used the [Flask framework](https://flask.palletsprojects.com/en/2.3.x/) to imp
 
 The "standard" way to cache user data for a web app is to use a database server. In this post, I will create a local database instance and change my *usermapper-web* program so it uses the database to store user information.
 
+## Why use a database
+
+Flexibility:
+
+- Can use any database service in the cloud when deploying -- just have to change some variables
+- Or, can deploy using containers so the "state" is in the database
+- Or, do both: test locally using containers and deploy using cloud services.
+
+
 ## Steps required
 
 Changing the way *usermapper-web* stores user information requires the following steps:
@@ -27,6 +36,183 @@ Changing the way *usermapper-web* stores user information requires the following
 1. Use [StringIO](https://docs.python.org/3/library/io.html) to serve the XML content as a [file download](https://www.geeksforgeeks.org/stringio-module-in-python/) to the user.
 
 1. When the user session ends, delete the row that contained that session's data. The app does not need to save the user's data because they will have their config file on their local computer. Managing user accounts and data will be a feature that may be implemented in the future.
+
+## Test the exiting *usermapper-web* application
+
+Get the code for the *usermapper-web* application. If you want to follow along with this tutorial, start at the tag *v0.3*, as shown below:
+
+```
+$ git clone --branch v0.3 https://github.com/blinklet/usermapper-web.git
+$ cd usermapper-web
+$ ls -1
+application.py
+Dockerfile
+dotenv.example
+downloads
+LICENSE
+README.md
+requirements.txt
+templates
+```
+
+Prepare a Python virtual environment and the dotenv file for local development.
+
+```bash
+$ python3 -m venv .venv
+$ source .venv/bin/activate
+(.venv) $ pip install -r requirements.txt
+$ cp dotenv.example .env
+```
+
+Run the application with the following command:
+
+```
+(.venv) $ flask run
+```
+
+To test the application, enter the application's URL in a browser window. Use the following URL:
+
+```text
+http://localhost:5000
+```
+
+The browser window should show the web app's first page, as shown in the screenshot below
+
+![Usermapper Web App running on local PC in development mode]({attach}usermapper-01.png){width=90%}
+
+For more information about the *usermapper-web* application and how to use it, either refer to the instructions on the web page or read [my web app tutorial post]({filename}/content/articles/003-flask-web-app-tutorial/flask-web-app-tutorial.md) that describes how I developed and use it.
+
+After you finish testing the *usermapper-web* application, quit the Flask app by typing *CTRL-C* in the terminal window. 
+
+## Generate a UUID
+
+Use the Python Standard Library's [UUID module](https://docs.python.org/3/library/uuid.html) to generate a random ID that will be used to identify each user's session. The UUID module is very unlikely to produce a duplicate ID within your lifetime.
+
+According to the UUID module's documentation, the *uuid4* function generates an instance of the UUID class that contains a random ID and its *int* attribute returns that ID as a 128-bit integer. So, I will use the statement, `uuid.uuid4().int` to generate a random integer that I will use to name the directory.
+
+For example:
+
+```python
+(.venv) $ python3
+>>> import uuid
+>>> for i in range(4):
+...     x = uuid.uuid4().int
+...     print(x)
+...
+48373756605288068424419529448133529384
+18514395524172778111336895815884387082
+157990026457444853003560573840411066999
+249080889110014159706537234532851223902
+>>> quit()
+(.venv) $ 
+```
+
+## Assign UUID to each user session
+
+Use the [Flask-Session](https://flask-session.readthedocs.io/en/latest/) extension. This creates server-side user sessions for Flask but it also requires a "backend" to store the user data on the server. You can use the system memory, filesystem, or a database.
+
+### Install Flask-Session
+
+Install the extension in your Python virtual environment:
+
+```bash
+(.venv) $ pip install Flask-Session
+```
+
+And, add the line, `Flask-Session`, to your *requirements.txt* file.
+
+### Create a session
+
+(Flask-Session creates a cookie for the user called "session" that contains a UUID for that user)
+Get the Flask-Session ID by looking for "session".
+
+Near the top of the *application.py* file add the following import statements:
+
+```python
+from flask import request, session
+from flask_session import Session
+```
+
+In the application configuration section, set the following configuration environment variables for the Session:
+
+```python
+app.config["SESSION_PERMANENT"] = False
+app.config["SESSION_TYPE"] = "filesystem"
+Session(app)
+```
+
+In the "/" route function, change function so it uses the Flask Session instead of manually creating its own random directory
+
+```python
+@app.route("/", methods=('GET','POST'))
+def index():
+    form = MyForm()
+    filename = None
+    if form.validate_on_submit():
+
+        f = form.filename.data
+        basedir = os.path.join(
+            os.path.relpath(os.path.dirname(__file__)), 
+            'downloads')
+        tempdir = tempfile.mkdtemp(dir=basedir)
+
+        filename = os.path.join(tempdir,'user-mapping.xml')
+
+        configuration = yaml.safe_load(f.read())
+        structure = get_users(configuration)
+        xmlwriter(structure,filename)
+
+        temp_folder = os.path.split(tempdir)[1]
+        return redirect (url_for('download_page', temp_folder=temp_folder))
+
+    return render_template('index.html', form=form)
+```
+
+
+
+
+## 
+The *application.py* file contains the Flask routes that create the randomly-named directories in the filesystem. Open the file and look at the 
+
+```
+newpath = r'C:\Program Files\arbitrary'
+if not os.path.exists(newpath):
+    os.makedirs(newpath)
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 ## Set up the database
@@ -45,52 +231,35 @@ Create a new database container called *userdb* from the Postgres image. Set the
 $ docker run \
     --detach \
     --env POSTGRES_PASSWORD=abcd1234 \
-    --env POSTGRES_USER=userdata \
+    --env POSTGRES_USER=sessions \
     --publish 5432:5432 \
     --name userdb\
     postgres
 ```
 
-Use the Docker *exec* command to run the *psql* utility on the container to check that the database server is running. Start it in interactive mode on the container. Use the username, *userdata*, which connects to the database, *userdata*:
+Use the Docker *exec* command to run the *psql* utility on the container to check that the database server is running. Start it in interactive mode on the container. Use the username, *sessions*, which connects to the database, *sessions*:
 
 ```bash
 $ docker exec -it userdb \
-    psql --username userdata
+    psql --username sessions
 
-userdata=#
+sessions=#
 ```
 
 Now you can be confident that the database is ready to use. Quit the *psql* utility:
 
 ```text
-userdata=# \q
+sessions=# \q
 $ 
 ```
 
-## Prepare the Python environment
 
-Get the code for the *usermapper-web* application:
 
-```
-$ git clone https://github.com/blinklet/usermapper-web.git
-$ cd usermapper-web
-$ ls -1
-application.py
-Dockerfile
-dotenv.example
-LICENSE
-README.md
-requirements.txt
-templates
-```
 
 
 ## x
 
-Flexibility:
-- Can use any database service in the cloud when deploying -- just have to change some variables
-- Or, can deploy using containers
-- Or, do both: test locally using containers and deploy using cloud services.
+
 
 Options:
 
