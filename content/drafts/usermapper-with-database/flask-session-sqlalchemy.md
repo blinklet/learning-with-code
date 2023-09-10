@@ -27,7 +27,7 @@ Prepare a Python virtual environment and the dotenv file for local development.
 $ mkdir experiment
 $ cd experiment
 $ python3 -m venv .venv
-$ source .venv/bin/activate
+$ 
 (.venv) $
 ```
 
@@ -375,10 +375,25 @@ However, Flask-Session does not seem to manage the sessions in the database well
 ## Redis?
 
 Try setting up a Redis server?
+https://testdriven.io/blog/flask-server-side-sessions/
 
 
 
+```bash
+(.venv) $  docker exec -it some-redis bash
+root@bd44f2f50099:/data# redis-cli
+127.0.0.1:6379> KEYS *
+1) "session:29aadd11-8831-4b2b-8453-0ca323c9f12b"
+127.0.0.1:6379> 
+127.0.0.1:6379> EXPIRETIME session:29aadd11-8831-4b2b-8453-0ca323c9f12b
+(integer) 1696906209
+127.0.0.1:6379> QUIT
+root@bd44f2f50099:/data# exit
+exit
+(.venv) $ 
+```
 
+https://www.epochconverter.com/
 
 
 
