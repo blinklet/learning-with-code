@@ -1,3 +1,5 @@
+app.py 
+
 ```python
 from flask import Flask, request, redirect, url_for, render_template, session
 from flask_session import Session
@@ -10,7 +12,8 @@ app.config["FLASK_APP"] = "app"
 app.config["FLASK_ENV"] = "Development"
 app.config["SESSION_PERMANENT"] = False
 app.config["SESSION_TYPE"] = "redis"
-app.config["SESSION_REDIS"] = redis.from_url('redis://localhost:6379')
+app.config["SESSION_REDIS"] = redis.Redis()
+app.config["PERMANENT_SESSION_LIFETIME"] = 30
 
 Session(app)
 

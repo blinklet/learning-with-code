@@ -27,7 +27,7 @@ Prepare a Python virtual environment and the dotenv file for local development.
 $ mkdir experiment
 $ cd experiment
 $ python3 -m venv .venv
-$ 
+$ source .venv/bin/activate
 (.venv) $
 ```
 
@@ -172,7 +172,7 @@ def greeting():
             lines = [x.decode('UTF-8') for x in file.readlines()]
             session['file_contents'] = lines
             return redirect (url_for('action'))
-    return render_template('greeting.html', form=form)
+    return render_template('greeting.html')
 
 @app.route("/action", methods=('GET','POST'))
 def action():
@@ -242,6 +242,41 @@ M-^Tes.(.venv) $
 ```
 
 I configured the *SESSION_PERMANENT* environment variable as *False* so that sessions would be deleted when not used anymore. Flask-Session does not immediately delete unused sessions. It waits for some threshold to be reached before it deletes unused session. For example, if you set *SESSION_FILE_THRESHOLD* from its default value of `500` to a very low value, like `1`, you can see that Flask Session will delete older files when there are more than one in the *flask-session* folder, effectively limiting the app to one user at a time. New users overwrite the other user's session, causing them to lose their data.
+
+
+
+"SESSION_PERMANENT" = false
+"PERMANENT_SESSION_LIFETIME" not configured
+   - files remain in folder after session expires
+     - SESSION_FILE_THRESHOLD has no affect
+   - file names do not correspond to session UUIDs in session cookie (filename: 7ce5a9e059f23c82ec6ff3b9383eb4a5, session UUID in browser: session:"ae1fa662-088d-49a9-8f4a-e3183893cd45")
+   - cookie expire time unknown (persists)
+       - cookie is a *session* cookie and is handled by the browser. Some browsers do not delete session cookies.
+
+"SESSION_PERMANENT" = false
+"PERMANENT_SESSION_LIFETIME" = 30
+   - files remain in folder after session expires
+     - SESSION_FILE_THRESHOLD has no affect
+   - cookie contents expire in 30 seconds but cookie remains (persists) so does not create a new file on system. Existing file name is reused for data for a new session so does not trigger directory cleanup.
+       - cookie is a *session* cookie and is handled by the browser. Some browsers do not delete session cookies.
+
+"SESSION_PERMANENT" = true (default)
+"PERMANENT_SESSION_LIFETIME" not configured
+   - files cleaned up after 5 minutes, which is the default value for PERMANENT_SESSION_LIFETIME, when a new session is added (when "Upload" button is clicked)
+     - SESSION_FILE_THRESHOLD required for easy testing. Cleanup happens after limit reached (default is 500 so for texting need to set it lower)
+   - cookie expire time = one month
+    - cookie will be replaced by new cookie with new ID after 30 seconds, so triggers 
+
+"SESSION_PERMANENT" = true (default)
+"PERMANENT_SESSION_LIFETIME" = 30
+   - files cleaned up after PERMANENT_SESSION_LIFETIME, when new session is added (when "Upload" button is clicked)
+     - SESSION_FILE_THRESHOLD required for easy testing. Cleanup happens after limit reached (default is 500 so for texting need to set it lower)
+     - **SESSION_FILE_THRESHOLD overrides PERMANENT_SESSION_LIFETIME. If there are more that x files, Flask-Session deletes files until the threshold is met, regardless of their lifetime.**
+   - cookie expire time = 30 seconds
+    - cookie will be replaced by new cookie with new ID after 30 seconds, so triggers 
+
+9eb774d49bff1dc28b49c895aff742d2
+fa9b99c03dec723a22b0b966f9e0b075
 
 ## Adding a database
 
@@ -341,8 +376,7 @@ app.config["SECRET_KEY"] = "xyzxyxyz"
 app.config["FLASK_APP"] = "app"
 app.config["FLASK_ENV"] = "Development"
 app.config["SESSION_PERMANENT"] = True
-app.config["PERMANENT_SESSION_LIFETIME"] = 30  # 1 hour
-app.config["SESSION_FILE_THRESHOLD"] = 2
+app.config["PERMANENT_SESSION_LIFETIME"] = 3600  # 1 hour
 app.config["SESSION_TYPE"] = "sqlalchemy"
 app.config['SQLALCHEMY_DATABASE_URI'] = uri
 
@@ -371,6 +405,82 @@ However, Flask-Session does not seem to manage the sessions in the database well
 
 **will not use Flask-Session for my usermapper web app because I plan to use an SQL database for it, because I get one for free on Azure**
 
+```bash
+userdata=# SELECT id, session_id, expiry FROM sessions;
+ id |                  session_id                  |           expiry
+----+----------------------------------------------+----------------------------
+  1 | session:a84b86a7-579b-4213-9133-2676812b8759 | 2023-09-08 21:34:02.670951
+  2 | session:58f4a217-1f5b-4a1a-a5ed-38dfa4b43def | 2023-09-08 22:13:32.22257
+(2 rows)
+```
+
+```bash
+userdata=# SELECT now();
+              now
+-------------------------------
+ 2023-09-11 17:30:39.633867+00
+(1 row)
+```
+
+"SESSION_PERMANENT" = false
+"PERMANENT_SESSION_LIFETIME" not configured
+   - Error
+
+"SESSION_PERMANENT" = false
+"PERMANENT_SESSION_LIFETIME" = 30
+   - Error
+
+"SESSION_PERMANENT" = true
+"PERMANENT_SESSION_LIFETIME" not configured
+   - database timeout = 1 month (default)
+   - cookie expire time = 1 month (default)
+
+"SESSION_PERMANENT" = true
+"PERMANENT_SESSION_LIFETIME" = 30
+   - database sets expiry to a timestamp 30 seconds from now, in the row
+     - no rows deleted from DB
+   - cookie expire time = 30 seconds
+       - cookie will be replaced by new cookie with new ID after 30 seconds
+   - new DB record for each new cookie, so not good to have short expiry time (for data sizes)
+
+
+The following SQL code snippet [^1], from [The Art of Web Blog](https://www.the-art-of-web.com/sql/trigger-delete-old/), will configure postgres to clear old rows based on a trigger. In this case, the function us triggered when a new row is inserted into the *sessions* table.
+
+[^1]: From [https://www.the-art-of-web.com/sql/trigger-delete-old/](https://www.the-art-of-web.com/sql/trigger-delete-old/). Accessed September, 2023
+
+```sql
+CREATE FUNCTION delete_old_rows2() RETURNS trigger
+    LANGUAGE plpgsql
+    AS $$
+BEGIN
+  DELETE FROM sessions WHERE expiry < CURRENT_TIMESTAMP - INTERVAL '30 seconds';
+  RETURN NULL;
+END;
+$$;
+
+
+CREATE TRIGGER trigger_delete_old_rows
+    AFTER INSERT ON sessions
+    EXECUTE PROCEDURE delete_old_rows2();
+```
+
+Now, when cookie expires on browser so new session id is created, the new record triggers old records to be deleted
+
+This is OK, but requires I set this up in Postgres outside my Flask app.
+
+I could define this using SQLAlchemy [^2] in my app. But that defeats the original purpose for using Flask-Session, which is to abstract away the management of browser sessions and the back-end storage of user data.
+
+[^2]: For example, after creating an SQLAlchemy engine object, run the following statement: 
+```
+engine.execute("""
+CREATE TRIGGER trigger_delete_old_rows
+    AFTER INSERT ON sessions
+    EXECUTE PROCEDURE delete_old_rows2();
+""")
+```
+
+https://stackoverflow.com/questions/27367886/user-defined-function-creation-in-sqlalchemy
+
 
 ## Redis?
 
@@ -378,23 +488,117 @@ Try setting up a Redis server?
 https://testdriven.io/blog/flask-server-side-sessions/
 
 
+```bash
+(.venv) $ pip install redis
+```
+
+app.py 
+
+```python
+from flask import Flask, request, redirect, url_for, render_template, session
+from flask_session import Session
+import redis
+
+app = Flask(__name__)
+
+app.config["SECRET_KEY"] = "xyzxyxyz"
+app.config["FLASK_APP"] = "app"
+app.config["FLASK_ENV"] = "Development"
+app.config["SESSION_PERMANENT"] = False
+app.config["SESSION_TYPE"] = "redis"
+app.config["SESSION_REDIS"] = redis.Redis()
+
+Session(app)
+
+@app.route("/", methods=('GET','POST'))
+def greeting():
+    if request.method == 'POST':
+        file = request.files['textfile']
+        if file:
+            lines = [x.decode('UTF-8') for x in file.readlines()]
+            session['file_contents'] = lines
+            return redirect (url_for('action'))
+    return render_template('greeting.html')
+
+@app.route("/action", methods=('GET','POST'))
+def action():
+    return render_template('action.html')
+```
+
+Start Redis container
 
 ```bash
-(.venv) $  docker exec -it some-redis bash
-root@bd44f2f50099:/data# redis-cli
+(.venv) $ docker run --name some-redis -d -p 6379:6379 redis
+```
+redis driver:
+https://redis-py.readthedocs.io/en/stable/
+
+
+Try `r = redis.Redis()` for the connection string
+It uses the defaults
+
+```bash
+(.venv) $  docker exec -it some-redis redis-cli
 127.0.0.1:6379> KEYS *
 1) "session:29aadd11-8831-4b2b-8453-0ca323c9f12b"
 127.0.0.1:6379> 
 127.0.0.1:6379> EXPIRETIME session:29aadd11-8831-4b2b-8453-0ca323c9f12b
 (integer) 1696906209
 127.0.0.1:6379> QUIT
-root@bd44f2f50099:/data# exit
-exit
 (.venv) $ 
 ```
 
+https://unixtime.org/
 https://www.epochconverter.com/
+1696906209
+Mon Oct 09 2023 22:50:09 GMT-0400 (Eastern Daylight Time)
 
+```bash
+(.venv) $ date -d @1696906209
+Mon Oct  9 10:50:09 PM EDT 2023
+```
+
+
+variable effects
+
+"SESSION_PERMANENT" = false
+"PERMANENT_SESSION_LIFETIME" not configured
+   - database timeout = 1 month
+   - cookie expire time unknown (persists)
+       - cookie is a *session* cookie and is handled by the browser. Some browsers do not delete session cookies.
+
+"SESSION_PERMANENT" = false
+"PERMANENT_SESSION_LIFETIME" = 30
+   - database expires in 30 seconds
+   - cookie expire time unknown (persists)
+       - cookie is a *session* cookie and is handled by the browser. Some browsers do not delete session cookies.
+
+"SESSION_PERMANENT" = true
+"PERMANENT_SESSION_LIFETIME" not configured
+   - database timeout = 1 month (default)
+   - cookie expire time = 1 month (default)
+
+"SESSION_PERMANENT" = true
+"PERMANENT_SESSION_LIFETIME" = 30
+   - database expires in 30 seconds
+   - cookie expire time = 30 seconds
+   - cookie will be replaced by new cookie with new ID after 30 seconds
+
+So, recommended settings are:
+
+```python
+app = Flask(__name__)
+
+app.config["SECRET_KEY"] = "xyzxyxyz"
+app.config["FLASK_APP"] = "app"
+app.config["FLASK_ENV"] = "Development"
+app.config["SESSION_PERMANENT"] = True
+app.config["SESSION_TYPE"] = "redis"
+app.config["SESSION_REDIS"] = redis.Redis()
+app.config["PERMANENT_SESSION_LIFETIME"] = 30
+
+Session(app)
+```
 
 
 
