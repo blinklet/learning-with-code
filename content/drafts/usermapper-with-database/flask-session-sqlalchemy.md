@@ -1,27 +1,36 @@
-title: Using Flask-Session to manage user data in a web app
-slug: flask-session-sqlalchemy-python
-summary: An experiment to see if the Flask-Session extension can be used without Flask-Login to manage ephemeral user sessions. I also test using SQLAlchemy to provide sessions' backend database. 
+title: Flask-Session deep dive
+slug: flask-session-sqlalchemy-redis-python
+summary: An in-depth review of the Flask-Session extension for the Flask Python web application framework. I review how well it can be used to manage ephemeral, anonymous user sessions. I test using the local file system, SQLAlchemy with a PostgeSQL database, and a Redis database to provide the sessions' backend data storage. 
 date: 2023-09-29
 modified: 2023-09-29
 category: Flask
 <!-- status: Published -->
 
-Where is flask-session data stored in the filesystem?
-https://stackoverflow.com/questions/32084646/flask-session-extension-vs-default-session
-https://testdriven.io/blog/flask-server-side-sessions/
-https://stackoverflow.com/questions/53841909/clean-server-side-session-files-flask-session-using-filesystem
-https://dev.to/hackersandslackers/managing-session-data-with-flask-session-redis-360n
+The *[Flask-Session](https://flask-session.readthedocs.io/en/latest/)* extension manages user sessions for your *[Flask](https://flask.palletsprojects.com/en)* web app and can use a variety of "backends" to store the user data on the server, enabling you to store large amounts of user data per session. The "backend" can be the server's system memory, file system, or a database. 
 
+In this post, I test Flask-Session to see if it is suitable for an application I am developing. I want to use an SQL database to manage user data associated with each user's session. I want users to remain anonymous so I do not implement *Login* and *Logout* buttons in my application. Instead, I want to automatically delete the user data after an anonymous user leaves the application. 
 
-Use the [Flask-Session](https://flask-session.readthedocs.io/en/latest/) extension. This creates server-side user sessions for Flask but it also requires a "backend" to store the user data on the server. You can use the system memory, filesystem, or a database.
+While working with Flask-Session in my sample program, I solved some frustrating issues that I think some readers who are writing similar programs will want to know about. Flask-Session can be made to work in my application by setting configuration variables and adding some initialization code.
 
-In this post, we will create a simple program that uses the filesystem backend and, after we have that working, we will test a database backend. The filesystem backend is suitable for development but most developers will plan to use the database backend in production.
+## Shortcut to the conclusion
 
+This is a long post so I will preview my conclusion here. At the end of this post, I conclude that I will not use Flask-Session for the program on which I am currently working. 
 
+Flask-Session has problems initializing an SQL database that required me to add SQLAlchemy code. If I have to use *[SQLAlchemy](https://www.sqlalchemy.org/)* into my program, anyway, I may as well write my own SQLAlchemy mappings and use them to manage the SQL database backend.
 
-## Set up Python environment
+Flask-Session's documentation assumes that the programmer will manually clean up sessions when a user logs out. It does not clearly explain how to use its configuration options to make it automatically delete backend data from non-permanent sessions. I document these points later in this post but, if I am no longer using Flask-Session to manage the database, it is clearer to use Flask's native *[session](https://flask.palletsprojects.com/en/2.3.x/quickstart/#sessions)* objects in my application.
 
-Prepare a Python virtual environment and the dotenv file for local development.
+However, there are many cases where Flask-Session will work, especially in more classic applications that manage users via the *[Flask-Login](https://pypi.org/project/Flask-Login/)* extension. Flask-Session works well for anonymous users if you use the *[Redis](https://redis.io/)* database backend. I assume most bloggers have come to the same conclusion because it seems every other blogger who writes about Flask-Session uses only Redis in their examples.
+
+## Create a simple program that uses Flask-Session
+
+To evaluate how Flask-Session works, create a simple Flask application that uses the Flask-Session extension with the *filesystem* backend. The *filesystem* backend is useful for testing your application on your PC and also avoids the potential issues that may occur when trying to connect to a database.
+
+The application will consist of a single application file, named *app.py*, and several Jinja template files that create the application's HTML web pages.
+
+### Set up Python environment
+
+Prepare a Python virtual environment for this project. I will place my application and the virtual environment in a directory named *experiment*.
 
 ```bash
 $ mkdir experiment
@@ -31,23 +40,24 @@ $ source .venv/bin/activate
 (.venv) $
 ```
 
+Install Flask and Flask-Session.
+
 ```bash
 (.venv) $ pip install flask
 (.venv) $ pip install Flask-Session
 ```
 
-## Create basic Flask templates
+### Create basic Flask templates
 
-Let's have a base template and two page templates that display different pages: a greetings page that gathers some user data, and an action page that displays it back to the user.
+Create a base template and two page templates that display different pages: a greetings page that gathers some user data, and an action page that displays that data back to the user.
 
-I re-used code from my *[usermapper-web]({filename}/articles/003-flask-web-app-tutorial/flask-web-app-tutorial.md)* application to make these templates. I decided to keep the [Bootstrap](https://getbootstrap.com/) code because it makes the page look good.
-
-Create a *templates* directory:
+Create a *templates* directory for the templates:
 
 ```bash
-mkdir templates
+(.venv) $ mkdir templates
+(.venv) $ cd templates
 ```
-### Base template
+#### Base template
 
 Create a file named *base.html*:
 
@@ -75,7 +85,7 @@ Enter the following text
 
 Save the file.
 
-### Greeting template
+#### Greeting template
 
 Create a file named *greeting.html*:
 
@@ -102,7 +112,7 @@ Enter the following text
 {% endblock %}
 ```
 
-### Action template
+#### Action template
 
 Create a file named *action.html*:
 
@@ -130,38 +140,53 @@ Enter the following text
 {% endblock %}
 ```
 
-## Create a session
-
-(Flask-Session creates a cookie for the user called "session" that contains a UUID for that user)
-Get the Flask-Session ID by looking for "session".
+### Create the Flask application
 
 Edit a file named *app.py*:
 
 ```nash
 (.venv) $ nano app.py
 ```
-At the top of the *app.py* file add the following import statements:
+
+At the top of the *app.py* file, import the following classes and functions from Flask and Flask-Session:
 
 ```python
 from flask import Flask, request, redirect, url_for, render_template, session
 from flask_session import Session
 ```
 
-In the application configuration section, set the following configuration environment variables for the Flask app and for the sessions to be created:
+[Instantiate](https://flask.palletsprojects.com/en/2.0.x/design/) the Flask application object. In this case, we will follow convention and call it *app*.
 
 ```python
 app = Flask(__name__)
+```
 
+To configure the Flask application, set the usual Flask environment variables, *SECRET_KEY*, *FLASK_APP*, and *FLASK_ENV*. 
+
+ for the Flask app and for the sessions to be created:
+
+```python
 app.config["SECRET_KEY"] = "xyzxyxyz"
 app.config["FLASK_APP"] = "app"
 app.config["FLASK_ENV"] = "Development"
-app.config["SESSION_PERMANENT"] = False
-app.config["SESSION_TYPE"] = "filesystem"
+```
 
+Then set the Flask-Session environment variables. Set the *SESSION_TYPE* to *filesystem* because it is the simplest backend to set up and so it is a good backend with which to start experimenting. 
+
+Flask-Session will start cleaning up old files from the directory after more than 500 files are stored there. You can change this threshold by setting the *SESSION_FILE_THRESHOLD* variable. I set it to a small value to make testing easier. 
+
+```python
+app.config["SESSION_TYPE"] = "filesystem"
+app.config["SESSION_FILE_THRESHOLD"] = 5
+```
+
+Call Flask-Session's *Session* class and pass the Flask application object into it. This adds configurations to the application's [*session* object](https://flask.palletsprojects.com/en/2.3.x/quickstart/#sessions). 
+
+```
 Session(app)
 ```
 
-Create the Flask routes for the index page, which I call the *greeting* route, and the page that displays the file, which I call the *action* route. I am not checking for valid inputs or ensuring that the file is really a text file. I am keeping this code very simple so i can better demonstrate the way *Flask-Session* works.
+Create the Flask route for the index page that contains the file upload form, which I call the *greeting* route.
 
 ```python
 @app.route("/", methods=('GET','POST'))
@@ -173,24 +198,32 @@ def greeting():
             session['file_contents'] = lines
             return redirect (url_for('action'))
     return render_template('greeting.html')
+```
 
+I used the Flask *[request.files](https://flask.palletsprojects.com/en/2.3.x/api/#flask.Request.files)* property to get the objected named "textfile" (whose name was defined in the Jinja template *greeting.html*) when the form is submitted, which generates a *POST* request.
+
+Flask uploads the file as a byte stream. The file's *readlines()* method outputs a list of rows but each row is a binary string. I need to convert each row in the list from bytes to UTF-8 character code points. The list comprehension in the *greeting* route, above, creates a new list named "lines" that contains the same rows but each row is now a UTF-8 string.
+
+Create the Flask route for the page that displays the uploaded file, which I call the *action* route. 
+
+```python
 @app.route("/action", methods=('GET','POST'))
 def action():
     return render_template('action.html')
 ```
 
-I used the Flask request *[files](https://flask.palletsprojects.com/en/2.3.x/api/#flask.Request.files)* property to get the objected named "textfile" when the form is submitted, which generates a *POST* request.
-
-Flask uploads the file as a byte stream. The file's readlines() method outputs a list of rows but each row is a binary string. I need to convert each row in the list from bytes to UTF-8 character code points. The list comprehension in the *greeting* route, above, creates a new list named "lines" that contains the same rows but each row is now a UTF-8 string.
+This simply renders the *action.html* Jinja2 template, which contains the code that checks if there is any user data in the *session['file_contents']* object and, if so, prints it on the page.
 
 Save the file.
 
-## Test the app
+Note that I am not checking for valid inputs or ensuring that the file is really a text file. I am keeping this code very simple so I can quickly demonstrate the way *Flask-Session* works. So, when testing, use small text files.
 
-Test this first version of the app 
+### Test the application
+
+Test that the application will request a text file and then display the contents of the file in the Browser. Run the app: 
 
 ```bash
-(.venv) flask run
+(.venv) $ flask run
 ```
 
 Open a browser and enter in the URL where the Flask server is running:
@@ -199,96 +232,57 @@ Open a browser and enter in the URL where the Flask server is running:
 http://localhost:5000
 ```
 
-The application will look like the following
+The index, or *greeting*, page of the application will look like the following:
 
 ![Flask app]({attach}session-001.png)
 
-Create a dummy text file and save it. Add some dummy text to it.
-
-Then upload the file using the web app and click the *Upload* button.
-
-You should see output similar to the screenshot below:
+Create a dummy text file, add some dummy text to it, and save it. Select the file using the web app and click the *Upload* button. The *action* page should look similar to the screenshot below:
 
 ![Flask app]({attach}session-002.png)
 
-Now, look at the session information created on the filesystem. The session file should be saved in a directory, created by Flask-Session, named *flask_session*. It will be in the same location as the *app.py* file.
+You should expect that the program will create a new directory and store user data as files in that directory.  The session file should be saved in a directory, created by Flask-Session, named *flask_session*. It will be in the same location as the *app.py* file. If you want, you can define another directory by setting the *SESSION_FILE_DIR* variable.
 
 ```bash
 (.venv) $ ls flask_session
-2029240f6d1128be89ddc32729463129  c4bf6e3ffacc6daeb6bfbfd9d5e54865
+2029240f6d1128be89ddc32729463129
 ```
 
-This shows two sessions on the server. There should also be two session cookies in your browser that correspond with the server-side sessions.
+This shows a session saved on the server. There should also be a session cookie in your browser that correspond with the server-side session file. The file names are created by encrypting the Session UUID so you can't easily match which cache file is associated with which browser session.
 
-One was created when I first opened the URL in the web browser and the second was created when I uploaded a file and it contains the file contents for the current user. I don't know why the first session was not used to store the file. 
-
-# answer: https://stackoverflow.com/questions/75858664/flask-session-filesystem-session-files-are-not-deleted-after-permanent-sessio
-
-I did not configure encryption so you should be able to see the contents of the sessions:
-
-```bash
-(.venv) $ cat -A 2029240f6d1128be89ddc32729463129
-^@^@^@^@M-^@^EK^B.(.venv) $
-(.venv) $
-(.venv) $ cat -A c4bf6e3ffacc6daeb6bfbfd9d5e54865
-M-ZF#eM-^@^EM-^UM-^X^@^@^@^@^@^@^@}M-^TM-^L^Mfile_contentsM-^T]M-^T(M-^L^XThis is the first line^M$
-M-^TM-^L^B^M$
-M-^TM-^L^_    The next line is indented^M$
-M-^TM-^L^B^M$
-M-^TM-^L(Some special characters are %, &, <, >^M$
-M-^TM-^L^KLast line^M$
-M-^Tes.(.venv) $
-(.venv) $
-```
 
 I configured the *SESSION_PERMANENT* environment variable as *False* so that sessions would be deleted when not used anymore. Flask-Session does not immediately delete unused sessions. It waits for some threshold to be reached before it deletes unused session. For example, if you set *SESSION_FILE_THRESHOLD* from its default value of `500` to a very low value, like `1`, you can see that Flask Session will delete older files when there are more than one in the *flask-session* folder, effectively limiting the app to one user at a time. New users overwrite the other user's session, causing them to lose their data.
 
+### FileSystem backend configuration variables
 
+I found the Flask-Session documentation did not describe how its configuration variables affect your program's operation. I describe in more detail the variables that interact with each other to affect how many sessions are cached and for how long. Other variables set the default storage directory, cookies and session names. These are described in the [Flask-Session configuration](https://flask-session.readthedocs.io/en/latest/config.html) documentation.
 
-"SESSION_PERMANENT" = false
-"PERMANENT_SESSION_LIFETIME" not configured
-   - files remain in folder after session expires
-     - SESSION_FILE_THRESHOLD has no affect
-   - file names do not correspond to session UUIDs in session cookie (filename: 7ce5a9e059f23c82ec6ff3b9383eb4a5, session UUID in browser: session:"ae1fa662-088d-49a9-8f4a-e3183893cd45")
-   - cookie expire time unknown (persists)
-       - cookie is a *session* cookie and is handled by the browser. Some browsers do not delete session cookies.
+#### SESSION_FILE_THRESHOLD
 
-"SESSION_PERMANENT" = false
-"PERMANENT_SESSION_LIFETIME" = 30
-   - files remain in folder after session expires
-     - SESSION_FILE_THRESHOLD has no affect
-   - cookie contents expire in 30 seconds but cookie remains (persists) so does not create a new file on system. Existing file name is reused for data for a new session so does not trigger directory cleanup.
-       - cookie is a *session* cookie and is handled by the browser. Some browsers do not delete session cookies.
+The *SESSION_FILE_THRESHOLD* variable controls the number of session data files cached in the *flask_session* directory. The default is value is 500. Depending on your application you may need more or less. For testing, I usually set a small number like five. No files, even files older than the *PERMANENT_SESSION_LIFETIME* are deleted until the configured threshold is met. When the threshold is met, all files older than the *PERMANENT_SESSION_LIFETIME* are deleted, even if that makes the number of files in the directory much lower than *SESSION_FILE_THRESHOLD*.
 
-"SESSION_PERMANENT" = true (default)
-"PERMANENT_SESSION_LIFETIME" not configured
-   - files cleaned up after 5 minutes, which is the default value for PERMANENT_SESSION_LIFETIME, when a new session is added (when "Upload" button is clicked)
-     - SESSION_FILE_THRESHOLD required for easy testing. Cleanup happens after limit reached (default is 500 so for texting need to set it lower)
-   - cookie expire time = one month
-    - cookie will be replaced by new cookie with new ID after 30 seconds, so triggers 
+If many files are generated quickly so that the threshold is reached before any file is older than *PERMANENT_SESSION_LIFETIME*, Flask-Session will still maintain the threshold and delete session files until there are only *SESSION_FILE_THRESHOLD* remaining.
 
-"SESSION_PERMANENT" = true (default)
-"PERMANENT_SESSION_LIFETIME" = 30
-   - files cleaned up after PERMANENT_SESSION_LIFETIME, when new session is added (when "Upload" button is clicked)
-     - SESSION_FILE_THRESHOLD required for easy testing. Cleanup happens after limit reached (default is 500 so for texting need to set it lower)
-     - **SESSION_FILE_THRESHOLD overrides PERMANENT_SESSION_LIFETIME. If there are more that x files, Flask-Session deletes files until the threshold is met, regardless of their lifetime.**
-   - cookie expire time = 30 seconds
-    - cookie will be replaced by new cookie with new ID after 30 seconds, so triggers 
+#### PERMANENT_SESSION_LIFETIME
 
-9eb774d49bff1dc28b49c895aff742d2
-fa9b99c03dec723a22b0b966f9e0b075
+The *PERMANENT_SESSION_LIFETIME* variable controls the length of time a session will last before Flask-Session deletes it. It has a default value of 2,592,000 seconds or 30 days. You may set it to a smaller or larger number of seconds. It is used to calculate the session expiry in cookies and is used to select which session files on the server will be deleted when the number of files exceeds *SESSION_FILE_THRESHOLD*. It can be used even if you are creating non-permanent sessions, as described below.
 
-## Adding a database
+#### SESSION_PERMANENT
 
-Now, let's explore using a database as the backed.
+The *SESSION_PERMANENT* variable controls the type of cookie created in the browser and has only an indirect affect on how files are stored on the server, because of the way Flask-Session reacts to cookies in the browser. 
+
+If *SESSION_PERMANENT* is true, the cookie sets its *Expires/Max-Age* to its default value of the current time plus 30 days or to the current time plus *PERMANENT_SESSION_LIFETIME* variable, if it was also configured. When you use the web app again to upload a new file after *PERMANENT_SESSION_LIFETIME*, you create a new cookie with a new session UUID and a new cache file in the *flask_session* directory.
+
+If *SESSION_PERMANENT* is false, the cookie sets its *Expires/Max-Age* to the string, "session". In theory this is a temporary cookie that should be deleted when the session ends but many browsers keep session cookies indefinitely. However, the *PERMANENT_SESSION_LIFETIME* variable still has an impact on sessions even if *SESSION_PERMANENT* is false. Flask-Session stops using the session after *PERMANENT_SESSION_LIFETIME* even though the session cookie still exists. When you use the app again to upload a file, it "re-initializes" the session and, since the session cookie still exists, it re-uses its Session UUID so it overwrites the corresponding session file on the server. The result is that is seems as though no new session file was added.
+
+## Using the Flask-Session SQLAlchemy backend 
+
+Now, let's explore using a database as the backend.
 
 Use SQLAlchemy
 
 ```bash
 (.venv) $ pip install flask-sqlalchemy
-(.venv) $ pip install psycopg2
 ```
-
 
 ### Set up the database
 
@@ -448,6 +442,8 @@ The following SQL code snippet [^1], from [The Art of Web Blog](https://www.the-
 
 [^1]: From [https://www.the-art-of-web.com/sql/trigger-delete-old/](https://www.the-art-of-web.com/sql/trigger-delete-old/). Accessed September, 2023
 
+(maybe change language to sql?)
+
 ```sql
 CREATE FUNCTION delete_old_rows2() RETURNS trigger
     LANGUAGE plpgsql
@@ -462,6 +458,20 @@ $$;
 CREATE TRIGGER trigger_delete_old_rows
     AFTER INSERT ON sessions
     EXECUTE PROCEDURE delete_old_rows2();
+```
+
+
+or try and event:
+
+```sql
+CREATE EVENT `purge_table` ON SCHEDULE
+        EVERY 1 DAY
+    ON COMPLETION NOT PRESERVE
+    ENABLE
+    COMMENT ''
+    DO BEGIN
+DELETE FROM sessions WHERE expiry <= now() - INTERVAL '1 DAY'
+END
 ```
 
 Now, when cookie expires on browser so new session id is created, the new record triggers old records to be deleted
@@ -625,5 +635,71 @@ userdata=# select * from sessions;
 userdata=# select session_id, expiry from sessions;
 ```
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+FileSystem
+
+"SESSION_PERMANENT" = false
+"PERMANENT_SESSION_LIFETIME" not configured
+   - SESSION_FILE_THRESHOLD seems to have strong effect. It does not matter how new or old a cache file is. As soon as SESSION_FILE_THRESHOLD is exceeded, Flask-Session deletes cache files until number of remaining files are SESSION_FILE_THRESHOLD.
+   - files older than PERMANENT_SESSION_LIFETIME will *probably* be deleted even if it brings the total files below SESSION_FILE_THRESHOLD but it is hard to test because the default value is 30 days.
+   - Browser cookie sets *Expires/Max-Age* to the value, "session". The cookie's contents expire in PERMANENT_SESSION_LIFETIME seconds but the cookie UUID remains (persists) so Flask-Session sees the same session ID. So, when you upload a new file after PERMANENT_SESSION_LIFETIME seconds, you do not create a new file on the filesystem. You get the same file name because the session ID is still the same. If you want to build up a lot of cache files during testing, you need to manually delete the session cookie using the Browser's developer tools.
+
+"SESSION_PERMANENT" = false
+"PERMANENT_SESSION_LIFETIME" = 30
+   - SESSION_FILE_THRESHOLD seems to have strong effect. It does not matter how new or old a cache file is. As soon as SESSION_FILE_THRESHOLD is exceeded, Flask-Session deletes cache files until number of remaining files are SESSION_FILE_THRESHOLD.
+   - files older than PERMANENT_SESSION_LIFETIME are deleted even if it brings the total files below SESSION_FILE_THRESHOLD
+   - Browser cookie sets *Expires/Max-Age* to the value, "session". The cookie's contents expire in PERMANENT_SESSION_LIFETIME seconds but the cookie UUID remains (persists) so Flask-Session sees the same session ID. So, when you upload a new file after PERMANENT_SESSION_LIFETIME seconds, you do not create a new file on the filesystem. You get the same file name because the session ID is still the same. If you want to build up a lot of cache files during testing, you need to manually delete the session cookie using the Browser's developer tools.
+
+"SESSION_PERMANENT" = true (default)
+"PERMANENT_SESSION_LIFETIME" not configured
+   - SESSION_FILE_THRESHOLD seems to have strong effect. It does not matter how new or old a cache file is. As soon as SESSION_FILE_THRESHOLD is exceeded, Flask-Session deletes cache files until number of remaining files are SESSION_FILE_THRESHOLD.
+   - files older than PERMANENT_SESSION_LIFETIME will probably be deleted even if it brings the total files below SESSION_FILE_THRESHOLD but it is hard to test because the default value is 15 minutes.
+   - Cookie cookie sets *Expires/Max-Age* to 30 days older than time cookie was created. After cookie expires, it will be replaced by a new cookie with a new UUID, causing a new backend file to be created with a new filename.
+
+"SESSION_PERMANENT" = true (default)
+"PERMANENT_SESSION_LIFETIME" = 30
+   - SESSION_FILE_THRESHOLD seems to have strong effect. It does not matter how new or old a cache file is. As soon as SESSION_FILE_THRESHOLD is exceeded, Flask-Session deletes cache files until number of remaining files are SESSION_FILE_THRESHOLD.
+   - files older than PERMANENT_SESSION_LIFETIME are deleted even if it brings the total files below SESSION_FILE_THRESHOLD
+   - Cookie cookie sets *Expires/Max-Age* to a value PERMANENT_SESSION_LIFETIME older than time cookie was created. After cookie expires, it will be replaced by a new cookie with a new UUID, causing a new backend file to be created with a new filename.
 
 
