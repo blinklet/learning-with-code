@@ -6,27 +6,15 @@ modified: 2023-09-29
 category: Flask
 <!-- status: Published -->
 
-The *[Flask-Session](https://flask-session.readthedocs.io/en/latest/)* extension manages user sessions for your *[Flask](https://flask.palletsprojects.com/en)* web app and can use a variety of "backends" to store the user data on the server, enabling you to store large amounts of user data per session. The "backend" can be the server's system memory, file system, or a database. 
+The *[Flask-Session](https://flask-session.readthedocs.io/en/latest/)* extension manages *[Flask](https://flask.palletsprojects.com/en)* application user session data. It can use a variety of session interfaces to store the user data on the local PC or on a server, enabling you to store large amounts of user data per session with a single browser cookie.
 
-In this post, I test Flask-Session to see if it is suitable for an application I am developing. I want to use an SQL database to manage user data associated with each user's session. I want users to remain anonymous so I do not implement *Login* and *Logout* buttons in my application. Instead, I want to automatically delete the user data after an anonymous user leaves the application. 
+In this post, I test the Flask-Session extension to see if it is suitable for an application I am developing. While working with Flask-Session, I solved some frustrating issues that I think some readers who are writing similar programs will want to know about. This post will explain how session data persistance works for three session types: FileSystem, SQLAlchemy, and Redis. It will also document the special steps required to make Flask-Session work with the SQLAlchemy session type.
 
-While working with Flask-Session in my sample program, I solved some frustrating issues that I think some readers who are writing similar programs will want to know about. Flask-Session can be made to work in my application by setting configuration variables and adding some initialization code.
+## Create a simple program that uses the FileSystem backend
 
-## Shortcut to the conclusion
+Create a simple Flask application that uses the Flask-Session extension with the *FileSystem* backend. This backend caches session data in a local directory and is useful for testing and for evaluating Flask-Session without also setting up a database server.
 
-This is a long post so I will preview my conclusion here. At the end of this post, I conclude that I will not use Flask-Session for the program on which I am currently working. 
-
-Flask-Session has problems initializing an SQL database that required me to add SQLAlchemy code. If I have to use *[SQLAlchemy](https://www.sqlalchemy.org/)* into my program, anyway, I may as well write my own SQLAlchemy mappings and use them to manage the SQL database backend.
-
-Flask-Session's documentation assumes that the programmer will manually clean up sessions when a user logs out. It does not clearly explain how to use its configuration options to make it automatically delete backend data from non-permanent sessions. I document these points later in this post but, if I am no longer using Flask-Session to manage the database, it is clearer to use Flask's native *[session](https://flask.palletsprojects.com/en/2.3.x/quickstart/#sessions)* objects in my application.
-
-However, there are many cases where Flask-Session will work, especially in more classic applications that manage users via the *[Flask-Login](https://pypi.org/project/Flask-Login/)* extension. Flask-Session works well for anonymous users if you use the *[Redis](https://redis.io/)* database backend. I assume most bloggers have come to the same conclusion because it seems every other blogger who writes about Flask-Session uses only Redis in their examples.
-
-## Create a simple program that uses Flask-Session
-
-To evaluate how Flask-Session works, create a simple Flask application that uses the Flask-Session extension with the *FileSystemSessionInterface* backend. This backend caches session data on your PC's file system and is useful for local testing.
-
-The application will consist of a single application file, named *app.py*, and several Jinja template files that create the application's HTML web pages.
+The Flask application will consist of a single application file, named *app.py*, and several Jinja template files that create the application's HTML web pages. It will use an SQL database to manage user data associated with each user's session. I want users to remain anonymous so I don't use the *Flask-Login* extension and do not implement *Login* and *Logout* buttons in my application. Instead, I want to automatically delete the user data after an anonymous user stops using the application for a specified period of time. 
 
 ### Set up Python environment
 
@@ -55,7 +43,6 @@ Create a *templates* directory for the templates:
 
 ```bash
 (.venv) $ mkdir templates
-(.venv) $ cd templates
 ```
 #### Base template
 
@@ -112,6 +99,8 @@ Enter the following text
 {% endblock %}
 ```
 
+Save the file.
+
 #### Action template
 
 Create a file named *action.html*:
@@ -139,6 +128,8 @@ Enter the following text
     {% endif %}
 {% endblock %}
 ```
+
+Save the file.
 
 ### Create the Flask application
 
@@ -200,7 +191,7 @@ def greeting():
     return render_template('greeting.html')
 ```
 
-I used the Flask *[request.files](https://flask.palletsprojects.com/en/2.3.x/api/#flask.Request.files)* property to get the objected named "textfile" (whose name was defined in the Jinja template *greeting.html*) when the form is submitted, which generates a *POST* request.
+I used the Flask *[request.files](https://flask.palletsprojects.com/en/2.3.x/api/#flask.Request.files)* property to get the object named "textfile" (whose name was defined in the Jinja template *greeting.html*) when the form is submitted, which generates a *POST* request.
 
 Flask uploads the file as a byte stream. The file's *readlines()* method outputs a list of rows but each row is a binary string. I need to convert each row in the list from bytes to UTF-8 character code points. The list comprehension in the *greeting* route, above, creates a new list named "lines" that contains the same rows but each row is now a UTF-8 string.
 
@@ -220,9 +211,11 @@ Note that I am not checking for valid inputs or ensuring that the file is really
 
 ### Test the application
 
-Test that the application will request a text file and then display the contents of the file in the Browser. Run the app: 
+Test that the application will request a text file and then display the contents of the file in the browser. Run the app: 
 
 ```bash
+(.venv) $ pwd
+/home/brian/Projects/experiment
 (.venv) $ flask run
 ```
 
@@ -257,16 +250,13 @@ If you delete the session cookie using your browser's development tools, and the
 394ee48c85cd86a3e1391102c3ce25d3
 ```
 
-
-
-
 ### FileSystem session configuration variables
 
 I found the Flask-Session documentation did not describe how its configuration variables affect your program's operation. I describe in more detail the variables that interact with each other to affect how many sessions are cached and for how long. Other variables set the default storage directory, cookies and session names, and are described well enough in the [Flask-Session configuration](https://flask-session.readthedocs.io/en/latest/config.html) documentation.
 
 #### SESSION_FILE_THRESHOLD
 
-The *SESSION_FILE_THRESHOLD* variable controls the number of session data files cached in the *flask_session* directory. The default is value is 500. Depending on your application you may need more or less. For testing, I usually set a small number like five. No files, even files older than the *PERMANENT_SESSION_LIFETIME* are deleted until the configured threshold is met. When the threshold is met, all files older than the *PERMANENT_SESSION_LIFETIME* are deleted, even if that makes the number of files in the directory much lower than *SESSION_FILE_THRESHOLD*.
+The *SESSION_FILE_THRESHOLD* variable controls the number of session data files cached in the *flask_session* directory. The default is value is 500. Depending on your application you may need more or less. For testing, I usually set a small number, like five. No files, even files older than the *PERMANENT_SESSION_LIFETIME* are deleted until the configured threshold is met. When the threshold is met, all files older than the *PERMANENT_SESSION_LIFETIME* are deleted, even if that makes the number of files in the directory much lower than *SESSION_FILE_THRESHOLD*.
 
 If many files are generated quickly so that the threshold is reached before any file is older than *PERMANENT_SESSION_LIFETIME*, Flask-Session will still maintain the threshold and delete session files until there are only *SESSION_FILE_THRESHOLD* remaining.
 
@@ -280,7 +270,7 @@ The *SESSION_PERMANENT* variable controls the type of cookie created in the brow
 
 If *SESSION_PERMANENT* is true, the cookie sets its *Expires/Max-Age* to its default value of the current time plus 30 days or to the current time plus *PERMANENT_SESSION_LIFETIME* variable, if it was also configured. When you use the web app again to upload a new file after *PERMANENT_SESSION_LIFETIME*, you create a new cookie with a new session UUID and a new cache file in the *flask_session* directory.
 
-If *SESSION_PERMANENT* is false, the cookie sets its *Expires/Max-Age* to the string, "session". In theory this is a temporary cookie that should be deleted when the session ends but many browsers keep session cookies indefinitely. However, the *PERMANENT_SESSION_LIFETIME* variable still has an impact on sessions even if *SESSION_PERMANENT* is false. Flask-Session stops using the session after *PERMANENT_SESSION_LIFETIME* even though the session cookie still exists. When you use the app again to upload a file, it "re-initializes" the session and, since the session cookie still exists, it re-uses its Session UUID so it overwrites the corresponding session file on the server. The result is that is seems as though no new session file was added.
+If *SESSION_PERMANENT* is false, the cookie sets its *Expires/Max-Age* to the string, "session". In theory this is a temporary cookie that should be deleted when the session ends but many browsers keep session cookies indefinitely. However, the *PERMANENT_SESSION_LIFETIME* variable still has an impact on sessions even if *SESSION_PERMANENT* is false. Flask-Session deletes the session after *PERMANENT_SESSION_LIFETIME* when you try to re-use it. But, since the session cookie still exists on the browser, it re-uses its Session UUID and creates a new session file on the server with the same filename as the previous session data. The result is that is seems as though no new session file was added.
 
 ## Using the Flask-Session SQLAlchemy backend 
 
@@ -293,7 +283,7 @@ Install Flask-SQLAlchemy and the Postgres Python driver in your Python virtual e
 (.venv) $ pip install psycopg2
 ```
 
-### Set up the database
+### Set up the database server
 
 The easiest way to start a database server for testing is to use Docker. In this example, I will create a Docker container that is running a *PostgreSQL* database. You may run the commands listed below and, if you wish, you may see more details about running a PostgreSQL database in a Docker container in my [previous post]({filename}/articles/018-postgresql-docker/postgresql-docker.md).
 
@@ -329,13 +319,27 @@ You also know the database information that is required to create the database c
 
 ### Modify your program to use the SQL database
 
-Edit the *app.py* program so it uses a database backend instead of the local filesystem. Open the file in your favorite text editor and add the following code under the existing import section to assign the [database connection string](https://blog.miguelgrinberg.com/post/the-flask-mega-tutorial-part-iv-database) to a variable named *uri*:
+Edit the *app.py* program so it uses a database backend instead of the local filesystem. Open the file in your favorite text editor.
+
+```bash
+(.venv) $ nano app.py
+```
+
+Add the following code under the existing import section to assign the [database connection string](https://blog.miguelgrinberg.com/post/the-flask-mega-tutorial-part-iv-database) to a variable named *uri*:
 
 ```python
 uri = "postgresql://userdata:abcd1234@localhost:5432/userdata"
 ```
 
-Change the Flask-Session configuration variables. Assign the string "sqlalchemy* to the *SESSION_TYPE* variable. You *must* set the *SESSION_PERMANENT* variable to be *True* or the database will generate type errors. You don't need to set the *PERMANENT_SESSION_LIFETIME* variable because Flask-Session will not delete old rows in the after their *PERMANENT_SESSION_LIFETIME* expires. However, I will create an SQL function that is triggered by a new row, that deletes rows who *expiry* column contains an old-enough timestamp. So, configure *PERMANENT_SESSION_LIFETIME* to a low value like 60 seconds for testing purposes. Finally, assign the connection string from the *uri* variable to the *SQLALCHEMY_DATABASE_URI* variable.
+Change the Flask-Session configuration variables. 
+
+* You *must* set the *SESSION_PERMANENT* variable to be *True* or the database will generate type errors. 
+* Assign the string "sqlalchemy" to the *SESSION_TYPE* variable. 
+* Assign the connection string from the *uri* variable to the *SQLALCHEMY_DATABASE_URI* variable.
+* Configure *PERMANENT_SESSION_LIFETIME* to a low value like 60 seconds for testing purposes
+    * Normally, you don't need to set the *PERMANENT_SESSION_LIFETIME* variable because Flask-Session will not delete old rows in the database. However, I plan to add some code to fix that in a later step, so . 
+
+The result will look like the code listed below:
 
 ```python
 app.config["SESSION_PERMANENT"] = True
@@ -344,7 +348,7 @@ app.config["SQLALCHEMY_DATABASE_URI"] = uri
 app.config["PERMANENT_SESSION_LIFETIME"] = 60  # 1 minute
 ```
 
-Then, add the following code after you initialize the *Session* class. This code is a [workaround](https://stackoverflow.com/questions/45887266/flask-session-how-to-create-the-session-table) that is not well documented. The Flask-Session *SqlAlchemySessionInterface* does not create the database when you initialze the Session. I consider this to be a bug in Flask-Session.
+Add the following code after you initialize the *Session* class. This code is a [workaround](https://stackoverflow.com/questions/45887266/flask-session-how-to-create-the-session-table) that is not well documented. The Flask-Session *SqlAlchemySessionInterface* does not create the database when you initialze the Session. I consider this to be a bug in Flask-Session.
 
 ```python
 Session(app)
@@ -357,7 +361,6 @@ In the code above, you need to use the *with app.app_context()* block to manuall
 In the end, the entire *app.py* program will look like below:
 
 ```python
-$ cat app.py
 from flask import Flask, redirect, url_for, render_template, session, request
 from flask_session import Session
 
@@ -368,9 +371,9 @@ app.config["SECRET_KEY"] = "xyzxyxyz"
 app.config["FLASK_APP"] = "app"
 app.config["FLASK_ENV"] = "Development"
 app.config["SESSION_PERMANENT"] = True
-app.config["PERMANENT_SESSION_LIFETIME"] = 60  # 1 minute
 app.config["SESSION_TYPE"] = "sqlalchemy"
-app.config['SQLALCHEMY_DATABASE_URI'] = uri
+app.config["SQLALCHEMY_DATABASE_URI"] = uri
+app.config["PERMANENT_SESSION_LIFETIME"] = 60  # 1 minute
 
 Session(app)
 with app.app_context():
@@ -429,19 +432,32 @@ userdata=# SELECT now();
 (1 row)
 ```
 
-However, the database rows will not be cleaned up after their expiry time passes. Flask-Session expects you to manually remove user data when the session ends. The only way for your program to know that is if a user clicks on a *Logout* button or something similar. Your Flask program cannot detect when a user just closes their browser. So, a lot of rows could potentially build up as people use your application. In my case, I do not try to detect when a user leaves their session so every time their session expires, as defined by the *PERMANENT_SESSION_LIFETIME* variable, the data related to it remains in the SQL database.
+However, Flask-Session does not clean up the database rows after their expiry time passes. Flask-Session expects you to manually remove user data when the session ends. The only way for your program to know that is if a user clicks on a *Logout* button or something similar. Your Flask program cannot detect when a user just closes their browser. So, a lot of rows could potentially build up as people use your application.
 
 ### Solving the data cleanup problem
 
-In my opinion, Flask-Session should take care of cleaning up old rows in the database. However, it does not.
+In my opinion, Flask-Session should take care of cleaning up old rows in the database. However, it does not. 
 
-There are two ways you can solve the data cleanup problem. You can create an SQL function that is triggered every time you insert a new row in the database. The function would check the *expiry* column in each row against the current time and delete any rows where the current time is later than the datetime in the row's *expiry* column. See [The Art of Web Blog](https://www.the-art-of-web.com/sql/trigger-delete-old/) for a good description of this solution. 
+According to the Flask-Session [source code](https://github.com/pallets-eco/flask-session/blob/main/src/flask_session/sessions.py), it only deletes backend session data for a specific session if you try to re-open it after it has expired. But, this ignores the case of "orphaned" session data. There is a [three-year-old pull request](https://github.com/pallets-eco/flask-session/pull/117) on Flask-Session's GitHub site waiting to be accepted that would probably solve this issue. I'll comment more about Flask-Session's slow development process later in this post.
 
-Another solution, and the one I prefer, is to add some more workaround code to the *app.py* program. The code will run when a new file is uploaded and check all the rows in the database. If the datetime in the *expiry* column in any row is later than the database's current time, it deletes the row. I integrated the code from a [stackoverflow answer](https://stackoverflow.com/questions/38455893/flask-session-cleanup-of-expired-sessions) into my *greeting* route.
+To solve this problem, I added more workaround code to the *app.py* program. I integrated the code from the [Flask-Session pull request #117](https://github.com/pallets-eco/flask-session/pull/117) into my *greeting* route. The code will run when a new file is uploaded and check all the rows in the database. If the datetime in the *expiry* column in any row is later than the database's current time, it deletes that row. 
+
+Open *app.py* in your text editor and make the following changes. First, import the datetime function from the Python datetime module:
 
 ```python
-import datetime
+from datetime import datetime
 ```
+
+Then, add the following code in the *greeting* route where it will run when a new file is uploaded.
+
+```python
+# clean up old sessions
+db_model = app.session_interface.sql_session_model
+db_model.query.filter(db_model.expiry < datetime.utcnow()).delete()
+app.session_interface.db.session.commit()
+```
+
+When you are done, the *greeting* route should look similar to below:
 
 ```python
 @app.route("/", methods=('GET','POST'))
@@ -451,54 +467,139 @@ def greeting():
         if file:
             lines = [x.decode('UTF-8') for x in file.readlines()]
             session['file_contents'] = lines
-            expired_sessions=(
-                app.
-                session_interface.
-                sql_session_model.
-                query.filter(
-                    app.
-                    session_interface.
-                    sql_session_model.
-                    expiry <= datetime.utcnow()
-                )
-            )
-            for es in expired_sessions:
-                app.session_interface.db.session.delete(es)
-                app.session_interface.db.session.commit()
+
+            # clean up old sessions
+            db_model = app.session_interface.sql_session_model
+            db_model.query.filter(db_model.expiry < datetime.utcnow()).delete()
+            app.session_interface.db.session.commit()
+            
             return redirect (url_for('action'))
     return render_template('greeting.html')
 ```
 
+Save the file. Now, when you test the program, you will find that any row in the *sessions* table that has a datetime in its *expiry* column older than the database's current time will be cleaned up. 
 
+This solution might cause a performance issue if your web app becomes a popular service. If many users are adding files to the database so the program has to search through and clean up many database rows each time a user uploads a file, that user will have to wait until the that code finishes executing before seeing the result of her upload. However, this is not an issue with low usage.
 
+#### An alternative solution: custom SQL functions
 
+There is another way to handle the data cleanup problem that will probably avoid the performance hit. You can create an SQL function in the database that is either triggered periodically, or every time you insert a new row in the database. I think this would have less impact on application performance because the data cleanup is not happening on the same process as the web app. 
 
+The function would check the *expiry* column in each row against the current time and delete any rows where the current time is later than the datetime in the row's *expiry* column. See [The Art of Web Blog](https://www.the-art-of-web.com/sql/trigger-delete-old/) for a good description of this solution. 
 
-## Redis?
+You would define the function in the database using the SQL programming language. This requires that you set up the database before you run your program and means you need to manage the database model using two different technologies: SQL and Python. But it also means you do not need to further change your program to make it work well with an SQL database.
 
-Try setting up a Redis server?
-https://testdriven.io/blog/flask-server-side-sessions/
+If you want to do everything in your Python program, you could define the SQL function in an SQLAlchemy module so it is created when you create the database. However, if you are going to write your own SQLAlchemy functions, you may as well skip using the Flask-Session extension and use Flask-SQLAlchemy and normal Flask session objects directly.
 
+### SQL Session configuration variables
+
+Only the *PERMANENT_SESSION_LIFETIME* variable affects how many sessions are cached in the SQL database and for how long. Other variables set the SQL database connection string and table name, and are described well enough in the [Flask-Session configuration](https://flask-session.readthedocs.io/en/latest/config.html) documentation.
+
+#### PERMANENT_SESSION_LIFETIME
+
+The *PERMANENT_SESSION_LIFETIME* variable determines the datetime value placed in a new or updated session row's *expiry* column and in the Browser session cookie's *Expires/Max-Age* field. Currently, Flask-Session does nothing else with this information so, unless you add the workarounds described above, *PERMANENT_SESSION_LIFETIME* has no affect on how Flask-Session works.
+
+If you set a very small value for *PERMANENT_SESSION_LIFETIME*, like 30 seconds, then you can end up with many new rows added to the database while testing your application. Because the browser's cookie will expire after *PERMANENT_SESSION_LIFETIME*, a new session will be created. So, a low value can result in a lot of database rows containing "orphaned" session data.
+
+#### SESSION_PERMANENT
+
+The *SESSION_PERMANENT* variable must be set to *True* 
+
+If *SESSION_PERMANENT* is *True*, Flask-Session places a datetime value of the current time plus 30 days or to the current time plus *PERMANENT_SESSION_LIFETIME* in the database row's *expiry* column. It also sets the same expiration time in the *Expires/Max-Age* field in your browser cookie.
+
+If *SESSION_PERMANENT* is *False*, Flask-Session places a value *None* in the database row's *expiry* column, which is not a valid data type for that column. This immediately causes an exception. So, *SESSION_PERMANENT* must be set to *True*
+
+## Using the Redis backend 
+
+If you do not have to use an SQL database, you may try the [*Redis* database](https://redis.io/). Redis works well with Flask-Session because it is easy to set up and it comes with a built-in ability to clean up old database rows after their expiry date is passed. Most [blog posts](https://testdriven.io/blog/flask-server-side-sessions/) about Flask-Session use the Redis database in their examples.
+
+Install the [Redis Python driver](https://redis-py.readthedocs.io/en/stable/) in your Python virtual environment.
 
 ```bash
 (.venv) $ pip install redis
 ```
 
-app.py 
+### Set up the database
+
+Again, it is easiest to use Docker to run a database server on your PC. In this example, I will create a Docker container that is running a Redis database server.
+
+Use the official [Redis Docker image](https://hub.docker.com/_/redis/) from the *Docker Hub* container library. When using Redis for testing, you don't have to define any environment variables. Run the Docker *run* command:
+
+```bash
+(.venv) $ docker run --name redis_db -d -p 6379:6379 redis
+```
+
+Use the Docker *exec* command to run the *redis-cli* utility on the container to check that the Redis database server is running. Start it in interactive mode on the container. 
+
+```bash
+(.venv) $  docker exec -it redis_db redis-cli
+127.0.0.1:6379>
+```
+
+Run some Redis commands to see that the server is responding:
+
+```text
+127.0.0.1:6379> keys *
+(empty array)
+127.0.0.1:6379> time
+1) "1694617027"
+2) "144270"
+127.0.0.1:6379>
+```
+
+Now you can be confident that the Redis database is ready to use. Quit the *redis-cli* utility:
+
+```text
+127.0.0.1:6379> quit
+(.venv) $ 
+```
+
+### Modify your program to use the Redis database
+
+Edit the *app.py* program so it uses a Redis database backend instead of the SQL database backend. Open the file in your favorite text editor and add the following code in the existing import section:
+
+Import the Redis driver:
 
 ```python
-from flask import Flask, request, redirect, url_for, render_template, session
-from flask_session import Session
 import redis
+```
+
+Delete the old SQL connection string.
+
+Change the Flask-Session configuration variables. 
+
+* Assign the string "redis" to the *SESSION_TYPE* variable. 
+* Configure the *SESSION_REDIS* variable. The Redis connection parameters can be left blank when calling the Redis class in the *redis* driver because it [defaults](https://redis.readthedocs.io/en/stable/examples/connection_examples.html#Connecting-to-a-default-Redis-instance,-running-locally.) to *http://localhost:6379
+* Set the *SESSION_PERMANENT* to either *True* or *False* depending on how you want cookie expiration to behave. 
+* Configure *PERMANENT_SESSION_LIFETIME* to a low value like 60 seconds for testing purposes. 
+
+The result will look like the code listed below:
+
+```python
+app.config["SESSION_TYPE"] = "redis"
+app.config["SESSION_REDIS"] = redis.Redis()
+app.config["SESSION_PERMANENT"] = True
+app.config["PERMANENT_SESSION_LIFETIME"] = 60  # 1 minute
+```
+
+Also, delete the workaround code you created for the SQL database in the previous section. Redis "just works" with Flask-Session so you don't need workarounds.
+
+In the end, the entire *app.py* program will look like below:
+
+```python
+from flask import Flask, redirect, url_for, render_template, session, request
+from flask_session import Session
+import redis 
 
 app = Flask(__name__)
 
 app.config["SECRET_KEY"] = "xyzxyxyz"
 app.config["FLASK_APP"] = "app"
 app.config["FLASK_ENV"] = "Development"
-app.config["SESSION_PERMANENT"] = False
+app.config["SESSION_PERMANENT"] = True
 app.config["SESSION_TYPE"] = "redis"
 app.config["SESSION_REDIS"] = redis.Redis()
+app.config["PERMANENT_SESSION_LIFETIME"] = 60
 
 Session(app)
 
@@ -517,268 +618,65 @@ def action():
     return render_template('action.html')
 ```
 
-Start Redis container
+You can see how easy it was to change to a database backend, again.
+
+### Test the program
+
+To test the modified program, run it with the `flask run` command and then open a browser to the URL: `http://localhost:5000`. The application looks and works the same as it did when we used the SQL database backend. Only, now, it is using a Redis database to cache session data. 
+
+Using your browser's development tools, delete the session cookie and upload the text file again. Do this several times within one minute (which is your configured expiry time).  You should have several rows in the database. Check the contents of the database by starting *redis-cli* in the database container:
 
 ```bash
-(.venv) $ docker run --name some-redis -d -p 6379:6379 redis
-```
-redis driver:
-https://redis-py.readthedocs.io/en/stable/
-
-
-Try `r = redis.Redis()` for the connection string
-It uses the defaults
-
-```bash
-(.venv) $  docker exec -it some-redis redis-cli
-127.0.0.1:6379> KEYS *
-1) "session:29aadd11-8831-4b2b-8453-0ca323c9f12b"
-127.0.0.1:6379> 
-127.0.0.1:6379> EXPIRETIME session:29aadd11-8831-4b2b-8453-0ca323c9f12b
-(integer) 1696906209
-127.0.0.1:6379> QUIT
-(.venv) $ 
+(.venv) $  docker exec -it redis_db redis-cli
+127.0.0.1:6379>
 ```
 
-https://unixtime.org/
-https://www.epochconverter.com/
-1696906209
-Mon Oct 09 2023 22:50:09 GMT-0400 (Eastern Daylight Time)
+Run the Redis *key* command to see that the server has user session data:
 
-```bash
-(.venv) $ date -d @1696906209
-Mon Oct  9 10:50:09 PM EDT 2023
+```text
+127.0.0.1:6379> keys *
+1) "session:f44482e5-de8e-4d4d-a1c9-dcf08277957f"
+2) "session:7c9c235e-77e7-48d3-bdec-5bb182bfb918"
 ```
 
+You can see how much time, in seconds, a key has remaining with the Redis *TTL* command:
 
-variable effects
-
-"SESSION_PERMANENT" = false
-"PERMANENT_SESSION_LIFETIME" not configured
-   - database timeout = 1 month
-   - cookie expire time unknown (persists)
-       - cookie is a *session* cookie and is handled by the browser. Some browsers do not delete session cookies.
-
-"SESSION_PERMANENT" = false
-"PERMANENT_SESSION_LIFETIME" = 30
-   - database expires in 30 seconds
-   - cookie expire time unknown (persists)
-       - cookie is a *session* cookie and is handled by the browser. Some browsers do not delete session cookies.
-
-"SESSION_PERMANENT" = true
-"PERMANENT_SESSION_LIFETIME" not configured
-   - database timeout = 1 month (default)
-   - cookie expire time = 1 month (default)
-
-"SESSION_PERMANENT" = true
-"PERMANENT_SESSION_LIFETIME" = 30
-   - database expires in 30 seconds
-   - cookie expire time = 30 seconds
-   - cookie will be replaced by new cookie with new ID after 30 seconds
-
-So, recommended settings are:
-
-```python
-app = Flask(__name__)
-
-app.config["SECRET_KEY"] = "xyzxyxyz"
-app.config["FLASK_APP"] = "app"
-app.config["FLASK_ENV"] = "Development"
-app.config["SESSION_PERMANENT"] = True
-app.config["SESSION_TYPE"] = "redis"
-app.config["SESSION_REDIS"] = redis.Redis()
-app.config["PERMANENT_SESSION_LIFETIME"] = 30
-
-Session(app)
+```text
+127.0.0.1:6379> ttl "session:f44482e5-de8e-4d4d-a1c9-dcf08277957f"
+(integer) 14
 ```
 
+To test the automatic data cleanup function in Redis, wait 60 seconds and see that the Redis user data has been automatically deleted
 
-
-NOTE: clearning session only works on the active session, and only for the browser cookies. For example, if you set the *PERMANENT_SESSION_LIFETIME* variable to 30 seconds, then the cookie is deleted after 30 seconds but the user data remains in stuck in the database. 
-Also, if you are testing, and clear your browser cache before the timeout occurs, you lose the association with the server-side session so it just stays in the database forever. 
-Add more program logic to periodically clean up the database.
-
-https://stackoverflow.com/questions/38455893/flask-session-cleanup-of-expired-sessions
-
-
-Get current time on db server
-
-```sql
-userdata=# select current_time;
+```text
+127.0.0.1:6379> keys *
+(empty array)
 ```
 
-get database contents:
+### Redis session configuration variables
 
-```sql
-userdata=# select * from sessions;
-```
+The *PERMANENT_SESSION_LIFETIME* variable affects how long session data is cached. The *SESSION_PERMANENT* variable determines how Browser cookies are handled. The other variable sets the Redis database instance and is described well enough in the [Flask-Session configuration](https://flask-session.readthedocs.io/en/latest/config.html) documentation.
 
-```sql
-userdata=# select session_id, expiry from sessions;
-```
+#### PERMANENT_SESSION_LIFETIME
 
+The *PERMANENT_SESSION_LIFETIME* variable controls the length of time a session will last before Redis deletes its associated user data. It has a default value of 2,592,000 seconds or 30 days. You may set it to a smaller or larger number of seconds. It is also used to calculate the session expiry in cookies if *SESSION_PERMANENT* is *True*.
 
+#### SESSION_PERMANENT
 
+The *SESSION_PERMANENT* variable controls the type of cookie created in the browser and has only an indirect affect on how data is stored on the server. Data is assigned a TTL on the server using the *PERMANENT_SESSION_LIFETIME* regardless of whether *SESSION_PERMANENT* is set to *True* or *False*.
 
+If *SESSION_PERMANENT* is *True*, the Browser cookie sets its *Expires/Max-Age* to its default value of the current time plus 30 days or to the current time plus *PERMANENT_SESSION_LIFETIME* variable, if it was also configured. When you use the web app again to upload a new file after *PERMANENT_SESSION_LIFETIME*, you create a new cookie with a new session UUID and a new entry in the Redis database.
 
+If *SESSION_PERMANENT* is *False*, the cookie sets its *Expires/Max-Age* to "session". In theory this is a temporary cookie that should be deleted when the session ends but many browsers keep session cookies indefinitely. However, the *PERMANENT_SESSION_LIFETIME* variable still has an impact on sessions even if *SESSION_PERMANENT* is *False*. Redis will still delete the server data when the TTL expires so, when you try to re-use the session, you will not have any data. After you upload a file again, Flask session creates a new entry in the Redis DB but it has the same key as the deleted session data, because it reuses the session name from the browser cookie. 
 
 
+## Conclusion
 
+I believe I have filled in a documentation gap about the way Flask-Session handles data persistence for three of its session types: filesystem, sqlalchemy, and redis. This was an "itch I had to scratch" once I realized that Flask-Session was not doing what I inferred should happen, given the configuration variable values. The Flask-Session documentation is clear, but sparse. It does not describe *how* session data persists on the backend or how configuration variables can change that behavior.
 
+As I stated before, I wrote this post while evaluating if Flask-Session would be suitable for my use-case and I have concluded that I will not use Flask-Session for the program on which I am currently working. I want to use an SQL database because I am learning about SQL, and my project is meant to support my learning. However, Flask-Session does not work the way I want when I use an SQL database as the backend. I had to add extra code to work around the issues.
 
+Also, I like to work with projects that are more active in accepting inputs from users. The Flask-Session project on GitHub seems to have a very slow development cycle. Updates are very infrequent. There are many [issues](https://github.com/pallets-eco/flask-session/issues) and [pull requests](https://github.com/pallets-eco/flask-session/pulls) that have been left open for years. If I write my own code to implement functionality similar to what Flask-Session provides, I can make changes to the way my program handles sessions without waiting for the Flask-Session team to review a pull request.
 
+However, there are many cases where Flask-Session will work, especially in more classic applications that manage users via the *[Flask-Login](https://pypi.org/project/Flask-Login/)* extension. Flask-Session works well for anonymous users if you use the *[Redis](https://redis.io/)* database backend.
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-SQL session
-
-"SESSION_PERMANENT" = false
-"PERMANENT_SESSION_LIFETIME" not configured
-   - Error
-
-"SESSION_PERMANENT" = false
-"PERMANENT_SESSION_LIFETIME" = 30
-   - Error
-
-"SESSION_PERMANENT" = true
-"PERMANENT_SESSION_LIFETIME" not configured
-   - database timeout = 1 month (default)
-   - cookie expire time = 1 month (default)
-
-"SESSION_PERMANENT" = true
-"PERMANENT_SESSION_LIFETIME" = 30
-   - database sets expiry to a timestamp 30 seconds from now, in the row
-     - no rows deleted from DB
-   - cookie expire time = 30 seconds
-       - cookie will be replaced by new cookie with new ID after 30 seconds
-   - new DB record for each new cookie, so not good to have short expiry time (for data sizes)
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-FileSystem
-
-"SESSION_PERMANENT" = false
-"PERMANENT_SESSION_LIFETIME" not configured
-   - SESSION_FILE_THRESHOLD seems to have strong effect. It does not matter how new or old a cache file is. As soon as SESSION_FILE_THRESHOLD is exceeded, Flask-Session deletes cache files until number of remaining files are SESSION_FILE_THRESHOLD.
-   - files older than PERMANENT_SESSION_LIFETIME will *probably* be deleted even if it brings the total files below SESSION_FILE_THRESHOLD but it is hard to test because the default value is 30 days.
-   - Browser cookie sets *Expires/Max-Age* to the value, "session". The cookie's contents expire in PERMANENT_SESSION_LIFETIME seconds but the cookie UUID remains (persists) so Flask-Session sees the same session ID. So, when you upload a new file after PERMANENT_SESSION_LIFETIME seconds, you do not create a new file on the filesystem. You get the same file name because the session ID is still the same. If you want to build up a lot of cache files during testing, you need to manually delete the session cookie using the Browser's developer tools.
-
-"SESSION_PERMANENT" = false
-"PERMANENT_SESSION_LIFETIME" = 30
-   - SESSION_FILE_THRESHOLD seems to have strong effect. It does not matter how new or old a cache file is. As soon as SESSION_FILE_THRESHOLD is exceeded, Flask-Session deletes cache files until number of remaining files are SESSION_FILE_THRESHOLD.
-   - files older than PERMANENT_SESSION_LIFETIME are deleted even if it brings the total files below SESSION_FILE_THRESHOLD
-   - Browser cookie sets *Expires/Max-Age* to the value, "session". The cookie's contents expire in PERMANENT_SESSION_LIFETIME seconds but the cookie UUID remains (persists) so Flask-Session sees the same session ID. So, when you upload a new file after PERMANENT_SESSION_LIFETIME seconds, you do not create a new file on the filesystem. You get the same file name because the session ID is still the same. If you want to build up a lot of cache files during testing, you need to manually delete the session cookie using the Browser's developer tools.
-
-"SESSION_PERMANENT" = true (default)
-"PERMANENT_SESSION_LIFETIME" not configured
-   - SESSION_FILE_THRESHOLD seems to have strong effect. It does not matter how new or old a cache file is. As soon as SESSION_FILE_THRESHOLD is exceeded, Flask-Session deletes cache files until number of remaining files are SESSION_FILE_THRESHOLD.
-   - files older than PERMANENT_SESSION_LIFETIME will probably be deleted even if it brings the total files below SESSION_FILE_THRESHOLD but it is hard to test because the default value is 15 minutes.
-   - Cookie cookie sets *Expires/Max-Age* to 30 days older than time cookie was created. After cookie expires, it will be replaced by a new cookie with a new UUID, causing a new backend file to be created with a new filename.
-
-"SESSION_PERMANENT" = true (default)
-"PERMANENT_SESSION_LIFETIME" = 30
-   - SESSION_FILE_THRESHOLD seems to have strong effect. It does not matter how new or old a cache file is. As soon as SESSION_FILE_THRESHOLD is exceeded, Flask-Session deletes cache files until number of remaining files are SESSION_FILE_THRESHOLD.
-   - files older than PERMANENT_SESSION_LIFETIME are deleted even if it brings the total files below SESSION_FILE_THRESHOLD
-   - Cookie cookie sets *Expires/Max-Age* to a value PERMANENT_SESSION_LIFETIME older than time cookie was created. After cookie expires, it will be replaced by a new cookie with a new UUID, causing a new backend file to be created with a new filename.
-
-
-
-
-
-
-
-
-[^1]: From [https://www.the-art-of-web.com/sql/trigger-delete-old/](https://www.the-art-of-web.com/sql/trigger-delete-old/). Accessed September, 2023
-
-(maybe change language to sql?)
-
-```sql
-CREATE FUNCTION delete_old_rows2() RETURNS trigger
-    LANGUAGE plpgsql
-    AS $$
-BEGIN
-  DELETE FROM sessions WHERE expiry < CURRENT_TIMESTAMP - INTERVAL '30 seconds';
-  RETURN NULL;
-END;
-$$;
-
-
-CREATE TRIGGER trigger_delete_old_rows
-    AFTER INSERT ON sessions
-    EXECUTE PROCEDURE delete_old_rows2();
-```
-
-
-or try and event:
-
-```sql
-CREATE EVENT `purge_table` ON SCHEDULE
-        EVERY 1 DAY
-    ON COMPLETION NOT PRESERVE
-    ENABLE
-    COMMENT ''
-    DO BEGIN
-DELETE FROM sessions WHERE expiry <= now() - INTERVAL '1 DAY'
-END
-```
-
-Now, when cookie expires on browser so new session id is created, the new record triggers old records to be deleted
-
-This is OK, but requires I set this up in Postgres outside my Flask app.
-
-I could define this using SQLAlchemy [^2] in my app. But that defeats the original purpose for using Flask-Session, which is to abstract away the management of browser sessions and the back-end storage of user data.
-
-[^2]: For example, after creating an SQLAlchemy engine object, run the following statement: 
-```
-engine.execute("""
-CREATE TRIGGER trigger_delete_old_rows
-    AFTER INSERT ON sessions
-    EXECUTE PROCEDURE delete_old_rows2();
-""")
-```
-
-https://stackoverflow.com/questions/27367886/user-defined-function-creation-in-sqlalchemy
