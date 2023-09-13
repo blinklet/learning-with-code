@@ -24,7 +24,7 @@ However, there are many cases where Flask-Session will work, especially in more 
 
 ## Create a simple program that uses Flask-Session
 
-To evaluate how Flask-Session works, create a simple Flask application that uses the Flask-Session extension with the *filesystem* backend. The *filesystem* backend is useful for testing your application on your PC and also avoids the potential issues that may occur when trying to connect to a database.
+To evaluate how Flask-Session works, create a simple Flask application that uses the Flask-Session extension with the *FileSystemSessionInterface* backend. This backend caches session data on your PC's file system and is useful for local testing.
 
 The application will consist of a single application file, named *app.py*, and several Jinja template files that create the application's HTML web pages.
 
@@ -247,14 +247,22 @@ You should expect that the program will create a new directory and store user da
 2029240f6d1128be89ddc32729463129
 ```
 
-This shows a session saved on the server. There should also be a session cookie in your browser that correspond with the server-side session file. The file names are created by encrypting the Session UUID so you can't easily match which cache file is associated with which browser session.
+This shows a session saved on the server. There should also be a session cookie in your browser that corresponds with the server-side session file. The file names are created by encrypting the Session UUID so you can't easily match which cache file is associated with which browser session. 
+
+If you delete the session cookie using your browser's development tools, and then try to upload a text file again, you will see that the new session creates a new file in the *flask_session* directory. For example:
+
+```bash
+(.venv) $ ls -1 flask_session
+2029240f6d1128be89ddc32729463129
+394ee48c85cd86a3e1391102c3ce25d3
+```
 
 
-I configured the *SESSION_PERMANENT* environment variable as *False* so that sessions would be deleted when not used anymore. Flask-Session does not immediately delete unused sessions. It waits for some threshold to be reached before it deletes unused session. For example, if you set *SESSION_FILE_THRESHOLD* from its default value of `500` to a very low value, like `1`, you can see that Flask Session will delete older files when there are more than one in the *flask-session* folder, effectively limiting the app to one user at a time. New users overwrite the other user's session, causing them to lose their data.
 
-### FileSystem backend configuration variables
 
-I found the Flask-Session documentation did not describe how its configuration variables affect your program's operation. I describe in more detail the variables that interact with each other to affect how many sessions are cached and for how long. Other variables set the default storage directory, cookies and session names. These are described in the [Flask-Session configuration](https://flask-session.readthedocs.io/en/latest/config.html) documentation.
+### FileSystem session configuration variables
+
+I found the Flask-Session documentation did not describe how its configuration variables affect your program's operation. I describe in more detail the variables that interact with each other to affect how many sessions are cached and for how long. Other variables set the default storage directory, cookies and session names, and are described well enough in the [Flask-Session configuration](https://flask-session.readthedocs.io/en/latest/config.html) documentation.
 
 #### SESSION_FILE_THRESHOLD
 
@@ -276,24 +284,23 @@ If *SESSION_PERMANENT* is false, the cookie sets its *Expires/Max-Age* to the st
 
 ## Using the Flask-Session SQLAlchemy backend 
 
-Now, let's explore using a database as the backend.
+The FileSystemSessionInterface backend is useful for for trying Flask-Session for the first time and may be good for local testing but you need to use a database if you intend to deploy your application as a web app. Flask-Session has an SQL database backend called *SqlAlchemySessionInterface*, which requires the Flask-SQLAlchemy extension.
 
-Use SQLAlchemy
+Install Flask-SQLAlchemy and the Postgres Python driver in your Python virtual environment.
 
 ```bash
 (.venv) $ pip install flask-sqlalchemy
+(.venv) $ pip install psycopg2
 ```
 
 ### Set up the database
 
-The easiest way to start a database server for testing is to use Docker. Set up a Docker container that is running a PostgreSQL database. You may run the commands listed below and, if you wish, you may see more details about running a PostgreSQL database in a Docker container in my [previous post]({filename}/articles/018-postgresql-docker/postgresql-docker.md).
+The easiest way to start a database server for testing is to use Docker. In this example, I will create a Docker container that is running a *PostgreSQL* database. You may run the commands listed below and, if you wish, you may see more details about running a PostgreSQL database in a Docker container in my [previous post]({filename}/articles/018-postgresql-docker/postgresql-docker.md).
 
-Use the official [PostgreSQL Docker image](https://hub.docker.com/_/postgres) from the *Docker Hub* container library. Open a terminal on your Linux PC and run the Docker *run* command:
-
-Create a new database container named *userdb* from the Postgres image. Set the admin password and define a user. Setting the user also creates a database with the same name as the user. In this case, I created a user named *userdata*. Run the Docker *run* command:
+Use the official [PostgreSQL Docker image](https://hub.docker.com/_/postgres) from the *Docker Hub* container library. Create a new database container named *userdb* from the Postgres image. Set the admin password and define a user. Setting the user also creates a database with the same name as the user. In this case, I created a user named *userdata*. Run the Docker *run* command:
 
 ```bash
-$ docker run \
+(.venv) $ docker run \
     --detach \
     --env POSTGRES_PASSWORD=abcd1234 \
     --env POSTGRES_USER=userdata \
@@ -305,7 +312,7 @@ $ docker run \
 Use the Docker *exec* command to run the *psql* utility on the container to check that the database server is running. Start it in interactive mode on the container. Use the username, *userdata*, which connects to the database, *userdata*:
 
 ```bash
-$ docker exec -it userdb \
+(.venv) $ docker exec -it userdb \
     psql --username userdata
 
 sessions=#
@@ -315,38 +322,29 @@ Now you can be confident that the database is ready to use. Quit the *psql* util
 
 ```text
 sessions=# \q
-$ 
+(.venv) $ 
 ```
 
-### Set up the database in your program
+You also know the database information that is required to create the database connection string in your Flask application. The database is running on TCP port 5432 at your PC's loopback address, which can be expressed either as *127.0.0.1* or *localhost*. You know the username and password and the database name.
 
-https://blog.miguelgrinberg.com/post/the-flask-mega-tutorial-part-iv-database
+### Modify your program to use the SQL database
 
-
-In *app.py*, add the following code under the existing import section to identify the database:
+Edit the *app.py* program so it uses a database backend instead of the local filesystem. Open the file in your favorite text editor and add the following code under the existing import section to assign the [database connection string](https://blog.miguelgrinberg.com/post/the-flask-mega-tutorial-part-iv-database) to a variable named *uri*:
 
 ```python
 uri = "postgresql://userdata:abcd1234@localhost:5432/userdata"
 ```
 
-The change the app configuration. The *SESSION_PERMANENT* environment variable must be set to *True* or the database will generate type errors. To automatically clear old sessions, add the *PERMANENT_SESSION_LIFETIME* environment variable. 
+Change the Flask-Session configuration variables. Assign the string "sqlalchemy* to the *SESSION_TYPE* variable. You *must* set the *SESSION_PERMANENT* variable to be *True* or the database will generate type errors. You don't need to set the *PERMANENT_SESSION_LIFETIME* variable because Flask-Session will not delete old rows in the after their *PERMANENT_SESSION_LIFETIME* expires. However, I will create an SQL function that is triggered by a new row, that deletes rows who *expiry* column contains an old-enough timestamp. So, configure *PERMANENT_SESSION_LIFETIME* to a low value like 60 seconds for testing purposes. Finally, assign the connection string from the *uri* variable to the *SQLALCHEMY_DATABASE_URI* variable.
 
 ```python
-app = Flask(__name__)
-
-app.config["SECRET_KEY"] = "xyzxyxyz"
-app.config["FLASK_APP"] = "app"
-app.config["FLASK_ENV"] = "Development"
 app.config["SESSION_PERMANENT"] = True
-app.config["PERMANENT_SESSION_LIFETIME"] = 3600  # 1 hour
 app.config["SESSION_TYPE"] = "sqlalchemy"
-app.config['SQLALCHEMY_DATABASE_URI'] = uri
-
-Session(app)
+app.config["SQLALCHEMY_DATABASE_URI"] = uri
+app.config["PERMANENT_SESSION_LIFETIME"] = 60  # 1 minute
 ```
 
-Then add the following code to initialize the database.
-This is a [workaround](https://stackoverflow.com/questions/45887266/flask-session-how-to-create-the-session-table) that is not well documented because the Flask-Session SQLAlchemy interface does not so it when you initialze the Session.
+Then, add the following code after you initialize the *Session* class. This code is a [workaround](https://stackoverflow.com/questions/45887266/flask-session-how-to-create-the-session-table) that is not well documented. The Flask-Session *SqlAlchemySessionInterface* does not create the database when you initialze the Session. I consider this to be a bug in Flask-Session.
 
 ```python
 Session(app)
@@ -354,7 +352,7 @@ with app.app_context():
     app.session_interface.db.create_all()
 ```
 
-You need to use the *with app.app_context()* block to manually make the Flask app's [application context](https://flask.palletsprojects.com/en/2.3.x/appcontext/) available to the *app.session_interface.db.create_all()* function. Flask normally manages the application context for you but, in this case, we are manually initializing the database outside of a Flask route or view. 
+In the code above, you need to use the *with app.app_context()* block to manually make the Flask app's [application context](https://flask.palletsprojects.com/en/2.3.x/appcontext/) available to the *app.session_interface.db.create_all()* function. Flask normally manages the application context for you but, in this case, we are manually initializing the database outside of a Flask route or view. 
 
 In the end, the entire *app.py* program will look like below:
 
@@ -370,7 +368,7 @@ app.config["SECRET_KEY"] = "xyzxyxyz"
 app.config["FLASK_APP"] = "app"
 app.config["FLASK_ENV"] = "Development"
 app.config["SESSION_PERMANENT"] = True
-app.config["PERMANENT_SESSION_LIFETIME"] = 3600  # 1 hour
+app.config["PERMANENT_SESSION_LIFETIME"] = 60  # 1 minute
 app.config["SESSION_TYPE"] = "sqlalchemy"
 app.config['SQLALCHEMY_DATABASE_URI'] = uri
 
@@ -393,103 +391,87 @@ def action():
     return render_template('action.html')
 ```
 
-You can see how easy it was to change to a database backend. You could change the session type back to FileSystem just as easily.
+You can see how easy it was to change to a database backend. Except for the workaround required to create the database, we just changed a few variables. You could change the session type back to *filesystem* just as easily.
 
-However, Flask-Session does not seem to manage the sessions in the database well and leaves the data there for us to manage later.
+### Test the program
 
-**will not use Flask-Session for my usermapper web app because I plan to use an SQL database for it, because I get one for free on Azure**
+To test the modified program, run it with the `flask run` command and then open a browser to the URL: `http://localhost:5000`. The application looks and works the same as it did when we used the filesystem backend. Only, now, it is using a database to cache session data. 
+
+Using your browser's development tools, delete the session cookie (or wait one minute), and upload the text file again. Now you should have two rows in the database. Check the contents of the database by starting *psql* in the database container:
 
 ```bash
+(.venv) $ docker exec -it userdb \
+    psql --username userdata
+
+sessions=#
+```
+
+Read rows in the *sessions* table in the database. By default, Flask-Sessions creates the table named *sessions* to store the session data. You may select your own table name if you configure the *SESSION_SQLALCHEMY_TABLE* variable in the program.
+
+
+```text
 userdata=# SELECT id, session_id, expiry FROM sessions;
- id |                  session_id                  |           expiry
+ id |                  session_id                  |           expiry           
 ----+----------------------------------------------+----------------------------
-  1 | session:a84b86a7-579b-4213-9133-2676812b8759 | 2023-09-08 21:34:02.670951
-  2 | session:58f4a217-1f5b-4a1a-a5ed-38dfa4b43def | 2023-09-08 22:13:32.22257
+  1 | session:84c64ee0-69e8-4e05-a6b4-ed18a9ef3719 | 2023-09-13 02:18:12.278563
+  2 | session:24c8b4a0-52b1-4e53-b5ae-e44daf4629f5 | 2023-09-13 02:18:28.17735
 (2 rows)
 ```
 
-```bash
+You can see that the expiry time is set 60 seconds in the future. Check the database time using the *now()* SQL function:
+
+
+```text
 userdata=# SELECT now();
-              now
+              now              
 -------------------------------
- 2023-09-11 17:30:39.633867+00
+ 2023-09-13 02:17:35.826363+00
 (1 row)
 ```
 
-"SESSION_PERMANENT" = false
-"PERMANENT_SESSION_LIFETIME" not configured
-   - Error
+However, the database rows will not be cleaned up after their expiry time passes. Flask-Session expects you to manually remove user data when the session ends. The only way for your program to know that is if a user clicks on a *Logout* button or something similar. Your Flask program cannot detect when a user just closes their browser. So, a lot of rows could potentially build up as people use your application. In my case, I do not try to detect when a user leaves their session so every time their session expires, as defined by the *PERMANENT_SESSION_LIFETIME* variable, the data related to it remains in the SQL database.
 
-"SESSION_PERMANENT" = false
-"PERMANENT_SESSION_LIFETIME" = 30
-   - Error
+### Solving the data cleanup problem
 
-"SESSION_PERMANENT" = true
-"PERMANENT_SESSION_LIFETIME" not configured
-   - database timeout = 1 month (default)
-   - cookie expire time = 1 month (default)
+In my opinion, Flask-Session should take care of cleaning up old rows in the database. However, it does not.
 
-"SESSION_PERMANENT" = true
-"PERMANENT_SESSION_LIFETIME" = 30
-   - database sets expiry to a timestamp 30 seconds from now, in the row
-     - no rows deleted from DB
-   - cookie expire time = 30 seconds
-       - cookie will be replaced by new cookie with new ID after 30 seconds
-   - new DB record for each new cookie, so not good to have short expiry time (for data sizes)
+There are two ways you can solve the data cleanup problem. You can create an SQL function that is triggered every time you insert a new row in the database. The function would check the *expiry* column in each row against the current time and delete any rows where the current time is later than the datetime in the row's *expiry* column. See [The Art of Web Blog](https://www.the-art-of-web.com/sql/trigger-delete-old/) for a good description of this solution. 
 
+Another solution, and the one I prefer, is to add some more workaround code to the *app.py* program. The code will run when a new file is uploaded and check all the rows in the database. If the datetime in the *expiry* column in any row is later than the database's current time, it deletes the row. I integrated the code from a [stackoverflow answer](https://stackoverflow.com/questions/38455893/flask-session-cleanup-of-expired-sessions) into my *greeting* route.
 
-The following SQL code snippet [^1], from [The Art of Web Blog](https://www.the-art-of-web.com/sql/trigger-delete-old/), will configure postgres to clear old rows based on a trigger. In this case, the function us triggered when a new row is inserted into the *sessions* table.
+```python
+import datetime
+```
 
-[^1]: From [https://www.the-art-of-web.com/sql/trigger-delete-old/](https://www.the-art-of-web.com/sql/trigger-delete-old/). Accessed September, 2023
-
-(maybe change language to sql?)
-
-```sql
-CREATE FUNCTION delete_old_rows2() RETURNS trigger
-    LANGUAGE plpgsql
-    AS $$
-BEGIN
-  DELETE FROM sessions WHERE expiry < CURRENT_TIMESTAMP - INTERVAL '30 seconds';
-  RETURN NULL;
-END;
-$$;
-
-
-CREATE TRIGGER trigger_delete_old_rows
-    AFTER INSERT ON sessions
-    EXECUTE PROCEDURE delete_old_rows2();
+```python
+@app.route("/", methods=('GET','POST'))
+def greeting():
+    if request.method == 'POST':
+        file = request.files['textfile']
+        if file:
+            lines = [x.decode('UTF-8') for x in file.readlines()]
+            session['file_contents'] = lines
+            expired_sessions=(
+                app.
+                session_interface.
+                sql_session_model.
+                query.filter(
+                    app.
+                    session_interface.
+                    sql_session_model.
+                    expiry <= datetime.utcnow()
+                )
+            )
+            for es in expired_sessions:
+                app.session_interface.db.session.delete(es)
+                app.session_interface.db.session.commit()
+            return redirect (url_for('action'))
+    return render_template('greeting.html')
 ```
 
 
-or try and event:
 
-```sql
-CREATE EVENT `purge_table` ON SCHEDULE
-        EVERY 1 DAY
-    ON COMPLETION NOT PRESERVE
-    ENABLE
-    COMMENT ''
-    DO BEGIN
-DELETE FROM sessions WHERE expiry <= now() - INTERVAL '1 DAY'
-END
-```
 
-Now, when cookie expires on browser so new session id is created, the new record triggers old records to be deleted
-
-This is OK, but requires I set this up in Postgres outside my Flask app.
-
-I could define this using SQLAlchemy [^2] in my app. But that defeats the original purpose for using Flask-Session, which is to abstract away the management of browser sessions and the back-end storage of user data.
-
-[^2]: For example, after creating an SQLAlchemy engine object, run the following statement: 
-```
-engine.execute("""
-CREATE TRIGGER trigger_delete_old_rows
-    AFTER INSERT ON sessions
-    EXECUTE PROCEDURE delete_old_rows2();
-""")
-```
-
-https://stackoverflow.com/questions/27367886/user-defined-function-creation-in-sqlalchemy
 
 
 ## Redis?
@@ -662,6 +644,47 @@ userdata=# select session_id, expiry from sessions;
 
 
 
+SQL session
+
+"SESSION_PERMANENT" = false
+"PERMANENT_SESSION_LIFETIME" not configured
+   - Error
+
+"SESSION_PERMANENT" = false
+"PERMANENT_SESSION_LIFETIME" = 30
+   - Error
+
+"SESSION_PERMANENT" = true
+"PERMANENT_SESSION_LIFETIME" not configured
+   - database timeout = 1 month (default)
+   - cookie expire time = 1 month (default)
+
+"SESSION_PERMANENT" = true
+"PERMANENT_SESSION_LIFETIME" = 30
+   - database sets expiry to a timestamp 30 seconds from now, in the row
+     - no rows deleted from DB
+   - cookie expire time = 30 seconds
+       - cookie will be replaced by new cookie with new ID after 30 seconds
+   - new DB record for each new cookie, so not good to have short expiry time (for data sizes)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -703,3 +726,59 @@ FileSystem
    - Cookie cookie sets *Expires/Max-Age* to a value PERMANENT_SESSION_LIFETIME older than time cookie was created. After cookie expires, it will be replaced by a new cookie with a new UUID, causing a new backend file to be created with a new filename.
 
 
+
+
+
+
+
+
+[^1]: From [https://www.the-art-of-web.com/sql/trigger-delete-old/](https://www.the-art-of-web.com/sql/trigger-delete-old/). Accessed September, 2023
+
+(maybe change language to sql?)
+
+```sql
+CREATE FUNCTION delete_old_rows2() RETURNS trigger
+    LANGUAGE plpgsql
+    AS $$
+BEGIN
+  DELETE FROM sessions WHERE expiry < CURRENT_TIMESTAMP - INTERVAL '30 seconds';
+  RETURN NULL;
+END;
+$$;
+
+
+CREATE TRIGGER trigger_delete_old_rows
+    AFTER INSERT ON sessions
+    EXECUTE PROCEDURE delete_old_rows2();
+```
+
+
+or try and event:
+
+```sql
+CREATE EVENT `purge_table` ON SCHEDULE
+        EVERY 1 DAY
+    ON COMPLETION NOT PRESERVE
+    ENABLE
+    COMMENT ''
+    DO BEGIN
+DELETE FROM sessions WHERE expiry <= now() - INTERVAL '1 DAY'
+END
+```
+
+Now, when cookie expires on browser so new session id is created, the new record triggers old records to be deleted
+
+This is OK, but requires I set this up in Postgres outside my Flask app.
+
+I could define this using SQLAlchemy [^2] in my app. But that defeats the original purpose for using Flask-Session, which is to abstract away the management of browser sessions and the back-end storage of user data.
+
+[^2]: For example, after creating an SQLAlchemy engine object, run the following statement: 
+```
+engine.execute("""
+CREATE TRIGGER trigger_delete_old_rows
+    AFTER INSERT ON sessions
+    EXECUTE PROCEDURE delete_old_rows2();
+""")
+```
+
+https://stackoverflow.com/questions/27367886/user-defined-function-creation-in-sqlalchemy
