@@ -1,10 +1,10 @@
 title: Flask-Session deep dive
 slug: flask-session-sqlalchemy-redis-python
 summary: An in-depth review of the Flask-Session extension for the Flask Python web application framework. I review how well it can be used to manage ephemeral, anonymous user sessions. I test using the local file system, SQLAlchemy with a PostgeSQL database, and a Redis database to provide the sessions' backend data storage. 
-date: 2023-09-29
-modified: 2023-09-29
+date: 2023-09-14
+modified: 2023-09-14
 category: Flask
-<!-- status: Published -->
+status: Published
 
 The *[Flask-Session](https://flask-session.readthedocs.io/en/latest/)* extension manages *[Flask](https://flask.palletsprojects.com/en)* application user session data. It can use a variety of session interfaces to store the user data on the local PC or on a server, enabling you to store large amounts of user data per session with a single browser cookie.
 
@@ -272,7 +272,7 @@ If *SESSION_PERMANENT* is true, the cookie sets its *Expires/Max-Age* to its def
 
 If *SESSION_PERMANENT* is false, the cookie sets its *Expires/Max-Age* to the string, "session". In theory this is a temporary cookie that should be deleted when the session ends but many browsers keep session cookies indefinitely. However, the *PERMANENT_SESSION_LIFETIME* variable still has an impact on sessions even if *SESSION_PERMANENT* is false. Flask-Session deletes the session after *PERMANENT_SESSION_LIFETIME* when you try to re-use it. But, since the session cookie still exists on the browser, it re-uses its Session UUID and creates a new session file on the server with the same filename as the previous session data. The result is that is seems as though no new session file was added.
 
-## Using the Flask-Session SQLAlchemy backend 
+## Using the SQLAlchemy backend 
 
 The FileSystemSessionInterface backend is useful for for trying Flask-Session for the first time and may be good for local testing but you need to use a database if you intend to deploy your application as a web app. Flask-Session has an SQL database backend called *SqlAlchemySessionInterface*, which requires the Flask-SQLAlchemy extension.
 
