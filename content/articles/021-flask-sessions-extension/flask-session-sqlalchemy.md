@@ -256,7 +256,7 @@ I found the Flask-Session documentation did not describe how its configuration v
 
 #### SESSION_FILE_THRESHOLD
 
-The *SESSION_FILE_THRESHOLD* variable controls the number of session data files cached in the *flask_session* directory. The default is value is 500. Depending on your application you may need more or less. For testing, I usually set a small number, like five. No files, even files older than the *PERMANENT_SESSION_LIFETIME* are deleted until the configured threshold is met. When the threshold is met, all files older than the *PERMANENT_SESSION_LIFETIME* are deleted, even if that makes the number of files in the directory much lower than *SESSION_FILE_THRESHOLD*.
+The *SESSION_FILE_THRESHOLD* variable controls the number of session data files cached in the *flask_session* directory. The default is value is 500. Depending on your application you may need more or less. For testing, I usually set a small number, like five. No files are deleted until the configured threshold is met, not even files older than the *PERMANENT_SESSION_LIFETIME*. When the threshold is met, all files older than the *PERMANENT_SESSION_LIFETIME* are deleted, even if that makes the number of files in the directory much lower than *SESSION_FILE_THRESHOLD*.
 
 If many files are generated quickly so that the threshold is reached before any file is older than *PERMANENT_SESSION_LIFETIME*, Flask-Session will still maintain the threshold and delete session files until there are only *SESSION_FILE_THRESHOLD* remaining.
 
