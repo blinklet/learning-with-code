@@ -28,9 +28,9 @@ The [Python Packaging Authority](https://www.pypa.io/en/latest/) (PyPA) [recomme
 
 * *[setuptools](https://setuptools.pypa.io/en/latest/)* is the recommended "backend" for the Python package creation process.
 * *[build](https://pypa-build.readthedocs.io/en/stable/index.html)* provides the "frontend" for the Python package creation process.
-* *[twine](https://twine.readthedocs.io/en/latest/)* uploads packages to the PyPI database so they can easily be distributed.
+* *[twine](https://twine.readthedocs.io/en/latest/)* uploads packages to the *PyPI* database so they can easily be distributed.
 
-All of the recommended packaging tools use the *[pyproject.toml](https://peps.python.org/pep-0621/)* file in your Python project's directory.
+All of the recommended packaging tools use the *[pyproject.toml](https://peps.python.org/pep-0621/)* file in a Python project's directory.
 
 ### Alternative tools
 
@@ -103,7 +103,7 @@ usermapper
 
 ## Create the project metadata
 
-I followed the [*setuptools* documentation](https://setuptools.pypa.io/en/latest/userguide/quickstart.html#basic-use) and create a *pyproject.toml* file. This file contains the project metadata and replaces the *setup.py* and *requirements.txt* files I previously used. 
+I followed the [*setuptools* documentation](https://setuptools.pypa.io/en/latest/userguide/quickstart.html#basic-use) and created a *pyproject.toml* file. This file contains the project metadata and replaces the *setup.py* and *requirements.txt* files I previously used. 
 
 I opened up a new file named *pyproject.toml*:
 
@@ -119,7 +119,7 @@ requires = ["setuptools"]
 build-backend = "setuptools.build_meta"
 ```
 
-Next, I added project metadata, to be used by the PyPI web site when I uploaded the package. Note that, when building, the main thing you need to look at is the version number. If you try to build on top of an existing version, you can get an error.
+Next, I added project metadata, to be used by the *PyPI* web site when I uploaded the package. Note that, when building, the main thing you need to look at is the version number. If you try to build on top of an existing version, you can get an error.
 
 ```
 [project]
@@ -183,7 +183,7 @@ usermapper
 
 The project was now available as a *[source distribution](https://packaging.python.org/en/latest/glossary/#term-Source-Distribution-or-sdist)* and I could have stopped here and told users to install it from my GitHub repository. However, I wanted users to be able to install this package from *PyPI*.
 
-To prepare it to be uploaded to PyPI, I had to convert it into a *[distribution package](https://packaging.python.org/en/latest/glossary/#term-Distribution-Package)*. To create the distribution package, first create a new Python virtual environment so you can install the *wheel* and *build* packages:
+To prepare it to be uploaded to *PyPI*, I had to convert it into a *[distribution package](https://packaging.python.org/en/latest/glossary/#term-Distribution-Package)*. To create the distribution package, I first created a new Python virtual environment so I could install the *wheel* and *build* packages:
 
 ```
 $ python3 -m venv .bld
@@ -192,24 +192,24 @@ $ source .bld/bin/activate
 (.bld) $ pip install build
 ```
 
-In the same directory where *pyproject.toml* is located, run the *build* module: 
+In the same directory where *pyproject.toml* is located, I ran the *build* module: 
 
 ```
 (.bld) $ python3 -m build
 Successfully built usermapper-0.3.tar.gz and usermapper-0.3-py3-none-any.whl
 ```
 
-See a new directory called *dist* in your project. It contains the two distribution files:
+I saw a new directory called *dist* in my project. It contained the two distribution files:
 
 ```
 dist
-│   ├── usermapper-0.3-py3-none-any.whl
-│   └── usermapper-0.3.tar.gz
+    ├── usermapper-0.3-py3-none-any.whl
+    └── usermapper-0.3.tar.gz
 ```
 
-The *tar.gz* file is a compressed archive of the [source distribution](https://packaging.python.org/en/latest/glossary/#term-Source-Distribution-or-sdist) and the *.whl* file is a [built distribution](https://packaging.python.org/en/latest/glossary/#term-Built-Distribution), also known as a *Wheel*. The *pip* package manager can install from either distribution format but, if a wheel file is available, it will prefer it. 
+The *tar.gz* file is a [distribution package](https://packaging.python.org/en/latest/glossary/#term-Distribution-Package), which is really just a compressed archive of the [source distribution](https://packaging.python.org/en/latest/glossary/#term-Source-Distribution-or-sdist). The *.whl* file is a [built distribution](https://packaging.python.org/en/latest/glossary/#term-Built-Distribution), also known as a *Wheel*. The *pip* package manager can install from either distribution format but, if a wheel file is available, it will prefer it. 
 
-Now that I had finished the build, I deactivated the build virtual environment and deleted it (because its name is not in my *.gitignore* file):
+After I finished the build, I deactivated the build virtual environment and deleted it (because its name is not in my *.gitignore* file):
 
 ```
 (.bld) $ deactivate
@@ -226,7 +226,7 @@ $ source .venv2/bin/activate
 (.venv2) $ python3 -m pip install usermapper-0.3-py3-none-any.whl
 ```
 
-I test the installed program program using my *config.yaml.example* file as the config file:
+I test the installed program using my *config.yaml.example* file as the config file:
 
 ```
 (.venv2) $ usermapper -i docs/config.yaml.example
@@ -246,11 +246,12 @@ When I ran a *diff* of the new *user-mapping.xml* file and *user-mapping.xml.exa
 
 I plan to build better tests and continuous integration scripts in the future.
 
-I cleaned up the Python virtual environment I had used for testing:
+I cleaned up the Python virtual environment I had used for testing, and I deleted the *user-mapping.xml* file that was created by the testing:
 
 ```
 (.venv2) $ deactivate
 $ rm -r .venv2
+$ rm user-mapping.xml
 ```
 
 ## Commit changes to Git and GitHub
@@ -275,18 +276,19 @@ $ source .gittest/bin/activate
 
 The install worked and a quick test shows that the module is available. So, I will not break any downstream apps that rely on the *usermapper* package's source distribution on GitHub.
 
-When testing an install from a Git source distribution, you [may need to use](https://stackoverflow.com/questions/35898734/pip-installs-packages-successfully-but-executables-not-found-from-command-line) the `python3 -m usermapper` command instead of just `usermapper`.
+Note that, when testing an install from a Git source distribution, you [may need to use](https://stackoverflow.com/questions/35898734/pip-installs-packages-successfully-but-executables-not-found-from-command-line) the `python3 -m usermapper` command instead of just `usermapper`.
 
 Again, clean up the Python virtual environment:
 
 ```
 (.gittest) $ deactivate
 $ rm -r .gittest
+$ rm user-mapping.xml
 ```
 
 ## Configure *twine*
 
-This time, I decided to publish my *usermapper* package to PyPI. I [created a new PyPI account](https://pypi.org/account/register/) and I configured [two-factor authentication](https://blog.pypi.org/posts/2023-05-25-securing-pypi-with-2fa/).
+This time, I decided to publish my *usermapper* package to *PyPI*. I [created a *PyPI* account](https://pypi.org/account/register/) and I configured [two-factor authentication](https://blog.pypi.org/posts/2023-05-25-securing-pypi-with-2fa/).
 
 I installed *twine* in my Python virtual environment:
 
@@ -298,7 +300,7 @@ $ source .venv/bin/activate
 (.venv) $ pip install twine
 ```
 
-I wanted to upload packages to PyPI without entering a userid and password every time, so I got a [token]((https://pypi.org/help/#apitoken)) from PyPI. I can use the token to authenticate all future uploads. To get the token, I went to my [PyPI Account Settings page](https://pypi.org/manage/account/) and scrolled down to the *API Tokens* section. I clicked the *Add API Token* button.
+I wanted to upload packages to *PyPI* without entering a userid and password every time, so I got a [token]((https://pypi.org/help/#apitoken)) from *PyPI*. I can use the token to authenticate all future uploads. To get the token, I went to my [PyPI Account Settings page](https://pypi.org/manage/account/) and scrolled down to the *API Tokens* section. I clicked the *Add API Token* button.
 
 ![Add an API token]({attach}pypi-new-token-030.png){width=100%}
 
@@ -324,31 +326,31 @@ I configured the *.pypirc* file, using my own token, similar to as shown below (
   password = pypi-Wd94fakeNr2jvl3LnqfpOOnvfakeO0iEU8LTmWY6ovrEun5Uq3fakeOUmnwX
 ```
 
-I saved the file. When I use *twine* to upload a package to PyPI, it will look in the *.pypirc* file for the authentication token.
+I saved the file. When I use *twine* to upload a package to *PyPI*, it will look in the *.pypirc* file for the authentication token.
 
-## Upload package to PyPI
+## Upload package to *PyPI*
 
-I used *twine* to upload the *usermapper* package to PyPI.
+I used *twine* to upload the *usermapper* package to *PyPI*.
 
 ```
 (.venv) $ twine upload dist/*
 ```
 
-After uploading the distribution package and the wheel, *twine* lists the URL of the Package's pag on PyPI. In my case, it was:
+After uploading the distribution package and the wheel, *twine* lists the URL of the Package's pag on *PyPI*. In my case, it was:
 
 ```
 https://pypi.org/project/usermapper/0.3/
 ```
 
-I viewed the package on PyPI:
+I viewed the package on *PyPI*:
 
 ![PyPI project page]({attach}pypi-project-uploaded-060.png){width=100%}
 
-It took the *README.md* file from my Python project directory and displayed it. I need to make a few edits to the README file now that my package is on PyPI, but that can wait until another time.
+*PyPI* took the *README.md* file from my Python project directory and displayed it. I need to make a few edits to the README file now that my package is on *PyPI*, but that can wait until another time.
  
-## Test the PyPI package
+## Test the *PyPI* package
 
-I tested that the package can now be installed from PyPI. The current Python virtual environment does not have the *usermapper* package installed, so I ran the following command:
+I tested that the package can now be installed from *PyPI*. The current Python virtual environment does not have the *usermapper* package installed, so I ran the following command:
 
 ```
 $ (.venv) pip install usermapper
@@ -365,15 +367,15 @@ $ rm -r .venv
 
 ## Conclusion and Next steps
 
-I successfully refactored the *usermapper* Python package to use modern tools. I did not need to change any actual application code. I moved files and directories around and changed which files are used to define the project metadata.
+I successfully refactored the *usermapper* Python package to use modern tools. I did not need to change any application code. I moved files and directories around and changed which files are used to define the project metadata.
 
-Now that I have learned the basics of modern Python packaging, I need to learn more about building [automated tests](https://realpython.com/python-testing/) and a [continuous integration](https://realpython.com/python-continuous-integration/) pipeline so I can automatically test and publish the *usermapper* package to PyPI. This means I will likely explore tools like the ones listed below:
+Now that I have learned the basics of modern Python packaging, I need to learn more about building [automated tests](https://realpython.com/python-testing/) and a [continuous integration](https://realpython.com/python-continuous-integration/) pipeline so I can automatically test and publish the *usermapper* package to *PyPI*. This means I will likely explore tools like the ones listed below:
 
 *[tox](https://tox.wiki/en/latest/user_guide.html#basic-example)* is an integrated build and test tool. It's not needed specifically for packaging, but is useful for building a basic continuous integration (CI) pipeline that supports testing your Python package.
 
 *[GitHub Actions](https://docs.github.com/actions)* are configurable, automated processes that will run one or more jobs on a remote server after being triggered by some condition. Or, I will look for a more "general purpose" tool that does the same thing.
 
-*[TestPyPI](https://test.pypi.org/)* is the PyPI testing repository. When developing automation and CI, I will use TestPyPI to avoid causing problems in my normal PyPI account. One point to remember: when I test an install from TestPyPI, I must specify `--extra-index-url` to [point to PyPI for the test project's dependencies](https://packaging.python.org/en/latest/guides/using-testpypi/).
+*[TestPyPI](https://test.pypi.org/)* is the *PyPI* testing repository. When developing automation and CI, I will use TestPyPI to avoid causing problems in my normal *PyPI* account. One point to remember: when I test an install from TestPyPI, I must specify `--extra-index-url` to [point to *PyPI* for the test project's dependencies](https://packaging.python.org/en/latest/guides/using-testpypi/).
 
 *[pip-tools](https://github.com/jazzband/pip-tools)* contains the *pip-compile*  and *pip-sync* tools that help you manage dependencies in your Python package. It useful when you need to create a *requirements.txt* file from your project's metadata or when you need to create a detailed list of all you project's dependencies, including dependencies of dependencies.
 
