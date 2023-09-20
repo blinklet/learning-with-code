@@ -140,7 +140,7 @@ Flask-WTF
 python-dotenv
 bootstrap-flask
 gunicorn
-git+https://github.com/blinklet/usermapper.git@v0.3#egg=usermapper
+git+https://github.com/blinklet/usermapper.git@v0.3
 ```
 
 ### Modify the *.env* file
@@ -153,7 +153,7 @@ In a production environment, Flask uses a secret key to help secure functions li
 $ python3 -c 'import secrets; print(secrets.token_urlsafe(32))'
 ```
 
-The command requested a random key that is 32 bytes long. It shoud display on your terminal like the one shown below. 
+The command requested a random key that is 32 bytes long. It should display on your terminal like the one shown below. 
 
 ```
 D9Oci7p2l9bqM8_uChJKA09tqXFOK7Db-FxKr6rGoDk

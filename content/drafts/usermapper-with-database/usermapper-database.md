@@ -1,6 +1,6 @@
 title: Add a database to a web app
 slug: web-app-database-python
-summary: Most web applications need to store data. Even if they do not store user data, web apps need to temporarily cache data so it can be passed between the their routes or views. Many developers choose to use a database to solve this problem. This post shows how I added a database to my *usermapper-web* web app.
+summary: Most web applications need to store data. Even if they do not store user data, Flask web apps need to temporarily cache data so it can be passed between the their routes or views. Many developers choose to use a database to solve this problem. This post shows how I added a database to my *usermapper-web* web app.
 date: 2023-09-07
 modified: 2023-09-07
 category: Databases
@@ -8,26 +8,24 @@ category: Databases
 
 My [*usermapper-web* program](https://github.com/blinklet/usermapper-web) is a very simple web app that uploads a small configuration file and uses it to build a complex [XML file](https://guacamole.apache.org/doc/gug/configuring-guacamole.html#user-mapping-xml) for the [Apache Guacamole](https://guacamole.apache.org/) remote desktop gateway. The user may download the XML file and use it to prepare user accounts, using the Guacamole server's default authentication.
 
-I used the [Flask framework](https://flask.palletsprojects.com/en/2.3.x/) to implement the program's web interface. To pass data created by the user between application routes, the program generated a randomly-named folder for each user and passed the folder name in a parameter when calling a new route. This works OK for a small app like *usermapper-web*, where I expect between zero and one users per week. But, this crude data-caching method requires filesystem services that may not be permitted on some web app platforms and it requires a separate data cleanup process to avoid filling the server's filesystem with user folders, over time.
+I used the [Flask framework](https://flask.palletsprojects.com/en/2.3.x/) to implement the program's web interface. To pass user-created data between application routes, the program generated a randomly-named folder for each user and passed the folder name in a parameter when calling a new route. This works OK for a small app like *usermapper-web*, where I expect between zero and one users per week. But, this crude data-caching method requires filesystem services that may not be available on some web app platforms and it requires a separate data cleanup process to avoid filling the server's filesystem with user folders, over time.
 
 The "standard" way to cache user data for a web app is to use a database server. In this post, I will create a local database instance and change my *usermapper-web* program so it uses the database to store user information.
 
 ## Why use a database
 
-Flexibility:
+In a simple use-case, like my *usermapper-web* application, one may many different caching methods for user-generated data. In fact, using the filesystem to cache data is a good option, as long as demand is low. However, there are benefits to starting with a database.
 
-- Can use any database service in the cloud when deploying -- just have to change some variables
-- Or, can deploy using containers so the "state" is in the database
-- Or, do both: test locally using containers and deploy using cloud services.
-
+- Your application Can use any database service that may be available -- you just have to change some variables in the program code.
+- If your web app is intended to be a "micro-service", you can deploy it  using containers so the service "state" is stored in a separate database
 
 ## Steps required
 
 Changing the way *usermapper-web* stores user information requires the following steps:
 
-1. Set up a database in a container running on your development PC, so you can test the changes you make to your program. Also, prepare the Python environment for your program. In my case, I run my *usermapper-web* application in a Python virtual environment.
+1. Set up a database in a container running on your development PC, so you can test the changes you make to your program. 
 
-1. Define and implement a way to identify each user. I prefer to avoid requiring users create a user ID and password so I want to create a temporary internal identifier for each user session. I plan assign a Flask [session](https://flask.palletsprojects.com/en/latest/quickstart/#sessions) to each user, and use it as the temporary user ID. I will use the [Flask-Session](https://flask-session.readthedocs.io/en/latest/) extension to make this easier.
+1. Define and implement a way to identify each user. I prefer to avoid requiring users create a user ID and password, so I want to create a temporary internal identifier for each user session. I plan to assign a Flask [session](https://flask.palletsprojects.com/en/latest/quickstart/#sessions) to each user, and use it as the temporary user ID.
 
 1. Use the identifiers assigned to users as keys in the database table.
 
