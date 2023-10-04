@@ -1,6 +1,8 @@
 In this post, I show how to create a simple application that writes and reads data to a database. 
 
-When using libraries like SQLAlchemy and frameworks like Flask, you need to structure you project
+## Python packages
+
+When using libraries like *SQLAlchemy* and frameworks like *Flask*, you need to structure you project
 
 Compared to my original usermapper-web application, a properly structured program separates functionality into discrete modules. In any app, but especially in a Flask app, the modules may be organized in a folder structure called packages.
 
