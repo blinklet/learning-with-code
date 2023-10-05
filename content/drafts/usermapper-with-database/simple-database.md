@@ -1,22 +1,40 @@
 In this post, I show how to create a simple application that writes and reads data to a database. 
 
-## Python packages
+First, I planned out the project structure. I will divide the project into two packages named *database*, which will set up the database model and functions that read or write data, and *interface*, which will create the user interface and functions that display data. 
 
-When using libraries like *SQLAlchemy* and frameworks like *Flask*, you need to structure you project
+When a user runs the program, they will use the application name *dbapp*. So, the project structure will look like below:
 
-Compared to my original usermapper-web application, a properly structured program separates functionality into discrete modules. In any app, but especially in a Flask app, the modules may be organized in a folder structure called packages.
+```
+dbproject/
+   ├── dbapp/
+   │   ├── database/
+   │   │   ├── connect.py
+   │   │   ├── functions.py
+   │   │   └── models.py
+   │   ├── interface/
+   │   │   └── cli.py
+   │   ├── config.py
+   │   ├── .env
+   │   └── __main__.py
+   ├── docs
+   │   └── dotenv_example.txt
+   └── tests
+```
 
-Python automatically detects a package when it finds Python modules organized in folders. You may, optionally, include special file 
+The *dbapp* package contains two packages, *database* and *interface*, a configuration module, a dotenv file for safely storing sensitive database connection strings and other configurations, and a file named *__main__.py*, which Python runs automatically when a user runs the `python -m dbapp` command when in the *dbproject* directory.
 
-It's important to decide how you will organize your application's code early in the project. The structure you choose will impact, and be impacted by, the following:
+The *database* package contains three modules:
 
-* The way you will run your Python program (as a script or as a module)
-* How the Python search path gets initialized, which may cause errors (or not) depending on which directory from which you run commands
-* How you will import modules in your program
-* How you will distribute your program
-* The metadata you need to create when packaging your program for distribution
+  * *connect* sets up the database connection
+  * *functions* creates functions that read, write, and delete database information
+  * *models* contains the SQLAlchemy code that defines the database
 
-If you, like me when I started this post, are at a point where you are just starting to build larger programs, I suggest you read an in-depth explanation of Python packages and modules. I re-read my *Lerning Python*
+The *interface* package contains just one module, for now.
+
+  * *cli* runs the program's command-line interface
+  * more user interfaces, such as an interactive user interface, could be added later
+
+In the project structure shown above, I also listed the *docs* and *tests* packages. I will not cover these in this post but most projects will include tests and may include documentation in a separate folder like *docs*. Since the `.env` file is not included in source control, I like to include an example dotenv file in the *docs* folder for anyone who clones one of my projects from [GitHub](https://github.com/blinklet).
 
 
 

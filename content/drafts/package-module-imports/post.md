@@ -1,3 +1,17 @@
+## Python packages
+
+A well-structured program separates functionality into discrete modules. In more complex apps, modules may be organized in a folder structure called packages. Python automatically detects packages when it finds Python modules organized in folders. 
+
+It's important to decide how you will organize your application's code early in the project. The structure you choose will impact, and be impacted by, the following:
+
+* The way you will run your Python program: as a script or as a module.
+* How the Python search path gets initialized, which may cause errors (or not) depending on the directory from which you run commands.
+* How you will import modules in your program files
+* How you will distribute your program
+* The metadata you need to create when packaging your program for distribution
+
+If you, like me when I started this post, are at a point where you are just starting to build larger programs, I suggest you read an in-depth explanation of Python packages and modules. I re-read my *Learning Python*
+
 Python package structure recommendation
 
 https://docs.python-guide.org/writing/structure/
