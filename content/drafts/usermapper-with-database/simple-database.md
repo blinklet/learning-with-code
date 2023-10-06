@@ -1,42 +1,115 @@
-In this post, I show how to create a simple application that writes and reads data to a database. 
+In this post, I show how to create a simple application that writes and reads data to a database. I focus on using the [SQLAlchemy](https://www.sqlalchemy.org/) library to define a database table, initialize a new database, and then write and read data. I will use the [SQLAlchemy ORM](https://medium.com/dataexplorations/sqlalchemy-orm-a-more-pythonic-way-of-interacting-with-your-database-935b57fd2d4d) for all operations so that my program is as "Pythonic" as possible.
 
-First, I planned out the project structure. I will divide the project into two packages named *database*, which will set up the database model and functions that read or write data, and *interface*, which will create the user interface and functions that display data. 
+## Project files and folders
 
-When a user runs the program, they will use the application name *dbapp*. So, the project structure will look like below:
+I want the application name to be *dbapp*. So, the application modules and sub-packages will all be in a directory named *bdapp*. The project metadata, used when distributing the application, is stored in the *pyproject.toml* file in the same project folder as the *dbapp* package.
 
-```
-dbproject/
-   ├── dbapp/
-   │   ├── database/
-   │   │   ├── connect.py
-   │   │   ├── functions.py
-   │   │   └── models.py
-   │   ├── interface/
-   │   │   └── cli.py
-   │   ├── config.py
-   │   ├── .env
-   │   └── __main__.py
-   ├── docs
-   │   └── dotenv_example.txt
-   └── tests
-```
-
-The *dbapp* package contains two packages, *database* and *interface*, a configuration module, a dotenv file for safely storing sensitive database connection strings and other configurations, and a file named *__main__.py*, which Python runs automatically when a user runs the `python -m dbapp` command when in the *dbproject* directory.
+The *dbapp* package contains two sub-packages, *database* and *interface*, a configuration module, a dotenv file for safely storing sensitive database connection strings and other configurations, and a file named *__main__.py*, which Python runs automatically when a user runs the `python -m dbapp` command when in the *dbproject* directory.
 
 The *database* package contains three modules:
 
-  * *connect* sets up the database connection
-  * *functions* creates functions that read, write, and delete database information
-  * *models* contains the SQLAlchemy code that defines the database
+  * *connect.py* sets up the database connection
+  * *functions.py* creates functions that read, write, and delete database information
+  * *models.py* contains the SQLAlchemy code that defines the database
 
 The *interface* package contains just one module, for now.
 
-  * *cli* runs the program's command-line interface
+  * *cli.py* runs the program's command-line interface
   * more user interfaces, such as an interactive user interface, could be added later
 
-In the project structure shown above, I also listed the *docs* and *tests* packages. I will not cover these in this post but most projects will include tests and may include documentation in a separate folder like *docs*. Since the `.env` file is not included in source control, I like to include an example dotenv file in the *docs* folder for anyone who clones one of my projects from [GitHub](https://github.com/blinklet).
+The project structure will look like below:
+
+```
+dbapp/
+   ├── .gitignore
+   ├── pyproject.toml
+   ├── src
+   │   └── dbapp/
+   │       ├── database/
+   │       │   ├── connect.py
+   │       │   ├── functions.py
+   │       │   └── models.py
+   │       ├── interface/
+   │       │   └── cli.py
+   │       ├── config.py
+   │       ├── .env
+   │       └── __main__.py
+   ├── docs/
+   │   └── dotenv_example.txt
+   └── tests/
+       └── test.py
+```
+
+You can see that the project is in three folders named *src*, *docs*, and *tests*. The *docs* folder contains a *dotenv_example.txt* file because the real [*dotenv** file]({filename}/articles/011-use-environment-variables/use-environment-variables.md) is not included in source control, so I like to document an example for anyone who clones one of my projects from [GitHub](https://github.com/blinklet).
+
+## Create a database container
+
+Create a new database container called *ps_userdata*. Run the following command:
+
+```bash
+$ docker run \
+    --detach \
+    --env POSTGRES_PASSWORD=abcd1234 \
+    --env POSTGRES_USER=userdata \
+    --publish 5432:5432 \
+    --name userdata\
+    postgres:alpine
+```
+
+## Configuration files
+
+In the project folder, I first created the project metadata file, *pyproject.toml*. I am starting wth the end goal in mind so I want to define the application entry point that a published package will use. This helps me make decisions about how to import project modules. See my previous post about [packaging  simple Python programs]({filename}/articles/022-modern-packaging/modern-packaging.md) for more details about project metadata and how to use it.
+
+The *pyproject.toml* file looks like the one below:
+
+```python
+# pyproject.toml
+
+[build-system]
+requires = ["setuptools"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "usermapper"
+version = "0.3"
+authors = [{name = "Brian Linkletter", email = "mail@brianlinkletter.ca"}]
+description = "Create a manual authentication file for the Guacamole remote access gateway from a simple configuration file."
+readme = "README.md"
+requires-python = ">=3.7"
+keywords = ["Guacamole", "YAML", "XML", "authentication"]
+license = {text = "GPLv3"}
+classifiers = ["Framework :: Flask", "Programming Language :: Python :: 3"]
+dependencies = ["PyYAML"]
+
+[project.urls]
+Repository = "https://github.com/blinklet/learning"
+Blog = "https://learningwithcode.com"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+include = ["usermapper*"]
+exclude = ["tests", "docs"]
+```
+
+Finally, the [console scripts](https://setuptools.pypa.io/en/latest/userguide/entry_point.html#console-scripts) table sets the name that will run the package in the command-line interface. This replaces the need to have a *\_\_main\_\_.py* file in the package directory but I want to keep it around, for now, until I get my tests working. The \_\_main\_\_.py file lets me run the package from the *usermapper/src* directory with the `python -m usermapper` command when I am developing it. It does not seem to hurt to leave it.
+
+```
+[project.scripts]
+usermapper = "usermapper.usermapper:main"
+```
+
+I saved the *pyproject.toml* file.
 
 
+
+
+
+
+
+
+
+
+I started code that supports the database. 
 
 SQLAlchemy
 
