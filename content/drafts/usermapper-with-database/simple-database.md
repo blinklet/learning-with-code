@@ -2,7 +2,7 @@ In this post, I show how to create a simple application that writes and reads da
 
 ## Project files and folders
 
-I want the application name to be *dbapp*. So, the application modules and sub-packages will all be in a directory named *bdapp*. The project metadata, used when distributing the application, is stored in the *pyproject.toml* file in the same project folder as the *dbapp* package.
+I want the application name to be *dbapp*. So, the application modules and sub-packages will all be in a directory named *bdapp*. The project metadata, used when installing dependencies, is stored in the *requirements.txt* file in the same project folder as the *dbapp* package.
 
 The *dbapp* package contains two sub-packages, *database* and *interface*, a configuration module, a dotenv file for safely storing sensitive database connection strings and other configurations, and a file named *__main__.py*, which Python runs automatically when a user runs the `python -m dbapp` command when in the *dbproject* directory.
 
@@ -20,9 +20,10 @@ The *interface* package contains just one module, for now.
 The project structure will look like below:
 
 ```
-dbapp/
+project/
    ├── .gitignore
-   ├── pyproject.toml
+   ├── requirements.txt
+   ├── README.md
    ├── src
    │   └── dbapp/
    │       ├── database/
@@ -40,7 +41,9 @@ dbapp/
        └── test.py
 ```
 
-You can see that the project is in three folders named *src*, *docs*, and *tests*. The *docs* folder contains a *dotenv_example.txt* file because the real [*dotenv** file]({filename}/articles/011-use-environment-variables/use-environment-variables.md) is not included in source control, so I like to document an example for anyone who clones one of my projects from [GitHub](https://github.com/blinklet).
+You can see that the project is in three folders named *src*, *docs*, and *tests*. 
+
+The *docs* folder contains a *dotenv_example.txt* file because the real [*dotenv** file]({filename}/articles/011-use-environment-variables/use-environment-variables.md) is excluded from source control, using the *.gitignore* file, so I like to document an example for anyone who clones one of my projects from [GitHub](https://github.com/blinklet).
 
 ## Create a database container
 
@@ -58,70 +61,79 @@ $ docker run \
 
 ## Configuration files
 
-In the project folder, I first created the project metadata file, *pyproject.toml*. I am starting wth the end goal in mind so I want to define the application entry point that a published package will use. This helps me make decisions about how to import project modules. See my previous post about [packaging  simple Python programs]({filename}/articles/022-modern-packaging/modern-packaging.md) for more details about project metadata and how to use it.
-
-The *pyproject.toml* file looks like the one below:
+The *requirements.txt* file looks like the one below. I do not intend to publish this package on *PyPI* so I only need a requirements file, and do not need to create a [*pyproject.toml* file]({filename}/articles/022-modern-packaging/modern-packaging.md).
 
 ```python
-# pyproject.toml
+# requirements.txt
 
-[build-system]
-requires = ["setuptools"]
-build-backend = "setuptools.build_meta"
-
-[project]
-name = "usermapper"
-version = "0.3"
-authors = [{name = "Brian Linkletter", email = "mail@brianlinkletter.ca"}]
-description = "Create a manual authentication file for the Guacamole remote access gateway from a simple configuration file."
-readme = "README.md"
-requires-python = ">=3.7"
-keywords = ["Guacamole", "YAML", "XML", "authentication"]
-license = {text = "GPLv3"}
-classifiers = ["Framework :: Flask", "Programming Language :: Python :: 3"]
-dependencies = ["PyYAML"]
-
-[project.urls]
-Repository = "https://github.com/blinklet/learning"
-Blog = "https://learningwithcode.com"
-
-[tool.setuptools.packages.find]
-where = ["src"]
-include = ["usermapper*"]
-exclude = ["tests", "docs"]
+SQLAlchemy 
+psycopg2
+python-dotenv
 ```
 
-Finally, the [console scripts](https://setuptools.pypa.io/en/latest/userguide/entry_point.html#console-scripts) table sets the name that will run the package in the command-line interface. This replaces the need to have a *\_\_main\_\_.py* file in the package directory but I want to keep it around, for now, until I get my tests working. The \_\_main\_\_.py file lets me run the package from the *usermapper/src* directory with the `python -m usermapper` command when I am developing it. It does not seem to hurt to leave it.
+I saved the *requirements.txt* file.
+
+
+## Install dependencies
+
+I created a Python virtual environment and used the *requirements.txt* file to install the project dependencies.
 
 ```
-[project.scripts]
-usermapper = "usermapper.usermapper:main"
+$ cd project
+$ python3 -m venv .venv
+$ source .venv/bin/activate
+(.venv) $ pip install -r requirements.txt
 ```
 
-I saved the *pyproject.toml* file.
+## Application configuration
 
+Configuration file, *config.py* defines the database connection string:
 
+```python
+import os
 
+from sqlalchemy.engine import URL
+from dotenv import load_dotenv
 
+load_dotenv()
 
+_database_server = os.getenv('DB_SERVER')
+_database_port = os.getenv('DB_PORT')
+_database_name = os.getenv('DB_NAME')
+_database_userid = os.getenv('DB_UID')
+_database_password = os.getenv('DB_PWD')
 
+database_url = URL.create(
+    drivername='postgresql+psycopg2',
+    username=_database_userid,
+    password=_database_password,
+    host=_database_server,
+    port=_database_port,
+    database=_database_name
+    )
 
+# SQLite3 database
+# database_url = "sqlite:////home/brian/db/userdata.db"
 
+if __name__ == "__main__":
+    print(f"Database URL = {database_url}")
+```
 
+To test the module, run it as a script:
 
-I started code that supports the database. 
+```bash
+(.venv) $ cd src
+(.venv) $ python -m dbapp.config
+Database URL = postgresql+psycopg2://userdata:***@localhost:5432/userdata
+```
 
-SQLAlchemy
+## Database code
 
-[declarative mapping](https://docs.sqlalchemy.org/en/20/orm/mapping_styles.html#orm-declarative-mapping)
+### Database 
 
+Set up the database connection in the *connection.py* module:
 
-https://www.youtube.com/watch?v=XWtj4zLl_tg
-
-
-where to create session?
-"ourside" functions that use it
-see: 
+**Explain why I use sessionmaker**
 
 used sessionmaker to get automatic connection management
 https://docs.sqlalchemy.org/en/20/orm/session_basics.html#using-a-sessionmaker
@@ -133,6 +145,87 @@ where?
 https://docs.sqlalchemy.org/en/20/orm/session_basics.html#when-do-i-construct-a-session-when-do-i-commit-it-and-when-do-i-close-it
 
 
+```python
+# dbapp/database/connect.py
+ 
+from sqlalchemy import create_engine
+from sqlalchemy.orm import sessionmaker
+
+from dbapp import config
+
+
+engine = create_engine(config.database_url)
+Session = sessionmaker(engine)
+
+
+if __name__ == "__main__":
+    print(engine)
+    with Session() as session:
+        connection = session.connection()
+        print(connection)
+```
+
+To test the module, run it as a script:
+
+```bash
+(.venv) $ python -m dbapp.database.connect
+Engine(postgresql+psycopg2://userdata:***@localhost:5432/userdata)
+<sqlalchemy.engine.base.Connection object at 0x7fd4c9015f00>
+```
+
+## Create database tables
+
+
+[declarative mapping](https://docs.sqlalchemy.org/en/20/orm/mapping_styles.html#orm-declarative-mapping)
+
+https://www.youtube.com/watch?v=XWtj4zLl_tg
+
+Create the *models.py file:
+
+```
+# dbapp/database/models/py
+
+from sqlalchemy import Integer, String, UnicodeText, DateTime, func
+from sqlalchemy.orm import declarative_base
+from sqlalchemy.orm import mapped_column
+
+from dbapp.database.connect import engine
+
+
+Base = declarative_base()
+
+
+class Userdata(Base):
+    __tablename__ = "userdata"
+
+    user_id = mapped_column(String(32), primary_key=True, nullable=False)
+    user_data = mapped_column(UnicodeText)
+    time_stamp = mapped_column(DateTime(timezone=True))
+
+    def __repr__(self):
+        return f"ID = {self.user_id:10}  " \
+               f"DATA = {self.user_data:20}  " \
+               f"TIME = {self.time_stamp.strftime('%B %d %H:%M')}"
+
+
+def db_setup():
+    Base.metadata.create_all(engine)
+
+
+if __name__ == "__main__":
+    db_setup()
+```
+
+I used to have `server_default=func.now()` in the *time_stamp* column so that the [SQL server would create the datetime entry](https://stackoverflow.com/questions/13370317/sqlalchemy-default-datetime) when a new row was added but I chose to calculate datetime in my program because it is simpler to update the timestamp in an existing row. Another solution involves [creating a trigger](https://stackoverflow.com/questions/22594567/sql-server-on-update-set-current-timestamp) in the SQL database but, again, I thought it was better to run this logic in the Python program.
+
+
+
+## Create database functions
+
+where to create session?
+"outside" functions that use it
+see: 
+
 how to update a row using ORM instead of "query" class
 https://docs.sqlalchemy.org/en/20/orm/queryguide/dml.html#orm-update-and-delete-with-custom-where-criteria
 
@@ -141,7 +234,71 @@ https://docs.sqlalchemy.org/en/20/orm/queryguide/index.html
 "In the SQLAlchemy 2.x series, SQL SELECT statements for the ORM are constructed using the same select() construct as is used in Core, which is then invoked in terms of a Session using the Session.execute() method (as are the update() and delete() constructs now used for the ORM-Enabled INSERT, UPDATE, and DELETE statements feature). However, the legacy Query object, which performs these same steps as more of an “all-in-one” object, continues to remain available as a thin facade over this new system, to support applications that were built on the 1.x series without the need for wholesale replacement of all queries. For reference on this object, see the section Legacy Query API."
 also see: https://docs.sqlalchemy.org/en/20/orm/queryguide/query.html#legacy-query-api
 
+```python
+from datetime import datetime
 
+from sqlalchemy import select, update, delete
+
+from dbapp.database.models import Userdata
+
+
+def db_id_exists(session, id):
+    stmt = (select(Userdata.user_id).where(Userdata.user_id == id))
+    result = session.scalar(stmt)
+    if result == None:
+        return False
+    else:
+        return result
+
+
+def db_write(session, id, data):
+    userdata = Userdata(
+        user_id = id,
+        user_data = data,
+        time_stamp = datetime.now()
+    )
+    session.add(userdata)
+
+
+def db_update(session, id, data):
+    stmt = (update(Userdata)
+            .where(Userdata.user_id == id)
+            .values(user_data=data, time_stamp = datetime.now()))
+    session.execute(stmt)
+
+
+def db_read(session, id):
+    if id == "all":
+        stmt = select(Userdata)
+    else:
+        stmt = select(Userdata).where(Userdata.user_id == id)
+    results = session.scalars(stmt)
+    for row in results:
+        print(row)
+
+
+def db_delete(session, id):
+    if db_id_exists(session, id):
+        stmt = delete(Userdata).where(Userdata.user_id == id)
+        session.execute(stmt)
+    else:
+        print(f"The user '{id}' does not exist.")
+
+
+if __name__ == "__main__":
+    from dbapp.database.connect import Session
+    from dbapp.database.models import db_setup
+    db_setup()
+    with Session() as session:
+        db_write(session, "test_id1", "this is test data")
+        if db_id_exists(session, "test_id1"):
+          print("test_id1 written correctly")
+        db_update(session, "test_id1", "New data")
+        db_read(session, "test_id1")
+        db_delete(session, "test_id1")
+        if not db_id_exists(session, "test_id1"):
+          print("test_id1 deleted correctly")
+```
 
 
 
