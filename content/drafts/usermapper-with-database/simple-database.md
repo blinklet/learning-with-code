@@ -29,17 +29,24 @@ project/
    │       ├── database/
    │       │   ├── connect.py
    │       │   ├── functions.py
-   │       │   └── models.py
+   │       │   ├── models.py
+   │       │   └── __init__.py
    │       ├── interface/
-   │       │   └── cli.py
+   │       │   ├── cli.py
+   │       │   └── __init__.py
    │       ├── config.py
    │       ├── .env
+   │       ├── __init__.py
    │       └── __main__.py
    ├── docs/
    │   └── dotenv_example.txt
    └── tests/
        └── test.py
 ```
+
+The *__init__.py* file in each package directory is just a blank file that indicates that the directory is to be treated as a *[regular Python package](https://python-notes.curiousefficiency.org/en/latest/python_concepts/import_traps.html)*.
+
+The *__main__.py* file in the top-level package directory will be executed when the package is called using the `python -m` command. https://realpython.com/pypi-publish-python-package/#call-the-reader
 
 You can see that the project is in three folders named *src*, *docs*, and *tests*. 
 
@@ -226,13 +233,7 @@ where to create session?
 "outside" functions that use it
 see: 
 
-how to update a row using ORM instead of "query" class
-https://docs.sqlalchemy.org/en/20/orm/queryguide/dml.html#orm-update-and-delete-with-custom-where-criteria
 
-query class is deprecated
-https://docs.sqlalchemy.org/en/20/orm/queryguide/index.html
-"In the SQLAlchemy 2.x series, SQL SELECT statements for the ORM are constructed using the same select() construct as is used in Core, which is then invoked in terms of a Session using the Session.execute() method (as are the update() and delete() constructs now used for the ORM-Enabled INSERT, UPDATE, and DELETE statements feature). However, the legacy Query object, which performs these same steps as more of an “all-in-one” object, continues to remain available as a thin facade over this new system, to support applications that were built on the 1.x series without the need for wholesale replacement of all queries. For reference on this object, see the section Legacy Query API."
-also see: https://docs.sqlalchemy.org/en/20/orm/queryguide/query.html#legacy-query-api
 
 ```python
 from datetime import datetime
@@ -242,6 +243,18 @@ from sqlalchemy import select, update, delete
 from dbapp.database.models import Userdata
 
 
+def db_write(session, id, data):
+    userdata = Userdata(
+        user_id = id,
+        user_data = data,
+        time_stamp = datetime.now()
+    )
+    session.add(userdata)
+```
+
+Read function
+
+```python
 def db_id_exists(session, id):
     stmt = (select(Userdata.user_id).where(Userdata.user_id == id))
     result = session.scalar(stmt)
@@ -251,66 +264,132 @@ def db_id_exists(session, id):
         return result
 
 
-def db_write(session, id, data):
-    userdata = Userdata(
-        user_id = id,
-        user_data = data,
-        time_stamp = datetime.now()
-    )
-    session.add(userdata)
-
-
-def db_update(session, id, data):
-    stmt = (update(Userdata)
-            .where(Userdata.user_id == id)
-            .values(user_data=data, time_stamp = datetime.now()))
-    session.execute(stmt)
-
-
 def db_read(session, id):
     if id == "all":
         stmt = select(Userdata)
     else:
         stmt = select(Userdata).where(Userdata.user_id == id)
-    results = session.scalars(stmt)
-    for row in results:
-        print(row)
+    results = session.execute(stmt)
+    return results
+```
 
+how to update a row using ORM instead of "query" class
+https://docs.sqlalchemy.org/en/20/orm/queryguide/dml.html#orm-update-and-delete-with-custom-where-criteria
 
+query class is deprecated
+https://docs.sqlalchemy.org/en/20/orm/queryguide/index.html
+"In the SQLAlchemy 2.x series, SQL SELECT statements for the ORM are constructed using the same select() construct as is used in Core, which is then invoked in terms of a Session using the Session.execute() method (as are the update() and delete() constructs now used for the ORM-Enabled INSERT, UPDATE, and DELETE statements feature). However, the legacy Query object, which performs these same steps as more of an “all-in-one” object, continues to remain available as a thin facade over this new system, to support applications that were built on the 1.x series without the need for wholesale replacement of all queries. For reference on this object, see the section Legacy Query API."
+also see: https://docs.sqlalchemy.org/en/20/orm/queryguide/query.html#legacy-query-api
+
+Update function
+
+```python
+def db_update(session, id, data):
+    stmt = (update(Userdata)
+            .where(Userdata.user_id == id)
+            .values(user_data=data, time_stamp = datetime.now()))
+    session.execute(stmt)
+```
+
+Delete function
+
+```python
 def db_delete(session, id):
     if db_id_exists(session, id):
         stmt = delete(Userdata).where(Userdata.user_id == id)
         session.execute(stmt)
     else:
         print(f"The user '{id}' does not exist.")
+```
+
+Save the *functions.py* module.
 
 
-if __name__ == "__main__":
-    from dbapp.database.connect import Session
-    from dbapp.database.models import db_setup
-    db_setup()
-    with Session() as session:
-        db_write(session, "test_id1", "this is test data")
-        if db_id_exists(session, "test_id1"):
-          print("test_id1 written correctly")
-        db_update(session, "test_id1", "New data")
-        db_read(session, "test_id1")
-        db_delete(session, "test_id1")
-        if not db_id_exists(session, "test_id1"):
-          print("test_id1 deleted correctly")
+
+## The user interface
+
+```python
+# dbapp/interface/cli.py
+
+import argparse
+
+from dbapp.interface.functions import read, write, update, delete
+
+def main(session):
+
+    parser = argparse.ArgumentParser(description="Database Application")
+    subparsers = parser.add_subparsers(title='subcommands', dest='subparser_name')
+
+    read_parser = subparsers.add_parser('read')
+    read_parser.add_argument('user_id_list', nargs='+')
+
+    write_parser = subparsers.add_parser('write')
+    write_parser.add_argument('user_id')
+    write_parser.add_argument('user_data')
+
+    update_parser = subparsers.add_parser('update')
+    update_parser.add_argument('user_id')
+    update_parser.add_argument('user_data')
+
+    delete_parser = subparsers.add_parser('delete')
+    delete_parser.add_argument('user_id_list', nargs='+')
+
+    args = parser.parse_args()
+
+    match args.subparser_name:
+        case 'read': 
+            read(session, args.user_id_list)
+        case'write': 
+            write(session, args.user_id, args.user_data)
+        case'update': 
+            update(session, args.user_id, args.user_data)
+        case'delete': 
+            delete(session, args.user_id_list)
+        case None:
+            parser.print_help()
+```
+
+Save the *cli.py* module.
+
+
+## The *__main__.py* program
+
+So that the package runs 
+
+```python
+from dbapp.interface import cli
+from dbapp.database.models import db_setup
+from dbapp.database.connect import Session
+
+db_setup()
+
+with Session.begin() as session:
+    session.expire_on_commit = False
+    cli.main(session)
 ```
 
 
 
+Why use just one session? https://docs.sqlalchemy.org/en/20/orm/session_basics.html#session-frequently-asked-questions
 
 
+Save the *__main__.py* program.
 
+Test
 
+```bash
+(.venv) $ cd project/src
+(.venv) $ python -m dbapp write user1 "test data 1"
+(.venv) $ python -m dbapp write user2 "more test data"
+(.venv) $ python -m dbapp read all
+```
 
+The output is:
 
-
-
-
+```
+ID = user1       DATA = test data 1           TIME = October 09 22:21
+ID = user2       DATA = more test data        TIME = October 09 22:22
+```
 
 
 
