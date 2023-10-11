@@ -44,9 +44,15 @@ project/
        └── test.py
 ```
 
-The *__init__.py* file in each package directory is just a blank file that indicates that the directory is to be treated as a *[regular Python package](https://python-notes.curiousefficiency.org/en/latest/python_concepts/import_traps.html)*.
+The *.gitignore* file
+use Python file from GitHub
+ensure *.env* file is included in *.gitignore* file
+
+The *__init__.py* file in each package directory is just a blank file that indicates that the directory is to be treated as a [regular Python package](https://python-notes.curiousefficiency.org/en/latest/python_concepts/import_traps.html).
 
 The *__main__.py* file in the top-level package directory will be executed when the package is called using the `python -m` command. https://realpython.com/pypi-publish-python-package/#call-the-reader
+https://docs.python.org/3/library/__main__.html#main-py-in-python-packages
+
 
 You can see that the project is in three folders named *src*, *docs*, and *tests*. 
 
@@ -54,7 +60,7 @@ The *docs* folder contains a *dotenv_example.txt* file because the real [*dotenv
 
 ## Create a database container
 
-Create a new database container called *ps_userdata*. Run the following command:
+Create a new database container called *ps_userdata*. In this case, I will start a [new container running *PostgreSQL*]({filename}/articles/018-postgresql-docker/postgresql-docker.md). Run the following command:
 
 ```bash
 $ docker run \
@@ -68,11 +74,10 @@ $ docker run \
 
 ## Configuration files
 
-The *requirements.txt* file looks like the one below. I do not intend to publish this package on *PyPI* so I only need a requirements file, and do not need to create a [*pyproject.toml* file]({filename}/articles/022-modern-packaging/modern-packaging.md).
+The *requirements.txt* file looks like the one below. 
 
 ```python
 # requirements.txt
-
 SQLAlchemy 
 psycopg2
 python-dotenv
