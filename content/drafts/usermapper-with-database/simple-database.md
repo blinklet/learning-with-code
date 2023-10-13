@@ -63,43 +63,51 @@ class Userdata(Base):
     time_stamp = mapped_column(DateTime(timezone=True))
 ```
 
-Create the database. May run even if database already exists. 
+Create the database. If database already exists, this will do nothing unless you changed the class. 
 
 ```python
 Base.metadata.create_all(engine)
 ```
 
-Now, we want to write some data to the database, using the unit-of-work model recommended in the ORM documentation.
+Now, we want to write some data to the database, using the [unit-of-work pattern](https://docs.sqlalchemy.org/en/20/tutorial/orm_data_manipulation.html#updating-orm-objects-using-the-unit-of-work-pattern) recommended in the ORM documentation.
 
 ```python
 session = Session(engine)
 ```
 
-https://docs.sqlalchemy.org/en/20/tutorial/data_update.html#tutorial-core-update-delete
+## Write somne records
 
-https://docs.sqlalchemy.org/en/20/tutorial/orm_data_manipulation.html#updating-orm-objects-using-the-unit-of-work-pattern
+
+
+
+
+
+
 
 
 ```python
 from datetime import datetime
-
-from sqlalchemy import select, update, delete
-
-from dbapp.database.models import Userdata
-
-
-def db_write(session, id, data):
-    userdata = Userdata(
-        user_id = id,
-        user_data = data,
-        time_stamp = datetime.now()
-    )
-    session.add(userdata)
+user = Userdata(user_id="Brad", user_data="Data", time_stamp=datetime.now())
+session.add(user)
+user = Userdata(user_id="Larry", user_data="Data", time_stamp=datetime.now())
+session.add(user)
+user = Userdata(user_id="Jane", user_data="Data", time_stamp=datetime.now())
+session.add(user)
 ```
+
+```
+session.commit()
+```
+
+
+See records in database: https://sqliteviewer.app/
+
+
 
 Read function
 
 ```python
+from sqlalchemy import select
 stmt = select(Userdata).where(Userdata.user_id == id)
 results = session.execute(stmt).scalar()
 print(results)
@@ -113,6 +121,12 @@ print(results.user_id, results.user_data, results.time_stamp)
 ```
 Brian data 2023-10-12 19:58:35.491346
 ```
+
+
+
+
+https://docs.sqlalchemy.org/en/20/tutorial/data_update.html#tutorial-core-update-delete
+
 how to update a row using ORM instead of "query" class
 https://docs.sqlalchemy.org/en/20/orm/queryguide/dml.html#orm-update-and-delete-with-custom-where-criteria
 
@@ -160,19 +174,36 @@ After selecting and printing row objects, propose adding a new *__repr__* functi
 ```python
 class Userdata(Base):
     __tablename__ = "userdata"
+    __table_args__ = {'extend_existing': True}
     user_id = mapped_column(String(32), primary_key=True, nullable=False)
     user_data = mapped_column(UnicodeText)
     time_stamp = mapped_column(DateTime(timezone=True))
     def __repr__(self):
-        return f"user_id = {self.user_id}, " \
-               f"user_data = {self.user_data}, " \
-               f"time_stamp = {self.time_stamp.strftime('%B %d %H:%M')}"
+        return f"user_id={self.user_id}, " \
+               f"user_data={self.user_data}, " \
+               f"time_stamp={self.time_stamp.strftime('%B %d %H:%M')}"
 ```
 
-
-
-
-
+```python
+stmt = select(Userdata).where(Userdata.user_id == "Brian")
+results = session.execute(stmt).scalar()
+print(results)
+```
+```
+user_id=Brian, user_data=changed, time_stamp=October 12 19:58
+```
+```python
+type(results)
+```
+```
+<class '__main__.Userdata'>
+```
+```python
+print(results.user_id)
+```
+```
+Brian
+```
 
 
 
