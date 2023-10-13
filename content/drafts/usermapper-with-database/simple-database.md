@@ -1,4 +1,190 @@
-In this post, I show how to create a simple application that writes and reads data to a database. I focus on using the [SQLAlchemy](https://www.sqlalchemy.org/) library to define a database table, initialize a new database, and then write and read data. I will use the [SQLAlchemy ORM](https://medium.com/dataexplorations/sqlalchemy-orm-a-more-pythonic-way-of-interacting-with-your-database-935b57fd2d4d) for all operations so that my program is as "Pythonic" as possible.
+In this post, I show how to create a simple application that writes and reads data to a database. I will use the [SQLAlchemy](https://www.sqlalchemy.org/) library to define a database table, initialize a new database, and then write and read data. I will use the [SQLAlchemy ORM](https://medium.com/dataexplorations/sqlalchemy-orm-a-more-pythonic-way-of-interacting-with-your-database-935b57fd2d4d) for all operations so that my program is as "Pythonic" as possible.
+
+## The fundamental topics
+
+I already describe how to use SQLAlchemy to read data from an existing relational database in some of my previous posts. If you have never used the SQLAlchemy ORM, I suggest you read those posts, first.
+
+In this post, I will describe a Python program that creates a single, simple table in a database and how I added, retrieved, and deleted data from that table. The program must, neccessarily, include functions that interact with the database and with the user. But, before I create a project structure and write all the Python modules that contain those functions, I will preview the main points in the Python REPL.  
+
+When creating 
+After connecting to a database engine, SQLAchemy will check if 
+
+```bash
+$ python3 -m venv .venv
+$ source .venv/bin/activate
+(.venv) $ pip install sqlalchemy
+(.venv) $ python
+>>>
+```
+
+```python
+from sqlalchemy import create_engine
+from sqlalchemy.orm import Session
+engine = create_engine("sqlite:///userdata.db")
+```
+
+
+There are two ways to create database metadata: reflection or declarative mapping. 
+
+I covered reflection extensively in my previous post about [using SQLAlchemy to read data]({filename}/articles/016-sqlalchemy-read-database/sqalchemy-read-database.md).
+
+In this case, I am creating a new database so I will use [SQLAlchemy Declarative Mapping](https://docs.sqlalchemy.org/en/20/orm/declarative_mapping.html) to manually build SQLAlchemy ORM classes as Python classes. 
+
+The SQLAlchemy documentation recommends you use Declarative Mapping in all cases to manually build SQLAlchemy ORM classes that match the database structure that either exists or is to be defined. Declarative Mapping documents the database structure in your program and allows you to more easily handle changes to database structure in the future.
+
+
+
+https://docs.sqlalchemy.org/en/20/orm/mapping_api.html#sqlalchemy.orm.DeclarativeBase
+
+Compatible with new [Python type hints](https://peps.python.org/pep-0484/), which I am not using in my programs, yet.
+
+```python
+from sqlalchemy.orm import DeclarativeBase
+class Base(DeclarativeBase):
+    pass
+```
+
+Base class has a metadata attribute that contains table information. Why create Base and not just subclass Declartive base in my table classes, below? Because Base can be configured with custom metadata and other attributes that could be inherited by all other database subclasses in more advanced database applications. This is just a good practice, for now.
+
+```python
+from sqlalchemy import String, UnicodeText, DateTime
+from sqlalchemy.orm import mapped_column
+```
+
+https://docs.sqlalchemy.org/en/20/tutorial/metadata.html#tutorial-orm-table-metadata
+
+I am not yet using type hints in my Python programs so I will exclusively use the SQLAlchemy ORM *mapped_column()* function to define each columns instead of also using the [ORM's *Mapped* class](https://docs.sqlalchemy.org/en/20/orm/mapping_styles.html).
+
+```python
+class Userdata(Base):
+    __tablename__ = "userdata"
+    user_id = mapped_column(String(32), primary_key=True, nullable=False)
+    user_data = mapped_column(UnicodeText)
+    time_stamp = mapped_column(DateTime(timezone=True))
+```
+
+Create the database. May run even if database already exists. 
+
+```python
+Base.metadata.create_all(engine)
+```
+
+Now, we want to write some data to the database, using the unit-of-work model recommended in the ORM documentation.
+
+```python
+session = Session(engine)
+```
+
+https://docs.sqlalchemy.org/en/20/tutorial/data_update.html#tutorial-core-update-delete
+
+https://docs.sqlalchemy.org/en/20/tutorial/orm_data_manipulation.html#updating-orm-objects-using-the-unit-of-work-pattern
+
+
+```python
+from datetime import datetime
+
+from sqlalchemy import select, update, delete
+
+from dbapp.database.models import Userdata
+
+
+def db_write(session, id, data):
+    userdata = Userdata(
+        user_id = id,
+        user_data = data,
+        time_stamp = datetime.now()
+    )
+    session.add(userdata)
+```
+
+Read function
+
+```python
+stmt = select(Userdata).where(Userdata.user_id == id)
+results = session.execute(stmt).scalar()
+print(results)
+```
+```
+<__main__.Userdata object at 0x000001F27489AFD0>
+```
+```
+print(results.user_id, results.user_data, results.time_stamp)
+```
+```
+Brian data 2023-10-12 19:58:35.491346
+```
+how to update a row using ORM instead of "query" class
+https://docs.sqlalchemy.org/en/20/orm/queryguide/dml.html#orm-update-and-delete-with-custom-where-criteria
+
+query class is deprecated
+https://docs.sqlalchemy.org/en/20/orm/queryguide/index.html
+"In the SQLAlchemy 2.x series, SQL SELECT statements for the ORM are constructed using the same select() construct as is used in Core, which is then invoked in terms of a Session using the Session.execute() method (as are the update() and delete() constructs now used for the ORM-Enabled INSERT, UPDATE, and DELETE statements feature). However, the legacy Query object, which performs these same steps as more of an “all-in-one” object, continues to remain available as a thin facade over this new system, to support applications that were built on the 1.x series without the need for wholesale replacement of all queries. For reference on this object, see the section Legacy Query API."
+also see: https://docs.sqlalchemy.org/en/20/orm/queryguide/query.html#legacy-query-api
+
+Update function
+
+```python
+def db_update(session, id, data):
+    stmt = (update(Userdata)
+            .where(Userdata.user_id == id)
+            .values(user_data=data, time_stamp = datetime.now()))
+    session.execute(stmt)
+```
+
+Delete function
+
+```python
+def db_delete(session, id):
+    if db_id_exists(session, id):
+        stmt = delete(Userdata).where(Userdata.user_id == id)
+        session.execute(stmt)
+    else:
+        print(f"The user '{id}' does not exist.")
+```
+
+```
+db_write(session, "tom", "this is test data")
+db_read(session, "tom")
+db_write(session, "jane", "more data")
+db_read(session, "all")
+db_update(session, "tom", "updated information")
+db_read(session, "all")
+db_delete(session, "jane")
+db_read(session, "all")
+```
+
+
+
+After selecting and printing row objects, propose adding a new *__repr__* function to the class"
+
+```python
+class Userdata(Base):
+    __tablename__ = "userdata"
+    user_id = mapped_column(String(32), primary_key=True, nullable=False)
+    user_data = mapped_column(UnicodeText)
+    time_stamp = mapped_column(DateTime(timezone=True))
+    def __repr__(self):
+        return f"user_id = {self.user_id}, " \
+               f"user_data = {self.user_data}, " \
+               f"time_stamp = {self.time_stamp.strftime('%B %d %H:%M')}"
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 ## Project files and folders
 
@@ -33,6 +219,7 @@ project/
    │       │   └── __init__.py
    │       ├── interface/
    │       │   ├── cli.py
+   │       │   ├── functions.py
    │       │   └── __init__.py
    │       ├── config.py
    │       ├── .env
