@@ -63,7 +63,23 @@ class Userdata(Base):
     time_stamp = mapped_column(DateTime(timezone=True))
 ```
 
-Create the database. If database already exists, this will do nothing unless you changed the class. 
+You don't need to include an *__init__()* method because SQLAlchemy creates a default *__init__()* method for subclasses of the *DeclarativeBase* class.
+
+The *ORM Mapped Classes* define the database. Every time you run this program in the future, this class sets up the Python objects that will interact with the tables and columns in the database. 
+
+The *Base* class interacts with its subclasses and stores data about them. When you create a new subclass that inherits the *Base* class, information you defined in the subclass is also [registered](https://docs.sqlalchemy.org/en/20/orm/mapping_api.html#sqlalchemy.orm.registry) in the Base class's metadata collection. The SQLAlchemy developers 
+
+https://docs.sqlalchemy.org/en/20/orm/declarative_tables.html#orm-declarative-metadata
+
+
+All model classes that inherit from Base are registered in its metadata, so calling `Base.metadata.create_all(engine)` will create all the associated tables [^1] if they do not already exist.
+
+[^1] From [StackOverflow answer #70402667](https://stackoverflow.com/questions/70402667/how-to-use-create-all-for-sqlalchemy-orm-objects-across-files)
+
+If you are running this program for the first time, you must create the database. The *Base* object's *metadata.create_all(engine)* method will create the database structure you defined in use the class information you created 
+
+If database already exists, SQLAlchemy detects it and does not alter the existing database. However, if the ORM Mapped Classes you created do not match the existing database schema, SQLAlchemy will raise an exception. I do not cover modifying existing database schema in this post.
+
 
 ```python
 Base.metadata.create_all(engine)
@@ -94,6 +110,13 @@ session.add(user)
 user = Userdata(user_id="Jane", user_data="Data", time_stamp=datetime.now())
 session.add(user)
 ```
+
+session.add(
+    Userdata(user_id="Sally", 
+             user_data="DataS", 
+             time_stamp=datetime.now()
+             )
+            )
 
 ```
 session.commit()
