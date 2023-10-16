@@ -1,21 +1,36 @@
-In this post, I show how to create a simple application that writes and reads data to a database. I will use the [SQLAlchemy](https://www.sqlalchemy.org/) library to define a database table, initialize a new database, and then write and read data. I will use the [SQLAlchemy ORM](https://medium.com/dataexplorations/sqlalchemy-orm-a-more-pythonic-way-of-interacting-with-your-database-935b57fd2d4d) for all operations so that my program is as "Pythonic" as possible.
+In this post, I study how to use Python and the [*SQLAlchemy ORM*](https://medium.com/dataexplorations/sqlalchemy-orm-a-more-pythonic-way-of-interacting-with-your-database-935b57fd2d4d) to write data to a database and read it back. I will use the [*SQLAlchemy*](https://www.sqlalchemy.org/) library to define a database table, initialize a new database, and then write and read data.
 
 ## The fundamental topics
 
-I already describe how to use SQLAlchemy to read data from an existing relational database in some of my previous posts. If you have never used the SQLAlchemy ORM, I suggest you read those posts, first.
+I already describe how to [use SQLAlchemy to read data]({filename}/articles/016-sqlalchemy-read-database/sqalchemy-read-database.md) from an existing relational database in some of my previous posts. If you have never used the SQLAlchemy ORM before, I suggest you read those posts, first.
 
-In this post, I will describe a Python program that creates a single, simple table in a database and how I added, retrieved, and deleted data from that table. The program must, neccessarily, include functions that interact with the database and with the user. But, before I create a project structure and write all the Python modules that contain those functions, I will preview the main points in the Python REPL.  
+I will describe how to create a simple database that contains just one table. The table will have the following columns: a user ID, which is a string and will serve as the table's primary key and must be unique in each row; a string containing user data, and a time stamp recorded in the standard *[datetime](https://docs.python.org/3/library/datetime.html)* format. I will use Python's built-in *[SQLite](https://www.sqlite.org/index.html)* database driver.
 
-When creating 
-After connecting to a database engine, SQLAchemy will check if 
+Then I will show how to add rows containing data to the database, how to read data from the database, and how to modify data in exsiting rows.
+
+## Create the environment
+
+Create a project directory and a new Python virtual environment. Install SQLAlchemy in the virtual environment.
 
 ```bash
 $ python3 -m venv .venv
 $ source .venv/bin/activate
 (.venv) $ pip install sqlalchemy
-(.venv) $ python
->>>
 ```
+
+You may, optionally, install [Jupyter Notebooks](https://docs.jupyter.org/en/latest/) so you can more easily follow this excercise. Or you may use the standard Python REPL. I will use a Jupyter Notebook.
+
+```
+(.venv) $ pip install jupyterlab
+(.venv) $ jupyter-lab
+```
+
+The Jupyter Notebook will open in a browser window.
+
+
+## Create a database
+
+### Create a connection
 
 ```python
 from sqlalchemy import create_engine
@@ -47,21 +62,19 @@ class Base(DeclarativeBase):
 Base class has a metadata attribute that contains table information. Why create Base and not just subclass Declartive base in my table classes, below? Because Base can be configured with custom metadata and other attributes that could be inherited by all other database subclasses in more advanced database applications. This is just a good practice, for now.
 
 ```python
-from sqlalchemy import String, UnicodeText, DateTime
+from sqlalchemy import String, DateTime
 from sqlalchemy.orm import mapped_column
+
+class Userdata(Base):
+    __tablename__ = "userdata"
+    user_id = mapped_column(String(32), primary_key=True, nullable=False)
+    user_data = mapped_column(String(640))
+    time_stamp = mapped_column(DateTime(timezone=True))
 ```
 
 https://docs.sqlalchemy.org/en/20/tutorial/metadata.html#tutorial-orm-table-metadata
 
 I am not yet using type hints in my Python programs so I will exclusively use the SQLAlchemy ORM *mapped_column()* function to define each columns instead of also using the [ORM's *Mapped* class](https://docs.sqlalchemy.org/en/20/orm/mapping_styles.html).
-
-```python
-class Userdata(Base):
-    __tablename__ = "userdata"
-    user_id = mapped_column(String(32), primary_key=True, nullable=False)
-    user_data = mapped_column(UnicodeText)
-    time_stamp = mapped_column(DateTime(timezone=True))
-```
 
 You don't need to include an *__init__()* method because SQLAlchemy creates a default *__init__()* method for subclasses of the *DeclarativeBase* class.
 
@@ -91,7 +104,7 @@ Now, we want to write some data to the database, using the [unit-of-work pattern
 session = Session(engine)
 ```
 
-## Write somne records
+## Write some records
 
 
 
@@ -111,12 +124,27 @@ user = Userdata(user_id="Jane", user_data="Data", time_stamp=datetime.now())
 session.add(user)
 ```
 
-session.add(
-    Userdata(user_id="Sally", 
-             user_data="DataS", 
-             time_stamp=datetime.now()
-             )
-            )
+To write data to the database, commit the changes:
+
+```python
+session.commit()
+```
+
+Commit sends one SQL INSERT command for each *Userdata* instance added to the session, followed by a COMMIT command.
+
+> **NOTE:** I don't discuss the The SQLAlchemy session's [*flush()* method](https://stackoverflow.com/questions/4201455/sqlalchemy-whats-the-difference-between-flush-and-commit) in this post but you will need to know about it when you create more complex database relationships and transactions. For now, you should know that the *commit()* method runs the *flush()* method before it commits data. And, the *select()* method runs the *flush()* method before it builds a select statement unless you chain the `execution_options(autoflush=False)` method to it.
+
+
+Look at teh 
+
+The session's [*flush()* method](https://stackoverflow.com/questions/4201455/sqlalchemy-whats-the-difference-between-flush-and-commit)
+
+https://docs.sqlalchemy.org/en/20/orm/session_basics.html#flushing
+https://docs.sqlalchemy.org/en/20/orm/session_transaction.html
+
+Look at SQL using Notebook
+
+https://www.datacamp.com/tutorial/sql-interface-within-jupyterlab
 
 ```
 session.commit()
