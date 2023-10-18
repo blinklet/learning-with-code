@@ -106,23 +106,24 @@ session = Session(engine)
 
 ## Write some records
 
-
-
-
-
-
-
-
+To add rows to the Userdata table in the database, add instances of the *Userdata* class to the SQLAlchemy session, and set the values of the attributes representing each column. For example, to add a row where the *user_id* is "Brad", and the *user_data* is "Brad's data", with a time stamp recording when the row was added, run the following code:
 
 ```python
 from datetime import datetime
-user = Userdata(user_id="Brad", user_data="Data", time_stamp=datetime.now())
-session.add(user)
-user = Userdata(user_id="Larry", user_data="Data", time_stamp=datetime.now())
-session.add(user)
-user = Userdata(user_id="Jane", user_data="Data", time_stamp=datetime.now())
+user = Userdata(user_id="Brad", user_data="Brad's data", time_stamp=datetime.now())
 session.add(user)
 ```
+
+You can add more records to the database using the same method: create a *Userdata* instance and add it to the *session* object.
+
+```
+user = Userdata(user_id="Larry", user_data="Data for Larry", time_stamp=datetime.now())
+session.add(user)
+user = Userdata(user_id="Jane", user_data="More data", time_stamp=datetime.now())
+session.add(user)
+```
+
+If you look at the *SQLite Viewer Web App*, you see that the *userdata* table is still empty. We added data to the session but have not yet written it to persistent storage in the database table. However, you can still access the data added to the session in your program before it is written to the persistent database using the SQLAlchemy *select* function. 
 
 To write data to the database, commit the changes:
 
