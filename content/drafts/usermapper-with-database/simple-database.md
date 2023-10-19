@@ -75,22 +75,26 @@ Next, I create a class that defines a table. This new class is a subclass of the
 
 I create a class named *Userdata* and define its *__tablename__* attribute. Then, I create three new attributes that map the table columns. Each attribute is generated using the *mapped_column()* function [^3], which takes parameters that define the column's data type and relationships. The attribute name defines the column name.
 
+[^3]: In some other tutorials, you may have seen the attributes defined differently, using [Python type hints](https://peps.python.org/pep-0484/) and the [ORM's *Mapped* class](https://docs.sqlalchemy.org/en/20/orm/mapping_styles.html). I am not yet using type hints in my Python programs so I exclusively used the SQLAlchemy ORM *mapped_column()* function to define each column.
+
 ```python
-from sqlalchemy import String, DateTime
+from sqlalchemy import String, DateTime, func
 from sqlalchemy.orm import mapped_column
 
 class Userdata(Base):
     __tablename__ = "userdata"
     user_id = mapped_column(String(32), primary_key=True, nullable=False)
     user_data = mapped_column(String(640))
-    time_stamp = mapped_column(DateTime(timezone=True))
+    time_stamp = mapped_column(DateTime(), server_default=func.now(), onupdate=func.now())
 ```
 
-[^3]: In some other tutorials, you may have seen the attributes defined differently, using [Python type hints](https://peps.python.org/pep-0484/) and the [ORM's *Mapped* class](https://docs.sqlalchemy.org/en/20/orm/mapping_styles.html). I am not yet using type hints in my Python programs so I exclusively used the SQLAlchemy ORM *mapped_column()* function to define each column.
+In the *time_stamp* column, I configured the parameters `server_default=func.now()` and `onupdate=func.now()` so that the [SQL server will create the datetime entry](https://stackoverflow.com/questions/13370317/sqlalchemy-default-datetime) when a row is added or updated. Other programmer might choose to generate a time stamp using the Python *datetime* module and write it to the database when adding or updating a row. Either method is OK. I wanted to demonstrate using database functions in this case.
 
-The *Userdata* class I defined is an *[ORM Mapped Class](https://docs.sqlalchemy.org/en/20/orm/mapping_styles.html#orm-mapped-class-overview)*. It, and any other ORM mapped classes I create, define the database. Every time I run this code in the future, this class sets up the Python objects that will interact with the table and columns in the database. 
+The *Userdata* class I defined above is an *[ORM Mapped Class](https://docs.sqlalchemy.org/en/20/orm/mapping_styles.html#orm-mapped-class-overview)*. It, and any other ORM mapped classes I create, define the database. Every time I run this code in the future, this class sets up the Python objects that will interact with the table and columns in the database. 
 
-When you create a new subclass, like *Userdata*, that is based on the *Base* class, information you defined in the subclass is also [registered](https://docs.sqlalchemy.org/en/20/orm/mapping_api.html#sqlalchemy.orm.registry) in the *Base* class's metadata collection. The SQLAlchemy developers used some advanced object-oriented programming techniques to accomplish this but users of SQLAlchemy don't need to worry about how this is done. Just know that you can get [table metadata](https://docs.sqlalchemy.org/en/20/tutorial/metadata.html#using-orm-declarative-forms-to-define-table-metadata) from the *Base.metadata.tables* attribute, even though that information is defined in other classes based on the *Base* class.
+### Database metadata
+
+When I create a new subclass, like *Userdata*, that is based on the *Base* class, information I defined in the subclass is also [registered](https://docs.sqlalchemy.org/en/20/orm/mapping_api.html#sqlalchemy.orm.registry) in the *Base* class's metadata collection. The SQLAlchemy developers used some advanced object-oriented programming techniques to accomplish this but users of SQLAlchemy don't need to worry about how this is done. Just know that you can get [table metadata](https://docs.sqlalchemy.org/en/20/tutorial/metadata.html#using-orm-declarative-forms-to-define-table-metadata) from the *Base.metadata.tables* attribute, even though that information is defined in other classes based on the *Base* class.
 
 For example:
 
@@ -98,17 +102,17 @@ For example:
 print(Base.metadata.tables)
 ```
 
-Produces the following output:
+Shows metadata that describes the *userdata* table:
 
 ```
-FacadeDict({'userdata': Table('userdata', MetaData(), Column('user_id', String(length=32), table=<userdata>, primary_key=True, nullable=False), Column('user_data', String(length=640), table=<userdata>), Column('time_stamp', DateTime(timezone=True), table=<userdata>), schema=None)})
+FacadeDict({'userdata': Table('userdata', MetaData(), Column('user_id', String(length=32), table=<userdata>, primary_key=True, nullable=False), Column('user_data', String(length=640), table=<userdata>), Column('time_stamp', DateTime(timezone=True), table=<userdata>, onupdate=ColumnElementColumnDefault(<sqlalchemy.sql.functions.now at 0x1ebdb2c5c90; now>), server_default=DefaultClause(<sqlalchemy.sql.functions.now at 0x1ebdb2c5c10; now>, for_update=False)), schema=None)})
 ```
 
 ### Connect to the database 
 
-If you are running this program for the first time, you must create the database. All model classes that inherit from *Base* are registered in its metadata, so use the *Base* class to create all its associated tables [^1] in the database. The *Base* object's *metadata.create_all()* method will use the metadata I defined in the ORM mapped classes to create the database structure. 
+If you are running this program for the first time, you must create the database. All ORM mapped classes that inherit from *Base* are registered in its metadata, so use the *Base* class to create all the tables [^1] in the database. The *Base* object's *metadata.create_all()* method will use the metadata I defined in the ORM mapped classes to create the database structure. 
 
-Pass it the database *engine* instance as a parameter. 
+Pass it the database *engine* instance as a parameter so it knows in which database server it will create a database, or map existing tables in an existing database. 
 
 [^1] From [StackOverflow answer #70402667](https://stackoverflow.com/questions/70402667/how-to-use-create-all-for-sqlalchemy-orm-objects-across-files)
 
@@ -118,11 +122,15 @@ Base.metadata.create_all(engine)
 
 At this point, SQLAlchemy will connect to the database defined by the *engine* instance and send SQL statements that create a table named *userdata*. Since I am using SQLite, a database file named *userdata.db* gets created in the project folder.
 
-If the database already exists, SQLAlchemy detects it and does not alter the existing database. But, if the ORM Mapped Classes you created do not match the the existing database schema, SQLAlchemy will raise an exception. I do not cover how to modify existing database schema in this post. To learn more about that, read about [SQLAlchemy database migration](https://alembic.sqlalchemy.org/en/latest/).
+If the database already exists, SQLAlchemy detects it and does not alter the existing database. Instead, it will try to map the metadata defined in the QLAlchemy ORM's *Base* class to the existing database schema. If the ORM Mapped Classes you created do not match the the existing database schema, SQLAlchemy will raise an exception. I do not cover how to modify existing database schema in this post. To learn more about that, read about [SQLAlchemy database migration](https://alembic.sqlalchemy.org/en/latest/).
+
+## Writing data to a database table
+
+Now, I want to write some data to the database, using the [unit-of-work pattern](https://docs.sqlalchemy.org/en/20/tutorial/orm_data_manipulation.html#updating-orm-objects-using-the-unit-of-work-pattern) recommended in the ORM documentation.
 
 ### Start a session
 
-Now, I want to write some data to the database, using the [unit-of-work pattern](https://docs.sqlalchemy.org/en/20/tutorial/orm_data_manipulation.html#updating-orm-objects-using-the-unit-of-work-pattern) recommended in the ORM documentation. To do this, I first create a [database session](https://docs.sqlalchemy.org/en/20/orm/session_basics.html#session-basics), which will manage the database transaction. One way to do that is to create an instance of the SQLAlcemy ORM's *Session* class and bind it to the *engine* instance I created earlier.
+To create database transactions, I first create a [database session](https://docs.sqlalchemy.org/en/20/orm/session_basics.html#session-basics), which will manage the database transactions. One way to do that is to create an instance of the SQLAlcemy ORM's *Session* class and bind it to the *engine* instance I created earlier.
 
 ```python
 from sqlalchemy.orm import Session
@@ -130,69 +138,157 @@ from sqlalchemy.orm import Session
 session = Session(engine)
 ```
 
-There are may ways to [create and use sessions](https://stackoverflow.com/questions/12223335/sqlalchemy-creating-vs-reusing-a-session). The SQLAlchemy documentation describes multiple ways to [use sessions](https://docs.sqlalchemy.org/en/20/orm/session.html#module-sqlalchemy.orm.session) and many [blog posts](https://soshace.com/optimizing-database-interactions-in-python-sqlalchemy-best-practices/) are available that describe how to create efficient database transactions. I will cover a few methods in this post, starting with the simplest, shown above.
+There are multiple ways to [create and use sessions](https://stackoverflow.com/questions/12223335/sqlalchemy-creating-vs-reusing-a-session). The SQLAlchemy documentation describes different ways to [use sessions](https://docs.sqlalchemy.org/en/20/orm/session.html#module-sqlalchemy.orm.session) and many [blog posts](https://soshace.com/optimizing-database-interactions-in-python-sqlalchemy-best-practices/) are available that describe how to create efficient database transactions. I will cover a few methods in this post, starting with the simplest, shown above.
 
+### Write some records
 
-## Write some records
-
-To add rows to the Userdata table in the database, add instances of the *Userdata* class to the SQLAlchemy session, and set the values of the attributes representing each column. For example, to add a row where the *user_id* is "Brad", and the *user_data* is "Brad's data", with a time stamp recording when the row was added, run the following code:
+To add rows to the *userdata* table in the database, add instances of the *Userdata* class to the SQLAlchemy session, and set the values of the attributes representing each column. For example, to add a row where the *user_id* is "Brad", and the *user_data* is "Brad's data", with a time stamp recording when the row was added, run the following code:
 
 ```python
 from datetime import datetime
-user = Userdata(user_id="Brad", user_data="Brad's data", time_stamp=datetime.now())
+user = Userdata(user_id="Brad", user_data="Brad's data")
 session.add(user)
 ```
 
-You can add more records to the database using the same method: create a *Userdata* instance and add it to the *session* object.
+You can add more records to the database using the same method: create another *Userdata* instance and add it to the *session* object. For example:
 
 ```
-user = Userdata(user_id="Larry", user_data="Data for Larry", time_stamp=datetime.now())
+user = Userdata(user_id="Larry", user_data="Data for Larry")
 session.add(user)
-user = Userdata(user_id="Jane", user_data="More data", time_stamp=datetime.now())
+user = Userdata(user_id="Jane", user_data="More data")
 session.add(user)
 ```
 
-If you look at the *SQLite Viewer Web App*, you see that the *userdata* table is still empty. We added data to the session but have not yet written it to persistent storage in the database table. However, you can still access the data added to the session in your program before it is written to the persistent database using the SQLAlchemy *select* function. 
+### Data persistence
 
-To write data to the database, commit the changes:
+At this point, I have a [database transaction](https://docs.sqlalchemy.org/en/20/orm/session_transaction.html) that has been started but not completed. No permanent records have been created in the database. The data exists in the session object, only. I found that it is helpful to use another database viewer tool to look at how and when my Python code actually writes dta in the database.
 
-```python
-session.commit()
-```
+I used the *[SQLite Viewer Web App](https://sqliteviewer.app/)*. I opened a web browser and navigated to: [https://sqliteviewer.app/](https://sqliteviewer.app/). Then I used the app to open the *userdata.db* file in my project directory.
 
-Commit sends one SQL INSERT command for each *Userdata* instance added to the session, followed by a COMMIT command.
+![SQLite Viewer reading userdata.db database file]({attach}SQLite-001-empty.png)
 
-> **NOTE:** I don't discuss the The SQLAlchemy session's [*flush()* method](https://stackoverflow.com/questions/4201455/sqlalchemy-whats-the-difference-between-flush-and-commit) in this post but you will need to know about it when you create more complex database relationships and transactions. For now, you should know that the *commit()* method runs the *flush()* method before it commits data. And, the *select()* method runs the *flush()* method before it builds a select statement unless you chain the `execution_options(autoflush=False)` method to it.
-
-
-Look at teh 
-
-The session's [*flush()* method](https://stackoverflow.com/questions/4201455/sqlalchemy-whats-the-difference-between-flush-and-commit)
-
-https://docs.sqlalchemy.org/en/20/orm/session_basics.html#flushing
-https://docs.sqlalchemy.org/en/20/orm/session_transaction.html
-
-Look at SQL using Notebook
-
-https://www.datacamp.com/tutorial/sql-interface-within-jupyterlab
-
-```
-session.commit()
-```
-
-
-See records in database: https://sqliteviewer.app/
-
-
-
-Read function
+I see that the *userdata* table is still empty. I added data to the session but have not yet written it to persistent storage in the database table. However, I can still access the data added to the session in my program before it is written to the persistent database using the SQLAlchemy *select* function. For example:
 
 ```python
 from sqlalchemy import select
-stmt = select(Userdata).where(Userdata.user_id == id)
-results = session.execute(stmt).scalar()
-print(results)
+
+stmt = select(Userdata)
+results = session.execute(stmt).scalars()
+for x in results:
+    print(x.user_id, x.user_data, x.time_stamp)
 ```
+
+Generates the data stored in the three records I added to the session. SQLAlchemy acts like they are stored in the database when they are actually just stored in the open transaction.
+
+```
+Brad Data from brad 2023-10-19 12:44:53
+Larry More data 2023-10-19 12:44:53
+Jane Even more data 2023-10-19 12:44:53
+```
+
+At this point, I can continue to add records, or modify the attributes of existing records. I can even discard all additions and changes in the transaction using the session's [*rollback()* method](https://docs.sqlalchemy.org/en/20/orm/session_basics.html#rolling-back), which I will discuss later. When I have completed all tasks associated with the current transaction, I commit the changes to the database using the SQLAlchemy session's *commit()* method, as shown below:
+
+```python
+session.commit()
+```
+
+The *commit()* method sends one SQL INSERT command for each *Userdata* instance added to the session, followed by a COMMIT command.
+
+> **NOTE:** I don't discuss the The SQLAlchemy session's [*flush()* method](https://stackoverflow.com/questions/4201455/sqlalchemy-whats-the-difference-between-flush-and-commit) in this post but you will need to know about it when you create more complex database relationships and transactions. For now, you should know that the *commit()* method [runs](https://docs.sqlalchemy.org/en/20/orm/session_basics.html#flushing) the *flush()* method before it commits data. And, the *select()* method runs the *flush()* method before it builds a select statement, which is why the *time_stamp* column has a value set to the time I ran the *select()* method.
+
+Now, when I look at the SQLite Viewer web app, I see three rows in the *userdata* table:
+
+![SQLite Viewer reading userdata.db database file]({attach}SQLite-002.png)
+
+### Close the session
+
+You may continue to use the existing database session for other transactions or you may close it. The SQLAlchemy documentation offers advice on [when you should close a session](https://docs.sqlalchemy.org/en/20/orm/session_basics.html#when-do-i-construct-a-session-when-do-i-commit-it-and-when-do-i-close-it).
+
+You can still use closed sessions for more transactions. [Closing a session](https://docs.sqlalchemy.org/en/20/orm/session_basics.html#closing) simply "resets" it back to an empty state so you can be sure all SQLAlchemy ORM mapped classes are deleted from the session. It is good practice to close sessions after a transaction is completed. 
+
+To reset the current session, run the following code:
+
+```python
+session.close()
+```
+
+## Update records in the database
+
+There are two ways to use the SQLAlchemy ORM to update database records. You may either:
+
+  * Use the *select()* function to select a record from the database, modify its attributes, then commit it back to the database
+  * Use the [ORM-enabled *update()*](https://docs.sqlalchemy.org/en/20/orm/queryguide/dml.html#orm-enabled-insert-update-and-delete-statements) function 
+
+Both methods are valid and you may prefer one or the other depending on what you are trying to accomplish. For example, the *update()* function may be usefule for [bulk updates](https://docs.sqlalchemy.org/en/20/orm/queryguide/dml.html#orm-bulk-update-by-primary-key).
+
+### Update object returned by *select()* function
+
+In the following example, I will use the *select()* function. I think that, in most of my programs, I will select a row, or rows, to be updated; make the changes required to each row; and then commit the rows back to the database.
+
+For example, to update the data for user "Brad", I ran the following code:
+
+```python
+id = "Brad"
+brad = session.execute(
+    select(Userdata).where(Userdata.user_id == id)
+    ).scalar()
+if brad:
+    brad.user_data = "Changed data"
+    session.commit()
+else:
+    print(f"User '{id}' does not exist")
+session.close()
+```
+
+This code allows me to check if the row to be modified actually exists before modifying it.
+
+Now I can see, in the SQLite Viewer web app, that the *user_data* column for the "Brad" row is changed:
+
+![SQLite Viewer reading userdata.db database file]({attach}SQLite-003.png)
+
+I see that the *time_stamp* column is also updated with a new value that reflects when the row was updated. See the SQL functions I defined in that column for more details about how that works.
+
+### Use the *update()* function
+
+In the next example, I will use the *update()* function to modify data in a database table. I changed Brad's data again by executing the SQL statement returned by [the *update()* function with a *where()* clause](https://docs.sqlalchemy.org/en/20/orm/queryguide/dml.html#orm-update-and-delete-with-custom-where-criteria).  
+
+```python
+session.execute(
+    update(Userdata)
+    .where(Userdata.user_id == "Brad")
+    .values(user_data="Changed again")
+)
+session.commit()
+session.close()
+```
+
+When I check the SQLite Viewer web app again, I see that the *user_data* column for "Brad" is changed again and so is the time stamp.
+
+To check if the row exists before I execute the update function, I would execute a *select()* function and test whether it returned a single result before executing the update function. While this looks like it is more complex in Python, it actually results in the same SQL commands being sent to the database as the *select()* example, above.
+
+Here is the complete code, including the check for an existing record:
+
+```python
+id = "Brad"
+brad = session.execute(
+    select(Userdata).where(Userdata.user_id == id)
+    ).scalar()
+if brad:
+    session.execute(
+        update(Userdata)
+        .where(Userdata.user_id == id)
+        .values(user_data="Changed again")
+    )
+    session.commit()
+else:
+    print(f"User '{id}' does not exist")
+session.close()
+```
+
+## Deleting rows from a table
+
+
+
 ```
 <__main__.Userdata object at 0x000001F27489AFD0>
 ```
@@ -334,6 +430,6 @@ if __name__ == "__main__":
 
 
 
-I used to have `server_default=func.now()` in the *time_stamp* column so that the [SQL server would create the datetime entry](https://stackoverflow.com/questions/13370317/sqlalchemy-default-datetime) when a new row was added but I chose to calculate datetime in my program because it is simpler to update the timestamp in an existing row. Another solution involves [creating a trigger](https://stackoverflow.com/questions/22594567/sql-server-on-update-set-current-timestamp) in the SQL database but, again, I thought it was better to run this logic in the Python program.
+
 
 
