@@ -1,48 +1,28 @@
-In this post, I will describe a Python program that creates a single, simple table in a database and how I added, retrieved, and deleted data from that table. The program must, neccessarily, include functions that interact with the database and with the user.
+title: A command-line utility that updates a database
+slug: sqlalchemy-database-cli-program
+summary: How to use Python and the SQLAlchemy ORM to create a table in a database, write data to it, and read it back.
+date: 2023-10-25
+modified: 2023-10-25
+category: Python
+<!--status: Published-->
 
-But, before I create a project structure and write all the Python modules that contain those functions,
+I created a simple command-line-interface utilty that modifies data in a database. It can add, update, or delete data. I created the program to practice working with databases in Python programs. While doing this I also learned how to use Python libraries to build CLI programs.
 
-(use unicodetext for user data so you can store xml doc)
+My goals were to:
 
-```python
-from sqlalchemy import String, UnicodeText, DateTime
-from sqlalchemy.orm import mapped_column
-
-python
-class Userdata(Base):
-    __tablename__ = "userdata"
-    user_id = mapped_column(String(32), primary_key=True, nullable=False)
-    user_data = mapped_column(UnicodeText)
-    time_stamp = mapped_column(DateTime(timezone=True))
-```
-
-
-
-
-
-
+* Write a "real program" using the [packaging concepts I learned]({filename}/articles/022-modern-packaging/modern-packaging.md) over the past few months
+* Excercise more relational database concepts, like relationships between tables
+* Learn to manage SQLAlchemy sessions in different types of programs
+* Learn one of the Python CLI libraries
 
 ## Project files and folders
 
-I want the application name to be *dbapp*. So, the application modules and sub-packages will all be in a directory named *bdapp*. The project metadata, used when installing dependencies, is stored in the *requirements.txt* file in the same project folder as the *dbapp* package.
+First, I created a project folder that contains the project's metadata, the program source code, test code, and documentation. A good project structure supports packaging the program for distribution and makes testing the program more realistic.
 
-The *dbapp* package contains two sub-packages, *database* and *interface*, a configuration module, a dotenv file for safely storing sensitive database connection strings and other configurations, and a file named *__main__.py*, which Python runs automatically when a user runs the `python -m dbapp` command when in the *dbproject* directory.
-
-The *database* package contains three modules:
-
-  * *connect.py* sets up the database connection
-  * *functions.py* creates functions that read, write, and delete database information
-  * *models.py* contains the SQLAlchemy code that defines the database
-
-The *interface* package contains just one module, for now.
-
-  * *cli.py* runs the program's command-line interface
-  * more user interfaces, such as an interactive user interface, could be added later
-
-The project structure will look like below:
+The project directory structure is shown below:
 
 ```
-project/
+dbproject/
    ├── .gitignore
    ├── requirements.txt
    ├── README.md
@@ -67,19 +47,56 @@ project/
        └── test.py
 ```
 
-The *.gitignore* file
-use Python file from GitHub
-ensure *.env* file is included in *.gitignore* file
+### The project folder
 
-The *__init__.py* file in each package directory is just a blank file that indicates that the directory is to be treated as a [regular Python package](https://python-notes.curiousefficiency.org/en/latest/python_concepts/import_traps.html).
+Everything is in a directory named *dbproject*. I could have named it anything because the actual name used to run the program is set in the program's package sub-directory, not the project directory. I like it when the project directory name is the same as the source control repository name. If I were to publish this on GitHub, I would call the repository "dbapp".
 
-The *__main__.py* file in the top-level package directory will be executed when the package is called using the `python -m` command. https://realpython.com/pypi-publish-python-package/#call-the-reader
-https://docs.python.org/3/library/__main__.html#main-py-in-python-packages
+The project metadata, which includes a *README.md* file, a license file, Git files (if using source control), and a *requirements.txt* file, is stored in the project directory. I organized the rest of the project into three sub-directories named *src*, *docs*, and *tests*. 
+
+### The *docs* directory
+
+The *docs* directory contains a *dotenv_example.txt* file because the real [*dotenv** file]({filename}/articles/011-use-environment-variables/use-environment-variables.md) must be excluded from source control, using the *.gitignore* file, so I like to document an example for anyone who clones one of my projects from [GitHub](https://github.com/blinklet).
+
+### The *tests* directory
+
+The *tests* directory contains one program named *test.py*. I am not proficient in writing real tests yet so it is just a simple script. In the future, I will write more complex test modules and store them in this directory.
+
+### The *src* directory
+
+The *src* directory contains the program's source code. Using a directory like *src* instead of just starting with the application package directory is [recommended](https://packaging.python.org/en/latest/tutorials/packaging-projects/) by the [Python Packaging Authority](https://www.pypa.io/en/latest/) and others[^1]. 
+
+#### The *dbapp* package
+
+The program I wrote is called *dbapp*. So, I organized the application source code in a package directory named *bdapp*. The *dbapp* package contains the following:
+
+[^1]: See also the following blog posts: *[Packaging a python library](https://blog.ionelmc.ro/2014/05/25/python-packaging/#the-structure)*, and *[Testing & Packaging](https://hynek.me/articles/testing-packaging/)*
+
+* A file named *\_\_main\_\_.py*, which is the [program entry point](https://docs.python.org/3/library/__main__.html#main-py-in-python-packages). Python [automatically runs](https://realpython.com/pypi-publish-python-package/#call-the-reader) *\_\_main\_\_.py* when a user runs the `python -m dbapp` command when in the *dbproject/src* directory.
+* A file named *\_\_init\_\_.py*. The presence of the file tells Python that its containing directory is a [package directory](https://docs.python.org/3/tutorial/modules.html#packages) and is to be treated as a [regular Python package](https://python-notes.curiousefficiency.org/en/latest/python_concepts/import_traps.html). It is often left blank but any code in it will run whenever the a Python module imports the package.
+* A configuration module named *config.py*
+* A dotenv file named *.env* for [safely storing]({filename}/articles/011-use-environment-variables/use-environment-variables.md) sensitive database connection strings and other secrets. It must be excluded from source control.
+* Two sub-packages named *database* and *interface*, that contain all the program's modules
+
+#### The *database* sub-package
+
+The *database* sub-package contains four modules:
+
+* *\_\_init\_\_.py*, which is blank
+* *connect.py* sets up the database connection
+* *models.py* contains the SQLAlchemy code that defines the database
+* *functions.py* creates functions that read, write, and delete database information
+
+#### The *interface* sub-package
+
+The *interface* sub-package contains three modules:
+
+* *\_\_init\_\_.py*, which is blank
+* *cli.py* runs the program's command-line interface
+* *functions.py* creates functions that support interacting with the user
 
 
-You can see that the project is in three folders named *src*, *docs*, and *tests*. 
 
-The *docs* folder contains a *dotenv_example.txt* file because the real [*dotenv** file]({filename}/articles/011-use-environment-variables/use-environment-variables.md) is excluded from source control, using the *.gitignore* file, so I like to document an example for anyone who clones one of my projects from [GitHub](https://github.com/blinklet).
+
 
 ## Create a database container
 
@@ -215,9 +232,9 @@ Engine(postgresql+psycopg2://userdata:***@localhost:5432/userdata)
 
 https://www.youtube.com/watch?v=XWtj4zLl_tg
 
-Create the *models.py file:
+Create the *models.py* file:
 
-```
+```python
 # dbapp/database/models/py
 
 from sqlalchemy import Integer, String, UnicodeText, DateTime, func
@@ -384,7 +401,7 @@ def main(session):
 Save the *cli.py* module.
 
 
-## The *__main__.py* program
+## The *\_\_main\_\_.py* program
 
 So that the package runs 
 
@@ -405,7 +422,7 @@ with Session.begin() as session:
 Why use just one session? https://docs.sqlalchemy.org/en/20/orm/session_basics.html#session-frequently-asked-questions
 
 
-Save the *__main__.py* program.
+Save the *\_\_main\_\_.py* program.
 
 Test
 
