@@ -53,9 +53,9 @@ engine = create_engine(connection_string)
 
 The Engine instance, which I named *engine*, does not immediately create a connection to the database. It will create a connection when it is asked to perform a database transaction. 
 
-For example, after running the above code, the database file named *userdata.db* is not yet created in the project folder[^5]. 
+For example, after running the above code, the database file named *userdata.db* is not yet created in the project folder[^1]. 
 
-[^5]: Most database drivers require that the database already exists, but SQLite lets me start with no database.
+[^1]: Most database drivers require that the database already exists, but SQLite lets me start with no database.
 
 ### Declare database table information
 
@@ -125,11 +125,11 @@ If I had defined other tables, they would have appeared in the same output, alon
 
 ### Connect to the database 
 
-I am running this code for the first time, so I must create the database. All ORM mapped classes that inherit from *Base* are registered in its metadata, so use the *Base* class to create all the tables [^1] in the database. The *Base* object's *metadata.create_all()* method will use the metadata to create the database structure. 
+I am running this code for the first time, so I must create the database. All ORM mapped classes that inherit from *Base* are registered in its metadata[^4], so use the *Base* class to create all the tables in the database. The *Base* object's *metadata.create_all()* method will use the metadata to create the database structure. 
 
 I pass the database *engine* instance as a parameter to the *create_all()* method so it can connect to the database and, if the tables do not yet exist, run the transactions that create them. 
 
-[^1]: From [StackOverflow answer #70402667](https://stackoverflow.com/questions/70402667/how-to-use-create-all-for-sqlalchemy-orm-objects-across-files)
+[^4]: From [StackOverflow answer #70402667](https://stackoverflow.com/questions/70402667/how-to-use-create-all-for-sqlalchemy-orm-objects-across-files)
 
 ```python
 Base.metadata.create_all(engine)
