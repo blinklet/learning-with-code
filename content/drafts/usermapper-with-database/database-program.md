@@ -26,6 +26,7 @@ dbproject/
    ├── .gitignore
    ├── requirements.txt
    ├── README.md
+   ├── LICENCE.txt
    ├── src
    │   └── dbapp/
    │       ├── database/
@@ -49,13 +50,15 @@ dbproject/
 
 ### The project folder
 
-Everything is in a directory named *dbproject*. I could have named it anything because the actual name used to run the program is set in the program's package sub-directory, not the project directory. I like it when the project directory name is the same as the source control repository name. If I were to publish this on GitHub, I would call the repository "dbapp".
+Everything is in a directory named *dbproject*. I could have named it anything because the actual name used to run the program is set in the program's package sub-directory, not the project directory. I prefer the project directory name to be the same as the source control remote repository name. If I were to publish this on GitHub, I would call the repository "dbproject".
 
-The project metadata, which includes a *README.md* file, a license file, Git files (if using source control), and a *requirements.txt* file, is stored in the project directory. I organized the rest of the project into three sub-directories named *src*, *docs*, and *tests*. 
+The project metadata is in the root level of the *dbproject* directory. I created all the files necessary for packaging, which includes a *README.md* file, a license file, Git files (if using source control), and a *requirements.txt* file[^2]. I organized the rest of the project into three sub-directories named *src*, *docs*, and *tests*. 
+
+[^2]: I do not intend to publish this package to the Python Package Index so I do not need a *pyproject.toml* file.
 
 ### The *docs* directory
 
-The *docs* directory contains a *dotenv_example.txt* file because the real [*dotenv** file]({filename}/articles/011-use-environment-variables/use-environment-variables.md) must be excluded from source control, using the *.gitignore* file, so I like to document an example for anyone who clones one of my projects from [GitHub](https://github.com/blinklet).
+The *docs* directory contains a *dotenv_example.txt* file because the real [*dotenv* file]({filename}/articles/011-use-environment-variables/use-environment-variables.md) must be excluded from source control, using the *.gitignore* file, so I like to document an example for anyone who clones one of my projects from [GitHub](https://github.com/blinklet).
 
 ### The *tests* directory
 
@@ -67,15 +70,15 @@ The *src* directory contains the program's source code. Using a directory like *
 
 #### The *dbapp* package
 
-The program I wrote is called *dbapp*. So, I organized the application source code in a package directory named *bdapp*. The *dbapp* package contains the following:
+The program I wrote is called *dbapp*. So, I organized the application source code in a package directory named *dbapp*. The *dbapp* package contains the following:
 
 [^1]: See also the following blog posts: *[Packaging a python library](https://blog.ionelmc.ro/2014/05/25/python-packaging/#the-structure)*, and *[Testing & Packaging](https://hynek.me/articles/testing-packaging/)*
 
-* A file named *\_\_main\_\_.py*, which is the [program entry point](https://docs.python.org/3/library/__main__.html#main-py-in-python-packages). Python [automatically runs](https://realpython.com/pypi-publish-python-package/#call-the-reader) *\_\_main\_\_.py* when a user runs the `python -m dbapp` command when in the *dbproject/src* directory.
-* A file named *\_\_init\_\_.py*. The presence of the file tells Python that its containing directory is a [package directory](https://docs.python.org/3/tutorial/modules.html#packages) and is to be treated as a [regular Python package](https://python-notes.curiousefficiency.org/en/latest/python_concepts/import_traps.html). It is often left blank but any code in it will run whenever the a Python module imports the package.
+* A file named *\_\_init\_\_.py*. The presence of this file tells Python that its directory is a [package directory](https://docs.python.org/3/tutorial/modules.html#packages) and is to be treated as a [regular Python package](https://python-notes.curiousefficiency.org/en/latest/python_concepts/import_traps.html). It is often left blank but any code in it will run when a Python module imports the package.
+* A file named *\_\_main\_\_.py*, which is the [program entry point](https://docs.python.org/3/library/__main__.html#main-py-in-python-packages). Python [automatically runs](https://realpython.com/pypi-publish-python-package/#call-the-reader) *\_\_main\_\_.py* when a user runs the `python -m dbapp` command while in the *dbproject/src* directory.
 * A configuration module named *config.py*
 * A dotenv file named *.env* for [safely storing]({filename}/articles/011-use-environment-variables/use-environment-variables.md) sensitive database connection strings and other secrets. It must be excluded from source control.
-* Two sub-packages named *database* and *interface*, that contain all the program's modules
+* Two sub-packages named *database* and *interface*, that contain the program's other modules
 
 #### The *database* sub-package
 
@@ -94,27 +97,25 @@ The *interface* sub-package contains three modules:
 * *cli.py* runs the program's command-line interface
 * *functions.py* creates functions that support interacting with the user
 
+## Set up the environment
 
+Before I started writing code, I set up my programming environment. I created a Python virtual environment so I could install the dependencies and test my code. I also created a database server so I could test my database code.
 
+### Python virtual environment
 
+As usual, I created a Python virtual environment and activated it:
 
-## Create a database container
-
-Create a new database container called *ps_userdata*. In this case, I will start a [new container running *PostgreSQL*]({filename}/articles/018-postgresql-docker/postgresql-docker.md). Run the following command:
-
-```bash
-$ docker run \
-    --detach \
-    --env POSTGRES_PASSWORD=abcd1234 \
-    --env POSTGRES_USER=userdata \
-    --publish 5432:5432 \
-    --name userdata\
-    postgres:alpine
+```
+$ mkdir dbproject
+$ cd dbproject
+$ python3 -m venv .venv
+$ source .venv/bin/activate
+(.venv) $ 
 ```
 
-## Configuration files
+### Install dependencies
 
-The *requirements.txt* file looks like the one below. 
+In the *requirements.txt* file, I recorded the libraries that need to be installed so my program will work: 
 
 ```python
 # requirements.txt
@@ -123,37 +124,116 @@ psycopg2
 python-dotenv
 ```
 
-I saved the *requirements.txt* file.
-
-
-## Install dependencies
-
-I created a Python virtual environment and used the *requirements.txt* file to install the project dependencies.
+Then, I used the *requirements.txt* file to install the project dependencies.
 
 ```
-$ cd project
-$ python3 -m venv .venv
-$ source .venv/bin/activate
 (.venv) $ pip install -r requirements.txt
 ```
 
-## Application configuration
+### Define database variables
 
-Configuration file, *config.py* defines the database connection string:
+I set up a PostgreSQL database server so I could test my program. In production, a database administrator would usually assign to a developer a database server and provide its userid and password. During development, I created my own local server so I am in control of it configuration.
+
+So, I decide that my database information will be as follows:
+
+* Database name = userdata
+* Admin user = userdata
+* Admin password = abcd1234
+* TCP port: 5432
+
+Since the database server will run on a Docker container on my local machine, its connection information will be:
+
+* Server address: localhost
+
+#### Create the dotenv file
+
+I created a dotenv file named *.env* that was used to load these configurations into variables in the *config.py* module. Some of these variables will also be used by the Docker *run* command[^3] when I create my database container.
+
+I created the file in the *src/dbapp* directory (the current working directory is *dbproject*). 
+
+```bash
+(.venv) $ mkir -p src/dbapp
+(.venv) $ cd src/dbapp
+(.venv) $ nano .env 
+```
+
+I entered the following variables in the file and then saved it:
 
 ```python
+# .env
+DB_SERVER_ADDRESS=localhost
+DB_SERVER_TCP_PORT=5432
+POSTGRES_DB=userdata
+POSTGRES_USER=userdata
+POSTGRES_PASSWORD=abcd1234
+```
+
+[^3]: Alternatively, one can export environment variables from the dotenv file to the shell environment. Then, set each of the container's environment variables using the shell variables. I that case, I would [load the environment variables in my dotenv file into my Bash shell](https://andrew.red/posts/how-to-load-dotenv-file-from-shell), then run my Docker command. I could have used the Bash shell's [*set* builtin](https://www.gnu.org/software/bash/manual/html_node/The-Set-Builtin.html) to temporarily modify my Bash shell so each variable sourced from the dotenv file is given the export attribute and marked for export to the shell environment. Then, I would run the command: `set -a; source .env; set +a`
+
+
+### Create the database server
+
+I used Docker to create a new database container called *ps_userdata*. I started a [container running *PostgreSQL*]({filename}/articles/018-postgresql-docker/postgresql-docker.md).
+
+I ran the following command to start the server (the current working directory is *dbproject/src*):
+
+```bash
+(.venv) $ docker run \
+    --detach \
+    --env-file ./.env \
+    --publish 5432:5432 \
+    --name postgres_db\
+    postgres:alpine
+```
+
+I tested that the server was running by logging into it:
+
+```bash
+(.venv) $ docker exec -it postgres_db psql \
+    --username userdata \
+    --dbname userdata \
+    --password
+```
+
+After entering the password, I saw the *psql* prompt and checked that the database was empty. Then, I quit the *psql* application:
+
+```text
+userdata=# \d
+Did not find any relations.
+userdata=# quit
+(.venv) $
+```
+
+### Ready to start
+
+Now the development environment is ready. I have a Python virtual environment with my dependencies installed, and a database server ready to use. I also have a dotenv file from which my Python configuration module can can get the database connection information.
+
+## Program configuration
+
+It is good practice to place all configuration code in one module (or, if multiple configurations are needed, then place them all in one package)[^5] and then import information from that module when needed. 
+
+There are [multiple ways](https://climbtheladder.com/10-python-config-file-best-practices/) to store configuration settings. I am using one of the simpler schemes.
+
+[^5]: From StackOverflow [answer #49643793](https://stackoverflow.com/questions/49643793/what-is-the-best-method-for-setting-up-a-config-file-in-python): "What is the best method for setting up a config file in Python?"
+
+### The configuration file
+
+I created a module called *config.py* in the *dbapp* package that builds the database configuration string from environment variables that are expected to be configured on the system where the application is installed, or made available in a *dotenv* file in the package directory.
+
+```python
+# config.py
 import os
 
 from sqlalchemy.engine import URL
 from dotenv import load_dotenv
 
-load_dotenv()
+load_dotenv()  # get environment variables from system or from dotenv file
 
-_database_server = os.getenv('DB_SERVER')
-_database_port = os.getenv('DB_PORT')
-_database_name = os.getenv('DB_NAME')
-_database_userid = os.getenv('DB_UID')
-_database_password = os.getenv('DB_PWD')
+_database_server = os.getenv('DB_SERVER_ADDRESS')
+_database_port = os.getenv('DB_SERVER_TCP_PORT')
+_database_name = os.getenv('POSTGRES_DB')
+_database_userid = os.getenv('POSTGRES_USER')
+_database_password = os.getenv('POSTGRES_PASSWORD')
 
 database_url = URL.create(
     drivername='postgresql+psycopg2',
@@ -164,38 +244,38 @@ database_url = URL.create(
     database=_database_name
     )
 
-# SQLite3 database
-# database_url = "sqlite:////home/brian/db/userdata.db"
-
 if __name__ == "__main__":
     print(f"Database URL = {database_url}")
 ```
 
-To test the module, run it as a script:
+To test the module, run it as a module:
 
 ```bash
-(.venv) $ cd src
-(.venv) $ python -m dbapp.config
+(.venv) $ python -m config
 Database URL = postgresql+psycopg2://userdata:***@localhost:5432/userdata
 ```
 
 ## Database code
 
-### Database 
+Before I write the *\_\_main\_\_.py* module in the *dbapp* package, I will write all the program modules and test them one by one. Then, I will write the *\_\_main\_\_.py* module, which will simply import and run the other modules.
 
-Set up the database connection in the *connection.py* module:
+First, I will write the modules that interface with the database.
 
-**Explain why I use sessionmaker**
+### Database sub-package
 
-used sessionmaker to get automatic connection management
-https://docs.sqlalchemy.org/en/20/orm/session_basics.html#using-a-sessionmaker
-use session.begin method
+I created the *database* sub-package with the following shell commands:
 
-from:  https://docs.sqlalchemy.org/en/20/orm/session_basics.html#using-a-sessionmaker
-"When you write your application, the sessionmaker factory should be scoped the same as the Engine object created by create_engine(), which is typically at module-level or global scope. As these objects are both factories, they can be used by any number of functions and threads simultaneously."
-where?
-https://docs.sqlalchemy.org/en/20/orm/session_basics.html#when-do-i-construct-a-session-when-do-i-commit-it-and-when-do-i-close-it
+```bash
+(.venv) $ mkdir database
+(.venv) $ cd database
+(.venv) $ touch __init__.py
+```
 
+Then, I created the database modules, *connection.py*, *models.py*, and *functions.py*.
+
+### Database connection module
+
+I set up the database connection in the *connection.py* module, as shown below.
 
 ```python
 # dbapp/database/connect.py
@@ -205,10 +285,8 @@ from sqlalchemy.orm import sessionmaker
 
 from dbapp import config
 
-
 engine = create_engine(config.database_url)
 Session = sessionmaker(engine)
-
 
 if __name__ == "__main__":
     print(engine)
@@ -217,15 +295,63 @@ if __name__ == "__main__":
         print(connection)
 ```
 
-To test the module, run it as a script:
+The module defines the *engine* object and creates the [*Session* object](https://docs.sqlalchemy.org/en/20/orm/session_basics.html) that will be used in the other modules.
+
+I chose to use SQLAlchemy's [*sessionmaker()*](https://docs.sqlalchemy.org/en/20/orm/session_basics.html#using-a-sessionmaker) function so that the Session object created would include automatic [connection management](https://docs.sqlalchemy.org/en/20/orm/session_transaction.html) when other modules use it as a context manager. Based on the SQLAlchemy documentation, I will import the Session object into the *dpapp* package's \_\_main\_\_.py* module so [it has a global scope](https://docs.sqlalchemy.org/en/20/orm/session_basics.html#when-do-i-construct-a-session-when-do-i-commit-it-and-when-do-i-close-it)
+
+To test the module, I ran it as a module. Because the *connection.py* module imports the *config.py* module from the *dbapp* package, I needed to run this module from the *dbproject/src* directory:
 
 ```bash
+(.venv) $ cd ../..
 (.venv) $ python -m dbapp.database.connect
 Engine(postgresql+psycopg2://userdata:***@localhost:5432/userdata)
 <sqlalchemy.engine.base.Connection object at 0x7fd4c9015f00>
 ```
 
-## Create database tables
+The [*session.connection()* function](https://docs.sqlalchemy.org/en/20/orm/session_api.html#sqlalchemy.orm.Session.connection) in the test code forces the session to start a transaction, which makes it try to immediately connect to the database. If the SQLAlchemy session failed to connect to the database, it would have raised an exception.
+
+Then, I went back to the *database* sub-package directory.
+
+```bash
+(.venv) $ cd dbapp/database
+```
+
+## Create database models
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 [declarative mapping](https://docs.sqlalchemy.org/en/20/orm/mapping_styles.html#orm-declarative-mapping)
