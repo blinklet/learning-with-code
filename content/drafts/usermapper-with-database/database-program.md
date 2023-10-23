@@ -19,7 +19,7 @@ My goals were to:
 
 First, I created a project folder that contains the project's metadata, the program source code, test code, and documentation. A good project structure supports packaging the program for distribution and makes testing the program more realistic.
 
-The project directory structure is shown below:
+I created the project directory structure shown below:
 
 ```
 dbproject/
@@ -68,11 +68,11 @@ The *tests* directory contains one program named *test.py*. I am not proficient 
 
 The *src* directory contains the program's source code. Using a directory like *src* instead of just starting with the application package directory is [recommended](https://packaging.python.org/en/latest/tutorials/packaging-projects/) by the [Python Packaging Authority](https://www.pypa.io/en/latest/) and others[^1]. 
 
+[^1]: See also the following blog posts: *[Packaging a python library](https://blog.ionelmc.ro/2014/05/25/python-packaging/#the-structure)*, and *[Testing & Packaging](https://hynek.me/articles/testing-packaging/)*
+
 #### The *dbapp* package
 
-The program I wrote is called *dbapp*. So, I organized the application source code in a package directory named *dbapp*. The *dbapp* package contains the following:
-
-[^1]: See also the following blog posts: *[Packaging a python library](https://blog.ionelmc.ro/2014/05/25/python-packaging/#the-structure)*, and *[Testing & Packaging](https://hynek.me/articles/testing-packaging/)*
+The program I wrote is called *dbapp*. So, I organized the application source code in the *src* directory in a package directory named *dbapp*. The *dbapp* package contains the following:
 
 * A file named *\_\_init\_\_.py*. The presence of this file tells Python that its directory is a [package directory](https://docs.python.org/3/tutorial/modules.html#packages) and is to be treated as a [regular Python package](https://python-notes.curiousefficiency.org/en/latest/python_concepts/import_traps.html). It is often left blank but any code in it will run when a Python module imports the package.
 * A file named *\_\_main\_\_.py*, which is the [program entry point](https://docs.python.org/3/library/__main__.html#main-py-in-python-packages). Python [automatically runs](https://realpython.com/pypi-publish-python-package/#call-the-reader) *\_\_main\_\_.py* when a user runs the `python -m dbapp` command while in the *dbproject/src* directory.
@@ -118,7 +118,7 @@ $ source .venv/bin/activate
 In the *requirements.txt* file, I recorded the libraries that need to be installed so my program will work: 
 
 ```python
-# requirements.txt
+# dbproject/requirements.txt
 SQLAlchemy 
 psycopg2
 python-dotenv
@@ -132,9 +132,9 @@ Then, I used the *requirements.txt* file to install the project dependencies.
 
 ### Define database variables
 
-I set up a PostgreSQL database server so I could test my program. In production, a database administrator would usually assign to a developer a database server and provide its userid and password. During development, I created my own local server so I am in control of it configuration.
+I set up a PostgreSQL database server so I could test my program. In production, a database administrator would usually assign a database server and provide to a developer its userid and password. During development, I created my own local server so I am in control of its configuration.
 
-So, I decide that my database information will be as follows:
+I decided that my database information would be as follows:
 
 * Database name = userdata
 * Admin user = userdata
@@ -160,7 +160,7 @@ I created the file in the *src/dbapp* directory (the current working directory i
 I entered the following variables in the file and then saved it:
 
 ```python
-# .env
+# dbproject/src/dbapp/.env
 DB_SERVER_ADDRESS=localhost
 DB_SERVER_TCP_PORT=5432
 POSTGRES_DB=userdata
@@ -173,9 +173,9 @@ POSTGRES_PASSWORD=abcd1234
 
 ### Create the database server
 
-I used Docker to create a new database container called *ps_userdata*. I started a [container running *PostgreSQL*]({filename}/articles/018-postgresql-docker/postgresql-docker.md).
+I used Docker to create a new database container called *ps_userdata*. I started a [container running *PostgreSQL*]({filename}/articles/018-postgresql-docker/postgresql-docker.md) using the official PostgreSQL docker image from Docker Hub.
 
-I ran the following command to start the server (the current working directory is *dbproject/src*):
+I ran the following command to start the server (the current working directory is *dbproject/src/dbapp*):
 
 ```bash
 (.venv) $ docker run \
@@ -218,10 +218,10 @@ There are [multiple ways](https://climbtheladder.com/10-python-config-file-best-
 
 ### The configuration file
 
-I created a module called *config.py* in the *dbapp* package that builds the database configuration string from environment variables that are expected to be configured on the system where the application is installed, or made available in a *dotenv* file in the package directory.
+I created a module called *config.py* in the *dbapp* package directory. It builds the database configuration string from environment variables that are expected to be configured on the system where the application is installed, or made available in a *dotenv* file in the package directory.
 
 ```python
-# config.py
+# dbproject/src/dbapp/config.py
 import os
 
 from sqlalchemy.engine import URL
@@ -271,22 +271,24 @@ I created the *database* sub-package with the following shell commands:
 (.venv) $ touch __init__.py
 ```
 
-Then, I created the database modules, *connection.py*, *models.py*, and *functions.py*.
+Then, I created the database modules, *connect.py*, *models.py*, and *functions.py*.
 
 ### Database connection module
 
-I set up the database connection in the *connection.py* module, as shown below.
+I set up the database connection in the *connect.py* module, as shown below.
 
 ```python
-# dbapp/database/connect.py
+# dbproject/src/dbapp/database/connect.py
  
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
 from dbapp import config
 
+
 engine = create_engine(config.database_url)
 Session = sessionmaker(engine)
+
 
 if __name__ == "__main__":
     print(engine)
@@ -297,18 +299,22 @@ if __name__ == "__main__":
 
 The module defines the *engine* object and creates the [*Session* object](https://docs.sqlalchemy.org/en/20/orm/session_basics.html) that will be used in the other modules.
 
-I chose to use SQLAlchemy's [*sessionmaker()*](https://docs.sqlalchemy.org/en/20/orm/session_basics.html#using-a-sessionmaker) function so that the Session object created would include automatic [connection management](https://docs.sqlalchemy.org/en/20/orm/session_transaction.html) when other modules use it as a context manager. Based on the SQLAlchemy documentation, I will import the Session object into the *dpapp* package's \_\_main\_\_.py* module so [it has a global scope](https://docs.sqlalchemy.org/en/20/orm/session_basics.html#when-do-i-construct-a-session-when-do-i-commit-it-and-when-do-i-close-it)
+I chose to use SQLAlchemy's [*sessionmaker()*](https://docs.sqlalchemy.org/en/20/orm/session_basics.html#using-a-sessionmaker) function so that the Session object created would include automatic [connection management](https://docs.sqlalchemy.org/en/20/orm/session_transaction.html) when other modules use it as a context manager. Based on the recommendations for CLI apps in the SQLAlchemy documentation, I will import the Session object into the *dpapp* package's \_\_main\_\_.py* module so [it has a global scope](https://docs.sqlalchemy.org/en/20/orm/session_basics.html#when-do-i-construct-a-session-when-do-i-commit-it-and-when-do-i-close-it)
 
-To test the module, I ran it as a module. Because the *connection.py* module imports the *config.py* module from the *dbapp* package, I needed to run this module from the *dbproject/src* directory:
+To test the module, I ran it as a module. Because the *connect.py* module imports the *config.py* module from the *dbapp* package, I needed to run this module from the *dbproject/src* directory:
 
 ```bash
 (.venv) $ cd ../..
-(.venv) $ python -m dbapp.database.connect
+(.venv) $ 
+
+```
+
+The [*session.connection()* function](https://docs.sqlalchemy.org/en/20/orm/session_api.html#sqlalchemy.orm.Session.connection) in the test code forces the session to start a transaction, which makes it try to immediately connect to the database. If the SQLAlchemy session failed to connect to the database, it would have raised an exception. The output shown below shows that the database connection was successful.
+
+```
 Engine(postgresql+psycopg2://userdata:***@localhost:5432/userdata)
 <sqlalchemy.engine.base.Connection object at 0x7fd4c9015f00>
 ```
-
-The [*session.connection()* function](https://docs.sqlalchemy.org/en/20/orm/session_api.html#sqlalchemy.orm.Session.connection) in the test code forces the session to start a transaction, which makes it try to immediately connect to the database. If the SQLAlchemy session failed to connect to the database, it would have raised an exception.
 
 Then, I went back to the *database* sub-package directory.
 
@@ -318,89 +324,122 @@ Then, I went back to the *database* sub-package directory.
 
 ## Create database models
 
+In the *models.py* module, I define the database tables. I created three tables that have a relationship between them:
 
+* The *users* table contains user information. Each user may have many data items so this table has a *one to many* relationship with the *data* table.
+* The *data* table contains data for each user. Each data item is associated with only one user and each user may have more than one data item in the table. Each data item has a label that identifies its type or purpose.
+* The *labels* table contains valid data label names. Each data label may be associated with many data entries so this forms a *one to many* relationship with the *data* table.
 
+I found it was very helpful to create a diagram of the tables that shows the columns and relationships. I used the database modeling web application at [https://dbdiagram.io/](https://dbdiagram.io/) to create the diagram, below:
 
+![*userdata* database diagram]({attach}dbproject-light.md)
 
+### The declarative base
 
+I used the SQLAlchemy [declarative mapping](https://docs.sqlalchemy.org/en/20/orm/mapping_styles.html#orm-declarative-mapping) method to define the tables and [relationships](https://docs.sqlalchemy.org/en/20/orm/basic_relationships.html).
 
+I walk through each section of the *models.py* module, in order, below.
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-[declarative mapping](https://docs.sqlalchemy.org/en/20/orm/mapping_styles.html#orm-declarative-mapping)
-
-https://www.youtube.com/watch?v=XWtj4zLl_tg
-
-Create the *models.py* file:
+First, I imported the necessary SQLAlchemy classes and functions and created the *Base* class that support the declarative mapping of database tables to classes.
 
 ```python
-# dbapp/database/models/py
+# dbproject/src/dbapp/database/models.py
 
-from sqlalchemy import Integer, String, UnicodeText, DateTime, func
-from sqlalchemy.orm import declarative_base
-from sqlalchemy.orm import mapped_column
-
-from dbapp.database.connect import engine
-
-
-Base = declarative_base()
+from sqlalchemy import Integer, String, UnicodeText, DateTime
+from sqlalchemy import ForeignKey
+from sqlalchemy import func
+from sqlalchemy.orm import DeclarativeBase
+from sqlalchemy.orm import mapped_column, relationship
 
 
-class Userdata(Base):
-    __tablename__ = "userdata"
-
-    user_id = mapped_column(String(32), primary_key=True, nullable=False)
-    user_data = mapped_column(UnicodeText)
-    time_stamp = mapped_column(DateTime(timezone=True))
-
-    def __repr__(self):
-        return f"ID = {self.user_id:10}  " \
-               f"DATA = {self.user_data:20}  " \
-               f"TIME = {self.time_stamp.strftime('%B %d %H:%M')}"
-
-
-def db_setup():
-    Base.metadata.create_all(engine)
-
-
-if __name__ == "__main__":
-    db_setup()
+class Base(DeclarativeBase):
+    pass
 ```
 
-I used to have `server_default=func.now()` in the *time_stamp* column so that the [SQL server would create the datetime entry](https://stackoverflow.com/questions/13370317/sqlalchemy-default-datetime) when a new row was added but I chose to calculate datetime in my program because it is simpler to update the timestamp in an existing row. Another solution involves [creating a trigger](https://stackoverflow.com/questions/22594567/sql-server-on-update-set-current-timestamp) in the SQL database but, again, I thought it was better to run this logic in the Python program.
+### The *data* table
 
-class Userdata(Base):
-    __tablename__ = "userdata"
-    user_id = mapped_column(String(32), primary_key=True, nullable=False)
-    user_data = mapped_column(UnicodeText)
-    time_stamp = mapped_column(DateTime(timezone=True), onupdate=func.now())
+I created an ORM mapped class named *Data* that describes the *data* table. It has five columns:
+
+* The *data_id* column uniquely identifies the data item and serves as the *data* table's primary key.
+* The *user_id* column identifies the user associated with this data and has a foreign key relationship with the *id* column in the *users* table. It creates a [one-to-many relationship](https://docs.sqlalchemy.org/en/20/orm/basic_relationships.html#one-to-many)) with the *user* table.
+* The *label_id* column identifies the label associated with this data has a foreign key relationship with the *id* column in the *labels* table. It creates a [one-to-many relationship](https://docs.sqlalchemy.org/en/20/orm/basic_relationships.html#one-to-many)) with the *labels* table. It also sets it *nullable* attribute to *False* so the dabase server will not allow the field to have the value *None*. Effectively, this [prevents data being deleted](https://stackoverflow.com/questions/42978090/prevent-deletion-of-parent-row-if-its-child-will-be-orphaned-in-sqlalchemy) if a label is deleted from the *labels* table while any data in the *data* table still uses that label.
+* The *data* column contains the user's data. In this simple example, it will be a unicode text field that may contain any size of unicode data. It could be any readable text, from a short message to a novel.
+* The *time_stamp* column shows when the data was created or when it was last updated. This column [runs an SQL function](https://stackoverflow.com/questions/13370317/sqlalchemy-default-datetime) on the database server to generate the time stamps.
+
+```python
+class Data(Base):
+    __tablename__ = "data"
+    # columns
+    id = mapped_column(Integer, primary_key=True, nullable=False)
+    user_id = mapped_column(ForeignKey("users.user_id"))
+    label_id = mapped_column(ForeignKey("labels.label_id"), nullable=False) # nullable=False prevents label deletion if any labels in use
+    data = mapped_column(UnicodeText)
+    time_stamp = mapped_column(DateTime(), default=func.now(), onupdate=func.now())
+```
+
+### The *users* table
+
+The *users* table has three columns and a relationship:
+
+  * The *id* column that will serve as its primary key. Each User ID will be an integer.
+  * The *name* column contains a string meant to contain a user's name.
+  * The *address* column contains a user's address. It is here just as a demonstration and is not critical to the program. In a more realistic scenario, can imagine that a *users* table might contain many columns that describe the attributes of each user.
+  * The *user_data* relationship has two purposes:
+    * It provides access to user data in the *data* table from the *Users* class
+    * It tells SQLAlchemy to cascade delete operations to all rows in the *data* table when a user is deleted from the *user* table. When a user is deleted, SQLAlchemy (and the database server) will automatically delete all the user's data records. So, I do not need to write that logic into my program.
+
+```python
+class Users(Base):
+    __tablename__ = "users"
+    # columns
+    id = mapped_column(Integer, primary_key=True, nullable=False)
+    name = mapped_column(String(64))
+    address = mapped_column(UnicodeText)
+    # relationships
+    user_data = relationship("Data", cascade="all, delete, delete-orphan") 
+```
+
+### The *labels* table
+
+The *labels* table has two columns and a relationship:
+
+* The *id* column identifies the label and is the table's primary key
+* The *label* column is the name of the label.
+* The *labeled_data* relationship has two purposes, similar to the *user_data* relationship in the *users* table described above, but with one difference:
+  * It provides access to the rows in the *data* table that have a *label_id* that is the same as the *id* in the *labels* table.
+  * It tells SQLAlchemy to cascade delete operations to all rows in the *data* table when a label is deleted from the *labels* table. However, because I previously defines the *label_id* column in the *labels* table to be non-nullable, SQLAlchemy will raise an exception if I try to delete a label that is still in use in the *data* table. This will prevent unintentional deletion of data.
+
+
+```python
+class Labels(Base):
+    __tablename__ = "labels"
+    # columns
+    id = mapped_column(Integer, primary_key=True, nullable=False)
+    label = mapped_column(String(32))
+    # relationships
+    labeled_data = relationship("Data", cascade="all, delete") 
+```
+
+### The *dbsetup()* function
+
+```python
+def db_setup(engine):
+    Base.metadata.create_all(engine)
+```
+
+### Test code
+
+```python
+if __name__ == "__main__":
+    from dbapp.database.connect import engine
+    db_setup(engine)
+```
+
+### The *models.py* file, complete
+
+After entering all the above code into the *models.py* module, I saved the file. 
+
+
 
 ## Create database functions
 
