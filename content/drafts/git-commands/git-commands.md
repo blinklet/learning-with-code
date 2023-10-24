@@ -64,6 +64,10 @@ Continue working in *newdb*
 
 
 
+# Use Github cli
 
+https://github.com/cli/cli/blob/trunk/docs/install_linux.md
+
+https://cli.github.com/
 
 
