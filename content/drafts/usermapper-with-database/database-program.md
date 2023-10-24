@@ -15,13 +15,15 @@ My goals were to:
 * Learn to manage SQLAlchemy sessions in different types of programs
 * Learn one of the Python CLI libraries
 
+This post assumes the reader is familiar with SQLAlchemy basics. If you are new to the topic of SQLAlchemy, I suggest you review some of my previous posts about the [basic features of SQLAlchemy]({filename}/articles/016-sqlalchemy-read-database/sqalchemy-read-database.md), how [SQLAlchemy represents data]({filename}/articles/019-inspect-database-schema-sqlalchemy/inspect-database-schema-sqlalchemy.md) in a Python program, and how to [declare SQLAlchemy ORM mapped classes]({filename}/articles/023-simple-db-write/simple-database-write.md).
+
 ## Project files and folders
 
 First, I created a project folder that contains the project's metadata, the program source code, test code, and documentation. A good project structure supports packaging the program for distribution and makes testing the program more realistic.
 
 I created the project directory structure shown below:
 
-```
+```text
 dbproject/
    ├── .gitignore
    ├── requirements.txt
@@ -50,7 +52,9 @@ dbproject/
 
 ### The project folder
 
-Everything is in a directory named *dbproject*. I could have named it anything because the actual name used to run the program is set in the program's package sub-directory, not the project directory. I prefer the project directory name to be the same as the source control remote repository name. If I were to publish this on GitHub, I would call the repository "dbproject".
+Everything is in a directory named *dbproject*. I could have chosen any name for the project directory because the actual name used to run the program is set in the program's package sub-directory, not the project directory. 
+
+When using source control, I prefer the project directory name to be the same as the source control remote repository name. If I were to publish this on [GitHub](https://github.com/blinklet), I would call the repository "dbproject". 
 
 The project metadata is in the root level of the *dbproject* directory. I created all the files necessary for packaging, which includes a *README.md* file, a license file, Git files (if using source control), and a *requirements.txt* file[^2]. I organized the rest of the project into three sub-directories named *src*, *docs*, and *tests*. 
 
@@ -86,7 +90,7 @@ The *database* sub-package contains four modules:
 
 * *\_\_init\_\_.py*, which is blank
 * *connect.py* sets up the database connection
-* *models.py* contains the SQLAlchemy code that defines the database
+* *models.py* contains the SQLAlchemy code that defines the database. An abstract representation of a database table is called a [model](https://en.wikipedia.org/wiki/Database_model) so many developers call the module that contains database table classes *models.py*.
 * *functions.py* creates functions that read, write, and delete database information
 
 #### The *interface* sub-package
@@ -324,7 +328,7 @@ Then, I went back to the *database* sub-package directory.
 
 ## Create database models
 
-In the *models.py* module, I define the database tables. I created three tables that have a relationship between them:
+I defined the code that defines the database tables. These code abstractions are usually called [models](https://en.wikipedia.org/wiki/Database_model). In the *models.py* module, I created three tables that have relationships between them:
 
 * The *users* table contains user information. Each user may have many data items so this table has a *one to many* relationship with the *data* table.
 * The *data* table contains data for each user. Each data item is associated with only one user and each user may have more than one data item in the table. Each data item has a label that identifies its type or purpose.
@@ -332,7 +336,7 @@ In the *models.py* module, I define the database tables. I created three tables 
 
 I found it was very helpful to create a diagram of the tables that shows the columns and relationships. I used the database modeling web application at [https://dbdiagram.io/](https://dbdiagram.io/) to create the diagram, below:
 
-![*userdata* database diagram]({attach}dbproject-light.md)
+![*userdata* database diagram]({attach}dbproject-light.png)
 
 ### The declarative base
 
@@ -383,7 +387,7 @@ The *users* table has three columns and a relationship:
 
   * The *id* column that will serve as its primary key. Each User ID will be an integer.
   * The *name* column contains a string meant to contain a user's name.
-  * The *address* column contains a user's address. It is here just as a demonstration and is not critical to the program. In a more realistic scenario, can imagine that a *users* table might contain many columns that describe the attributes of each user.
+  * The *info* column contains a user's information. It is here just as a demonstration and is not critical to the program. In a more realistic scenario, I can imagine that a *users* table might contain many columns that describe the different attributes of each user.
   * The *user_data* relationship has two purposes:
     * It provides access to user data in the *data* table from the *Users* class
     * It tells SQLAlchemy to cascade delete operations to all rows in the *data* table when a user is deleted from the *user* table. When a user is deleted, SQLAlchemy (and the database server) will automatically delete all the user's data records. So, I do not need to write that logic into my program.
@@ -394,7 +398,7 @@ class Users(Base):
     # columns
     id = mapped_column(Integer, primary_key=True, nullable=False)
     name = mapped_column(String(64))
-    address = mapped_column(UnicodeText)
+    info = mapped_column(UnicodeText)
     # relationships
     user_data = relationship("Data", cascade="all, delete, delete-orphan") 
 ```
@@ -409,7 +413,6 @@ The *labels* table has two columns and a relationship:
   * It provides access to the rows in the *data* table that have a *label_id* that is the same as the *id* in the *labels* table.
   * It tells SQLAlchemy to cascade delete operations to all rows in the *data* table when a label is deleted from the *labels* table. However, because I previously defines the *label_id* column in the *labels* table to be non-nullable, SQLAlchemy will raise an exception if I try to delete a label that is still in use in the *data* table. This will prevent unintentional deletion of data.
 
-
 ```python
 class Labels(Base):
     __tablename__ = "labels"
@@ -420,45 +423,89 @@ class Labels(Base):
     labeled_data = relationship("Data", cascade="all, delete") 
 ```
 
-### The *dbsetup()* function
-
-```python
-def db_setup(engine):
-    Base.metadata.create_all(engine)
-```
-
 ### Test code
+
+The test code, which runs when this module is executed as a script, simply tries to create the database using the *Base* object's metadata that was created by each ORM mapped class in the *models.py* file. It will echo the SQL commands generated by SQLAlchemy onto the terminal screen.
+
+If I had made any syntax errors in the table definitions of relationships, or declared something that SQLAlchemy does not allow, the test code will raise an exception.
 
 ```python
 if __name__ == "__main__":
     from dbapp.database.connect import engine
-    db_setup(engine)
+    engine.echo = True
+    Base.metadata.create_all(engine)
 ```
 
 ### The *models.py* file, complete
 
 After entering all the above code into the *models.py* module, I saved the file. 
 
+I ran the module from the *dbroject/src* directory to see if any errors were raised. It appeared that all worked correctly.
+
+```bash
+(.venv) $ cd ../..
+(.venv) $ python -m dbapp.database.models
+```
+
+There was a lot of output I did understand, but the section I could read showed that the tables were being created:
+
+```sql
+CREATE TABLE users (
+        id SERIAL NOT NULL, 
+        name VARCHAR(64), 
+        PRIMARY KEY (id)
+)
+
+CREATE TABLE labels (
+        id SERIAL NOT NULL, 
+        label VARCHAR(32), 
+        PRIMARY KEY (id)
+)
+
+CREATE TABLE data (
+        id SERIAL NOT NULL, 
+        user_id INTEGER, 
+        label_id INTEGER NOT NULL, 
+        data TEXT, 
+        time_stamp TIMESTAMP WITHOUT TIME ZONE, 
+        PRIMARY KEY (id), 
+        FOREIGN KEY(user_id) REFERENCES users (id), 
+        FOREIGN KEY(label_id) REFERENCES labels (id)
+)
+```
+
 
 
 ## Create database functions
 
-where to create session?
-"outside" functions that use it
-see: 
+I decided to create a module that contains all the functions that operate on the database. My plan was to abstract away the details of adding data to a database session, selecting data from the database, updating data, and deleting data.
 
+All these functions will interact with the SQLAchemy ORM session. So, I needed to decide where in the program should I create the session, or if I should create multiple sessions. The SQLAlchemy ORM documentation [recommends that CLI utilities create one session for the entire program](https://docs.sqlalchemy.org/en/20/orm/session_basics.html#when-do-i-construct-a-session-when-do-i-commit-it-and-when-do-i-close-it), and import it into any other modules that use it. So, the functions in the *database/functions.py* module will accept the *session* object as a parameter and the module in which they are used will import the *session* object from the *\_\_main\_\_.py* module in the *dbapp* package directory.
 
+I create the *functions.py* module in the *dbproject/scr/dbapp/database* directory:
+
+```bash
+(.venv) $ cd dbapp/database
+(.venv) $ nano modules.py
+```
+
+First, I imported the functions I need from the Python standard library and from SQLAlchemy. Then, I imported the database models I created in *models.py*.
 
 ```python
+# dbproject/src/dbapp/database/functions.py
+
 from datetime import datetime
 
 from sqlalchemy import select, update, delete
 
-from dbapp.database.models import Userdata
+from dbapp.database.models import Data, Users, Labels
+```
 
+The *bd_write* function creates user data in the database. If the user does not already exist in the *users* table, the function will add the user name in the *users* table and then add the data in the *data* table. The same happens for the label: if the label does not already exist in the *labels* table, the function adds it there before adding the data.
 
+```python
 def db_write(session, id, data):
-    userdata = Userdata(
+    userdata = User(
         user_id = id,
         user_data = data,
         time_stamp = datetime.now()
@@ -476,8 +523,8 @@ def db_id_exists(session, id):
         return False
     else:
         return result
-
-
+```
+```python
 def db_read(session, id):
     if id == "all":
         stmt = select(Userdata)
@@ -517,6 +564,29 @@ def db_delete(session, id):
 ```
 
 Save the *functions.py* module.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
