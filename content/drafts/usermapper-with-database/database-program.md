@@ -331,8 +331,9 @@ Then, I went back to the *database* sub-package directory.
 I defined the code that defines the database tables. These code abstractions are usually called [models](https://en.wikipedia.org/wiki/Database_model). In the *models.py* module, I created three tables that have relationships between them:
 
 * The *users* table contains user information. Each user may have many data items so this table has a *one to many* relationship with the *data* table.
-* The *data* table contains data for each user. Each data item is associated with only one user and each user may have more than one data item in the table. Each data item has a label that identifies its type or purpose.
+* The *data* table contains data for each user and label. Each data item is associated with only one user and each user may have more than one data item in the table. Each data item has a label that identifies its type or purpose.
 * The *labels* table contains valid data label names. Each data label may be associated with many data entries so this forms a *one to many* relationship with the *data* table.
+* Since each user may user multiple labels and each label may be used by multiple users, there is a *many-to-many* relationship between users and labels.
 
 I found it was very helpful to create a diagram of the tables that shows the columns and relationships. I used the database modeling web application at [https://dbdiagram.io/](https://dbdiagram.io/) to create the diagram, below:
 
@@ -360,25 +361,24 @@ class Base(DeclarativeBase):
     pass
 ```
 
-### The *data* table
+### The association table
 
-I created an ORM mapped class named *Data* that describes the *data* table. It has five columns:
+The planned *users* and *labels* tables have a [*many-to-many* relationship](https://docs.sqlalchemy.org/en/20/orm/basic_relationships.html#many-to-many). I had to decide how to best implement this relationship in the database. [A many-to-many relationship is often supported by an *association table*](# https://docs.sqlalchemy.org/en/20/orm/basic_relationships.html#combining-association-object-with-many-to-many-access-patterns
+) but, in a simple case like this, the association table is not strictly necessary.
 
-* The *data_id* column uniquely identifies the data item and serves as the *data* table's primary key.
-* The *user_id* column identifies the user associated with this data and has a foreign key relationship with the *id* column in the *users* table. It creates a [one-to-many relationship](https://docs.sqlalchemy.org/en/20/orm/basic_relationships.html#one-to-many)) with the *user* table.
-* The *label_id* column identifies the label associated with this data has a foreign key relationship with the *id* column in the *labels* table. It creates a [one-to-many relationship](https://docs.sqlalchemy.org/en/20/orm/basic_relationships.html#one-to-many)) with the *labels* table. It also sets it *nullable* attribute to *False* so the dabase server will not allow the field to have the value *None*. Effectively, this [prevents data being deleted](https://stackoverflow.com/questions/42978090/prevent-deletion-of-parent-row-if-its-child-will-be-orphaned-in-sqlalchemy) if a label is deleted from the *labels* table while any data in the *data* table still uses that label.
-* The *data* column contains the user's data. In this simple example, it will be a unicode text field that may contain any size of unicode data. It could be any readable text, from a short message to a novel.
-* The *time_stamp* column shows when the data was created or when it was last updated. This column [runs an SQL function](https://stackoverflow.com/questions/13370317/sqlalchemy-default-datetime) on the database server to generate the time stamps.
+I decided to use an association table, anyway. If the data table becomes very large, then I will be glad I had an association table that speeds up queries related to users and labels. And, this is a good case to study how to use an association table. 
+
+I named the association table "users_labels". It has one row for each unique combination of Label ID and User ID. 
+
+In SQLAchemy, association tables are usually expressed as *Table* objects and not as Mapped ORM classes. So, the code that defines the *users_labels* table will be as follows:
 
 ```python
-class Data(Base):
-    __tablename__ = "data"
-    # columns
-    id = mapped_column(Integer, primary_key=True, nullable=False)
-    user_id = mapped_column(ForeignKey("users.user_id"))
-    label_id = mapped_column(ForeignKey("labels.label_id"), nullable=False) # nullable=False prevents label deletion if any labels in use
-    data = mapped_column(UnicodeText)
-    time_stamp = mapped_column(DateTime(), default=func.now(), onupdate=func.now())
+users_labels = Table(
+    'users_labels',
+    Base.metadata,
+    Column('user_id', Integer, ForeignKey('users.id'), primary_key=True),
+    Column('label_id', Integer, ForeignKey('labels.id'), primary_key=True)
+)
 ```
 
 ### The *users* table
@@ -435,6 +435,28 @@ if __name__ == "__main__":
     engine.echo = True
     Base.metadata.create_all(engine)
 ```
+
+### The *data* table
+
+I created an ORM mapped class named *Data* that describes the *data* table. It has five columns:
+
+* The *data_id* column uniquely identifies the data item and serves as the *data* table's primary key.
+* The *user_id* column identifies the user associated with this data and has a foreign key relationship with the *id* column in the *users* table. It creates a [one-to-many relationship](https://docs.sqlalchemy.org/en/20/orm/basic_relationships.html#one-to-many)) with the *user* table.
+* The *label_id* column identifies the label associated with this data has a foreign key relationship with the *id* column in the *labels* table. It creates a [one-to-many relationship](https://docs.sqlalchemy.org/en/20/orm/basic_relationships.html#one-to-many)) with the *labels* table. It also sets it *nullable* attribute to *False* so the dabase server will not allow the field to have the value *None*. Effectively, this [prevents data being deleted](https://stackoverflow.com/questions/42978090/prevent-deletion-of-parent-row-if-its-child-will-be-orphaned-in-sqlalchemy) if a label is deleted from the *labels* table while any data in the *data* table still uses that label.
+* The *data* column contains the user's data. In this simple example, it will be a unicode text field that may contain any size of unicode data. It could be any readable text, from a short message to a novel.
+* The *time_stamp* column shows when the data was created or when it was last updated. This column [runs an SQL function](https://stackoverflow.com/questions/13370317/sqlalchemy-default-datetime) on the database server to generate the time stamps.
+
+```python
+class Data(Base):
+    __tablename__ = "data"
+    # columns
+    id = mapped_column(Integer, primary_key=True, nullable=False)
+    user_id = mapped_column(ForeignKey("users.user_id"))
+    label_id = mapped_column(ForeignKey("labels.label_id"), nullable=False) # nullable=False prevents label deletion if any labels in use
+    data = mapped_column(UnicodeText)
+    time_stamp = mapped_column(DateTime(), default=func.now(), onupdate=func.now())
+```
+
 
 ### The *models.py* file, complete
 
