@@ -328,16 +328,15 @@ Then, I went back to the *database* sub-package directory.
 
 ## Create database models
 
-I defined the code that defines the database tables. These code abstractions are usually called [models](https://en.wikipedia.org/wiki/Database_model). In the *models.py* module, I created three tables that have relationships between them:
+To define the database tables, I used ORM mapped classes that are usually called [models](https://en.wikipedia.org/wiki/Database_model). In the *models.py* module, I created three tables that have relationships between them:
 
 * The *users* table contains user information. Each user may have many data items so this table has a *one to many* relationship with the *data* table.
-* The *data* table contains data for each user and label. Each data item is associated with only one user and each user may have more than one data item in the table. Each data item has a label that identifies its type or purpose.
 * The *labels* table contains valid data label names. Each data label may be associated with many data entries so this forms a *one to many* relationship with the *data* table.
-* Since each user may user multiple labels and each label may be used by multiple users, there is a *many-to-many* relationship between users and labels.
+* The *storage* table contains data for each user and label. Each data item is associated with only one user and each user may have more than one data item in the table. Each data item has a label that identifies its type or purpose.
 
 I found it was very helpful to create a diagram of the tables that shows the columns and relationships. I used the database modeling web application at [https://dbdiagram.io/](https://dbdiagram.io/) to create the diagram, below:
 
-![*userdata* database diagram]({attach}dbproject-light.png)
+![*userdata* database diagram]({attach}dbproject-light-3.png)
 
 ### The declarative base
 
