@@ -267,7 +267,7 @@ First, I will write the modules that interface with the database.
 
 ### Database sub-package
 
-I created the *database* sub-package with the following shell commands:
+I used the following shell commands to create the *database* sub-package:
 
 ```bash
 (.venv) $ mkdir database
@@ -301,16 +301,15 @@ if __name__ == "__main__":
         print(connection)
 ```
 
-The module defines the *engine* object and creates the [*Session* object](https://docs.sqlalchemy.org/en/20/orm/session_basics.html) that will be used in the other modules.
+The module defines the *engine* object and creates the [*Session* object](https://docs.sqlalchemy.org/en/20/orm/session_basics.html) that will be used in the other modules to create database sessions.
 
-I chose to use SQLAlchemy's [*sessionmaker()*](https://docs.sqlalchemy.org/en/20/orm/session_basics.html#using-a-sessionmaker) function so that the Session object created would include automatic [connection management](https://docs.sqlalchemy.org/en/20/orm/session_transaction.html) when other modules use it as a context manager. Based on the recommendations for CLI apps in the SQLAlchemy documentation, I will import the Session object into the *dpapp* package's \_\_main\_\_.py* module so [it has a global scope](https://docs.sqlalchemy.org/en/20/orm/session_basics.html#when-do-i-construct-a-session-when-do-i-commit-it-and-when-do-i-close-it)
+I chose to use SQLAlchemy's [*sessionmaker()*](https://docs.sqlalchemy.org/en/20/orm/session_basics.html#using-a-sessionmaker) function so that the Session object created would include automatic [connection management](https://docs.sqlalchemy.org/en/20/orm/session_transaction.html) when other modules use it as a context manager.
 
 To test the module, I ran it as a module. Because the *connect.py* module imports the *config.py* module from the *dbapp* package, I needed to run this module from the *dbproject/src* directory:
 
 ```bash
 (.venv) $ cd ../..
-(.venv) $ 
-
+(.venv) $ python -m dbapp.database.connect
 ```
 
 The [*session.connection()* function](https://docs.sqlalchemy.org/en/20/orm/session_api.html#sqlalchemy.orm.Session.connection) in the test code forces the session to start a transaction, which makes it try to immediately connect to the database. If the SQLAlchemy session failed to connect to the database, it would have raised an exception. The output shown below shows that the database connection was successful.
@@ -320,7 +319,7 @@ Engine(postgresql+psycopg2://userdata:***@localhost:5432/userdata)
 <sqlalchemy.engine.base.Connection object at 0x7fd4c9015f00>
 ```
 
-Then, I went back to the *database* sub-package directory.
+Then, I went back to the *database* sub-package directory so I can continue adding modules there.
 
 ```bash
 (.venv) $ cd dbapp/database
@@ -353,74 +352,70 @@ from sqlalchemy import Integer, String, UnicodeText, DateTime
 from sqlalchemy import ForeignKey
 from sqlalchemy import func
 from sqlalchemy.orm import DeclarativeBase
-from sqlalchemy.orm import mapped_column, relationship
+from sqlalchemy.orm import mapped_column
 
 
 class Base(DeclarativeBase):
     pass
 ```
 
-### The association table
+### The *users* and *labels* tables
 
-The planned *users* and *labels* tables have a [*many-to-many* relationship](https://docs.sqlalchemy.org/en/20/orm/basic_relationships.html#many-to-many). I had to decide how to best implement this relationship in the database. [A many-to-many relationship is often supported by an *association table*](# https://docs.sqlalchemy.org/en/20/orm/basic_relationships.html#combining-association-object-with-many-to-many-access-patterns
-) but, in a simple case like this, the association table is not strictly necessary.
+In a [star schema](https://en.wikipedia.org/wiki/Star_schema) like the one I am using for this application, tables like the *users* and *labels* tables are called *dimension* tables. They contain details about the characteristics of the data in the *fact* table.
 
-I decided to use an association table, anyway. If the data table becomes very large, then I will be glad I had an association table that speeds up queries related to users and labels. And, this is a good case to study how to use an association table. 
-
-I named the association table "users_labels". It has one row for each unique combination of Label ID and User ID. 
-
-In SQLAchemy, association tables are usually expressed as *Table* objects and not as Mapped ORM classes. So, the code that defines the *users_labels* table will be as follows:
-
-```python
-users_labels = Table(
-    'users_labels',
-    Base.metadata,
-    Column('user_id', Integer, ForeignKey('users.id'), primary_key=True),
-    Column('label_id', Integer, ForeignKey('labels.id'), primary_key=True)
-)
-```
-
-### The *users* table
-
-The *users* table has three columns and a relationship:
+The *users* table has three columns:
 
   * The *id* column that will serve as its primary key. Each User ID will be an integer.
-  * The *name* column contains a string meant to contain a user's name.
+  * The *name* column contains a string meant to contain a user's name.  It also sets its *nullable* attribute to *False* because the user must have a name and its name cannot have a value of *None* or *NULL*.
   * The *info* column contains a user's information. It is here just as a demonstration and is not critical to the program. In a more realistic scenario, I can imagine that a *users* table might contain many columns that describe the different attributes of each user.
-  * The *user_data* relationship has two purposes:
-    * It provides access to user data in the *data* table from the *Users* class
-    * It tells SQLAlchemy to cascade delete operations to all rows in the *data* table when a user is deleted from the *user* table. When a user is deleted, SQLAlchemy (and the database server) will automatically delete all the user's data records. So, I do not need to write that logic into my program.
+
+The *Users* class defines the *users* table as shown below:
 
 ```python
-class Users(Base):
+class User(Base):
     __tablename__ = "users"
-    # columns
-    id = mapped_column(Integer, primary_key=True, nullable=False)
-    name = mapped_column(String(64))
+    id = mapped_column(Integer, primary_key=True)
+    name = mapped_column(String(64), unique=True, nullable=False)
     info = mapped_column(UnicodeText)
-    # relationships
-    user_data = relationship("Data", cascade="all, delete, delete-orphan") 
 ```
 
-### The *labels* table
-
-The *labels* table has two columns and a relationship:
+The *labels* table has two columns:
 
 * The *id* column identifies the label and is the table's primary key
-* The *label* column is the name of the label.
-* The *labeled_data* relationship has two purposes, similar to the *user_data* relationship in the *users* table described above, but with one difference:
-  * It provides access to the rows in the *data* table that have a *label_id* that is the same as the *id* in the *labels* table.
-  * It tells SQLAlchemy to cascade delete operations to all rows in the *data* table when a label is deleted from the *labels* table. However, because I previously defines the *label_id* column in the *labels* table to be non-nullable, SQLAlchemy will raise an exception if I try to delete a label that is still in use in the *data* table. This will prevent unintentional deletion of data.
+* The *label* column is the name of the label. It also sets its *nullable* attribute to *False* because the label must have a name and cannot have a value of *None* or *NULL*.
+
 
 ```python
-class Labels(Base):
+class Label(Base):
     __tablename__ = "labels"
-    # columns
-    id = mapped_column(Integer, primary_key=True, nullable=False)
-    label = mapped_column(String(32))
-    # relationships
-    labeled_data = relationship("Data", cascade="all, delete") 
+    id = mapped_column(Integer, primary_key=True)
+    name = mapped_column(String(32), unique=True, nullable=False)
 ```
+
+### The *storage* table
+
+In this schema, the *storage* table acts as the *fact* table. It contains the data we are interested in and refers to the *dimension* tables for additional details. The *storage* table has five columns:
+
+* The *data_id* column uniquely identifies the data item and serves as the *data* table's primary key.
+* The *user_id* column identifies the user associated with this data and has a [foreign key relationship](https://en.wikipedia.org/wiki/Foreign_key) with the *id* column in the *users* table. It creates a [one-to-many relationship](https://docs.sqlalchemy.org/en/20/orm/basic_relationships.html#one-to-many) with the *user* table. It also sets its *nullable* attribute to *False* because every row must be related to a user via the *user_id*. If I make a mistake in my program that allows a value of *None* in this field, SQLAlchemy will raise an error.
+* The *label_id* column identifies the label associated with this data and has a foreign key relationship with the *id* column in the *labels* table. It creates a one-to-many relationship with the *labels* table. It also sets its *nullable* attribute to *False* because every row must be related to a label via the *label_id*.
+* The *data_item* column contains the user's data. In this simple example, it will be a unicode text field that may contain any size of unicode data. It could be any readable text, from a short message to a novel.
+* The *time_stamp* column shows when the data was created, or when it was last updated. This column [runs an SQL function](https://stackoverflow.com/questions/13370317/sqlalchemy-default-datetime) on the database server to generate the time stamps. 
+
+```python
+class Storage(Base):
+    __tablename__ = "storage"
+    # columns
+    id = mapped_column(Integer, primary_key=True)
+    user_id = mapped_column(ForeignKey("users.id"), nullable=False)
+    label_id = mapped_column(ForeignKey("labels.id"), nullable=False)
+    data_item = mapped_column(UnicodeText)
+    time_stamp = mapped_column(DateTime(), default=func.now(), onupdate=func.now())
+```
+
+### The *db_setup()* function
+
+The *db_setup()* function creates the database if it does not yet exist on the connected database server. If the database already exists, it makes no changes to it, so it is safe to run every time the program runs.
 
 ### Test code
 
@@ -432,30 +427,10 @@ If I had made any syntax errors in the table definitions of relationships, or de
 if __name__ == "__main__":
     from dbapp.database.connect import engine
     engine.echo = True
-    Base.metadata.create_all(engine)
+    db_setup(engine)
 ```
 
-### The *data* table
-
-I created an ORM mapped class named *Data* that describes the *data* table. It has five columns:
-
-* The *data_id* column uniquely identifies the data item and serves as the *data* table's primary key.
-* The *user_id* column identifies the user associated with this data and has a foreign key relationship with the *id* column in the *users* table. It creates a [one-to-many relationship](https://docs.sqlalchemy.org/en/20/orm/basic_relationships.html#one-to-many)) with the *user* table.
-* The *label_id* column identifies the label associated with this data has a foreign key relationship with the *id* column in the *labels* table. It creates a [one-to-many relationship](https://docs.sqlalchemy.org/en/20/orm/basic_relationships.html#one-to-many)) with the *labels* table. It also sets it *nullable* attribute to *False* so the dabase server will not allow the field to have the value *None*. Effectively, this [prevents data being deleted](https://stackoverflow.com/questions/42978090/prevent-deletion-of-parent-row-if-its-child-will-be-orphaned-in-sqlalchemy) if a label is deleted from the *labels* table while any data in the *data* table still uses that label.
-* The *data* column contains the user's data. In this simple example, it will be a unicode text field that may contain any size of unicode data. It could be any readable text, from a short message to a novel.
-* The *time_stamp* column shows when the data was created or when it was last updated. This column [runs an SQL function](https://stackoverflow.com/questions/13370317/sqlalchemy-default-datetime) on the database server to generate the time stamps.
-
-```python
-class Data(Base):
-    __tablename__ = "data"
-    # columns
-    id = mapped_column(Integer, primary_key=True, nullable=False)
-    user_id = mapped_column(ForeignKey("users.user_id"))
-    label_id = mapped_column(ForeignKey("labels.label_id"), nullable=False) # nullable=False prevents label deletion if any labels in use
-    data = mapped_column(UnicodeText)
-    time_stamp = mapped_column(DateTime(), default=func.now(), onupdate=func.now())
-```
-
+The `engine.echo` attribute will print out on the console the SQL commands 
 
 ### The *models.py* file, complete
 
@@ -468,40 +443,52 @@ I ran the module from the *dbroject/src* directory to see if any errors were rai
 (.venv) $ python -m dbapp.database.models
 ```
 
-There was a lot of output I did understand, but the section I could read showed that the tables were being created:
+There was a lot of output, that I do not show, caused by the SQL database checking for existing tables and setting up the schema. Then,the database [prints the SQL commands](https://docs.sqlalchemy.org/en/20/core/connections.html) used to create the new tables to the console:
 
 ```sql
+2023-11-04 23:27:51,160 INFO sqlalchemy.engine.Engine 
 CREATE TABLE users (
         id SERIAL NOT NULL, 
-        name VARCHAR(64), 
-        PRIMARY KEY (id)
+        name VARCHAR(64) NOT NULL, 
+        info TEXT, 
+        PRIMARY KEY (id), 
+        UNIQUE (name)
 )
 
+2023-11-04 23:27:51,161 INFO sqlalchemy.engine.Engine [no key 0.00054s] {}
+2023-11-04 23:27:51,194 INFO sqlalchemy.engine.Engine 
 CREATE TABLE labels (
         id SERIAL NOT NULL, 
-        label VARCHAR(32), 
-        PRIMARY KEY (id)
+        name VARCHAR(32) NOT NULL, 
+        PRIMARY KEY (id), 
+        UNIQUE (name)
 )
 
-CREATE TABLE data (
+2023-11-04 23:27:51,194 INFO sqlalchemy.engine.Engine [no key 0.00025s] {}
+2023-11-04 23:27:51,206 INFO sqlalchemy.engine.Engine 
+CREATE TABLE storage (
         id SERIAL NOT NULL, 
-        user_id INTEGER, 
+        user_id INTEGER NOT NULL, 
         label_id INTEGER NOT NULL, 
-        data TEXT, 
+        data_item TEXT, 
         time_stamp TIMESTAMP WITHOUT TIME ZONE, 
         PRIMARY KEY (id), 
         FOREIGN KEY(user_id) REFERENCES users (id), 
         FOREIGN KEY(label_id) REFERENCES labels (id)
 )
+
+
+2023-11-04 23:27:51,206 INFO sqlalchemy.engine.Engine [no key 0.00017s] {}
+2023-11-04 23:27:51,220 INFO sqlalchemy.engine.Engine COMMIT
 ```
-
-
 
 ## Create database functions
 
-I decided to create a module that contains all the functions that operate on the database. My plan was to abstract away the details of adding data to a database session, selecting data from the database, updating data, and deleting data.
+I decided to create a module that contains all the functions that operate on the database. My plan was to import functions from this module when other modules need to add data to a database session, read data from the database, and delete data.
 
-All these functions will interact with the SQLAchemy ORM session. So, I needed to decide where in the program should I create the session, or if I should create multiple sessions. The SQLAlchemy ORM documentation [recommends that CLI utilities create one session for the entire program](https://docs.sqlalchemy.org/en/20/orm/session_basics.html#when-do-i-construct-a-session-when-do-i-commit-it-and-when-do-i-close-it), and import it into any other modules that use it. So, the functions in the *database/functions.py* module will accept the *session* object as a parameter and the module in which they are used will import the *session* object from the *\_\_main\_\_.py* module in the *dbapp* package directory.
+All these functions will interact with the SQLAchemy ORM session. So, at this point, I needed to decide where in the program I should create the database session, or if I should create multiple sessions. 
+
+The SQLAlchemy ORM documentation [recommends that CLI utilities create one session for the entire program](https://docs.sqlalchemy.org/en/20/orm/session_basics.html#when-do-i-construct-a-session-when-do-i-commit-it-and-when-do-i-close-it), and import it into any other modules that use it. So, the functions in the *database/functions.py* module will accept the *session* object as a parameter and the module in which they are used will import the *session* object from the *\_\_main\_\_.py* module in the *dbapp* package directory.
 
 I create the *functions.py* module in the *dbproject/scr/dbapp/database* directory:
 
@@ -515,151 +502,528 @@ First, I imported the functions I need from the Python standard library and from
 ```python
 # dbproject/src/dbapp/database/functions.py
 
-from datetime import datetime
+from sqlalchemy import select, delete, func
 
-from sqlalchemy import select, update, delete
-
-from dbapp.database.models import Data, Users, Labels
+from dbapp.database.models import Storage, User, Label
 ```
 
-The *bd_write* function creates user data in the database. If the user does not already exist in the *users* table, the function will add the user name in the *users* table and then add the data in the *data* table. The same happens for the label: if the label does not already exist in the *labels* table, the function adds it there before adding the data.
+### The *data_write()* function
+
+The *data_write* function writes user data to the database. If the user does not already exist in the *users* table, the function will add the user name in the *users* table and then add the data in the *data* table. The same happens for the label: if the label does not already exist in the *labels* table, the function adds it there before adding the data.
 
 ```python
-def db_write(session, id, data):
-    userdata = User(
-        user_id = id,
-        user_data = data,
-        time_stamp = datetime.now()
+def data_write(session, user_name, label_name, data_item):
+
+    # if user exists, get user from database
+    user = session.scalar(select(User).where(User.name == user_name))
+    # if user does not exist, create new user in database
+    if user == None:
+        user = User(name=user_name)
+        session.add(user)
+        session.flush()  # create user.id
+    
+    # if label exists, get label from database
+    label = session.scalar(select(Label).where(Label.name == label_name))
+    # if label does not exist, create new label in database
+    if label == None:
+        label = Label(name=label_name)
+        session.add(label)
+        session.flush()  # create label.id
+
+    # Add data item
+    data = Storage(label_id=label.id, user_id=user.id, data_item=data_item)
+    session.add(data) 
+
+    print(f"User '{user.name}' added data labeled '{label.name}'.")
+```
+
+In the function's first stanza, I check to see if the contents of the *user_name* parameter matches the name of any user in the *users* table. If so, I get that *User* instance from the database. If not, I create a new *User* instance, which will add a new row to the *users* table when added to the session. In that case, I also [flush the session](https://docs.sqlalchemy.org/en/20/orm/session_basics.html#session-flushing) so that the database will automatically populate the table's *id* column with a valid key and return that key to the session so it can be used later in the function.
+
+In the function's second stanze, I do the same with the *label_name* parameter.
+
+And, finally, I create a *Storage* instance and add it to the session. This will result in a new row in the *storage* table that has the user ID, label ID, and the data. The timestamp column and the storage ID column will get automatically populated by the database when the session is committed.
+
+### The *data_read()* function
+
+The *data_read()* function reads user data from the database. the function needs both a *user_name* and a *Label_name* to find the one or more rows that have the matching user ID and label ID.
+
+If the *user_name* and *label_name* exist in the database, the function selects joins the information in the *users* and *labels* tables with the *storage* table and returns all rows where both the *user_id* and *label_id* columns from the *storage* table matches the user ID and label ID associated with the *user_name* and *label_name*. 
+
+If no results are returned, even though the *user_name* and *label_name* were valid, then that means that the user is not using that label for any of their data. 
+
+The *data_read()* function is shown below:
+
+```python
+def data_read(session, user_name, label_name):
+
+    user = session.scalar(select(User).where(User.name == user_name))
+    if user == None:
+        print(f"User '{user_name}' does not exist.")
+        return
+    
+    label = session.scalar(select(Label).where(Label.name == label_name))
+    if label == None:
+        print(f"Label '{label_name}' does not exist.")
+        return
+
+    stmt = (
+        select(Storage.data_item.label("data"), 
+            User.name.label("user_name"), 
+            Label.name.label("label_name"))
+        .join(Label)
+        .join(User)
+        .where(Label.id==label.id)
+        .where(User.id==user.id)
     )
-    session.add(userdata)
-```
-
-Read function
-
-```python
-def db_id_exists(session, id):
-    stmt = (select(Userdata.user_id).where(Userdata.user_id == id))
-    result = session.scalar(stmt)
-    if result == None:
-        return False
+    result = session.execute(stmt).fetchall()
+    if len(result) > 0:
+        for row in result:
+            print(
+                f"User: {row.user_name},  "
+                f"Label: {row.label_name},  "
+                f"Data: {row.data},  "
+                f"Time: {row.time_stamp}"
+                )
     else:
-        return result
-```
-```python
-def db_read(session, id):
-    if id == "all":
-        stmt = select(Userdata)
-    else:
-        stmt = select(Userdata).where(Userdata.user_id == id)
-    results = session.execute(stmt)
-    return results
+        print(f"User '{user_name}' does not use label '{label_name}.")
 ```
 
-how to update a row using ORM instead of "query" class
-https://docs.sqlalchemy.org/en/20/orm/queryguide/dml.html#orm-update-and-delete-with-custom-where-criteria
+#### Why use the *select()* function?
 
-query class is deprecated
-https://docs.sqlalchemy.org/en/20/orm/queryguide/index.html
-"In the SQLAlchemy 2.x series, SQL SELECT statements for the ORM are constructed using the same select() construct as is used in Core, which is then invoked in terms of a Session using the Session.execute() method (as are the update() and delete() constructs now used for the ORM-Enabled INSERT, UPDATE, and DELETE statements feature). However, the legacy Query object, which performs these same steps as more of an “all-in-one” object, continues to remain available as a thin facade over this new system, to support applications that were built on the 1.x series without the need for wholesale replacement of all queries. For reference on this object, see the section Legacy Query API."
-also see: https://docs.sqlalchemy.org/en/20/orm/queryguide/query.html#legacy-query-api
+Many SQLAlchemy blog posts and tutorials use the SQLAlchemy ORM's *query()* function to read data from a database. However, since version 2.0 of SQLAlchemy, the *query()* function is considered to be a [legacy tool](https://docs.sqlalchemy.org/en/20/orm/queryguide/query.html#legacy-query-api). It still works, for now, but has been replaced by a new recommended function: the *select()* function.
 
-Update function
+I am using the [*select()* function](https://docs.sqlalchemy.org/en/20/orm/queryguide/index.html) because it is the recommended way to get data from the SQLAlchemy ORM and I want to focus on using SQLAlchemy in the most "modern" way.
+
+### The *data_delete()* function
+
+The *data_delete()* function deletes user data from the database. After deleting the rows that match both the *user_name* and *label_name*, teh function checks if the label and/or the user are still have data associated with them in the *storage* table. If not, the leftover label or user is deleted from the *labels* or *users* table.
+
+This function uses the new SQLAlchemy ORM *delete()* function to perform a bulk-delete of *storage* table rows that match both the user ID and the label ID.
 
 ```python
-def db_update(session, id, data):
-    stmt = (update(Userdata)
-            .where(Userdata.user_id == id)
-            .values(user_data=data, time_stamp = datetime.now()))
+def data_delete(session, user_name, label_name):
+
+    # Get user record, or quit if user does not exist in "users" table
+    user = session.scalar(select(User).where(User.name == user_name))
+    if user == None:
+        print(f"User '{user_name}' does not exist.")
+        return
+    
+    # Get label record, or quit if label does not exist in "labels" table
+    label = session.scalar(select(Label).where(Label.name == label_name))
+    if label == None:
+        print(f"Label '{label_name}' does not exist.")
+        return
+
+    # Check if any records match both the user ID and the label ID
+    stmt = (
+        select(func.count())
+        .select_from(Storage)
+        .join(Label)
+        .join(User)
+        .where(Label.id == label.id)
+        .where(User.id == user.id)
+    )
+    number_matched = session.execute(stmt).scalar()
+    if number_matched == 0:
+        print(f"User '{user_name}' does not use Label '{label_name}'.")
+        return
+
+    # Bulk delete all records that match both the user ID and the label ID
+    stmt = (
+        delete(Storage)
+        .where(Storage.user_id == user.id)
+        .where(Storage.label_id == label.id)
+    )
     session.execute(stmt)
+    print(f"Deleted {number_matched} rows.")
+
+    # If label is no longer used in the "storage" table, 
+    # then also delete it from the "labels" table
+    stmt = select(Storage.id).where(Storage.label_id == label.id).limit(1)
+    label_exists = session.scalar(stmt)
+    if label_exists == None:
+        session.delete(label)
+
+    # If user is no longer used in the "storage" table, 
+    # then also delete them from the "users" table
+    stmt = select(Storage.id).where(Storage.user_id == user.id).limit(1)
+    user_exists = session.scalar(stmt)
+    if user_exists == None:
+        session.delete(user)
 ```
 
-Delete function
+### The *user_read()* function
+
+The *user_read()* function simply lists all user names in the *users* table. 
 
 ```python
-def db_delete(session, id):
-    if db_id_exists(session, id):
-        stmt = delete(Userdata).where(Userdata.user_id == id)
-        session.execute(stmt)
-    else:
-        print(f"The user '{id}' does not exist.")
+def user_read(session):
+    stmt = (select(User.name))
+    user_list = session.scalars(stmt).all()
+    for x in user_list:
+        print(x)
 ```
 
-Save the *functions.py* module.
+### The *label_read()* function
 
+The *label_read()* function lists all labels used by a particular user. This helps find data items one may want to read, using the *data_read()* function.
 
+```python
+def label_read(session, user_name):
+    user = session.scalar(select(User).where(User.name == user_name))
+    if user == None:
+        print(f"User '{user_name}' does not exist!")
+    else:
+        stmt = (select(Label.name).distinct()
+                .join(Storage)
+                .join(User)
+                .where(User.id == user.id)
+        )
+        label_list = session.scalars(stmt).all()
+        for x in label_list:
+            print(x)
+```
 
+### The test code
 
+At the end of the *functions.py* module, I created some test code which will create an empty database, then add, read, and delete information.
 
+```python
+if __name__ == "__main__":
 
+    from dbapp.database.connect import Session
+    from dbapp.database.connect import engine
+    from dbapp.database.models import Base
+    from sqlalchemy import select
 
+    Base.metadata.drop_all(engine)
+    Base.metadata.create_all(engine)
 
+    session = Session()
 
+    data_write(session, user_name="Bill",label_name="Notes",data_item="makes some notes")
+    data_write(session, user_name="Jane",label_name="reports",data_item="I would like to report that...")
+    data_write(session, user_name="Bill",label_name="directions",data_item="Go west")
+    data_write(session, user_name="Jane",label_name="directions",data_item="Go north then east")
+    data_write(session, user_name="Jane",label_name="description",data_item="tall and dark")
+    data_write(session, user_name="Jane",label_name="reports",data_item="more reports data")
+    data_write(session, user_name="Brian",label_name="reports",data_item="Brian reports...")
+    data_write(session, user_name="Walter",label_name="www",data_item="Walter web data...")
+    session.commit()
+    print()
+    data_read(session, user_name="Jane", label_name="zed")
+    data_read(session, user_name="Noone", label_name="reports")
+    data_read(session, user_name="Jane", label_name="www")
+    data_read(session, user_name="Jane", label_name="reports")
+    print()
+    user_read(session)
+    print()
+    label_read(session, user_name="Jane")
+    session.commit()
+    print()
+    data_delete(session, user_name="Bill", label_name="reports")
+    data_delete(session, user_name="Brian", label_name="reports")
+    data_delete(session, user_name="Jane", label_name="reports")
+    session.commit()
 
+    session.close()
+```
 
+To test my code, I run the *functions.py* module as a script:
 
+```text
+$ cd ../..
+$ python -m dbapp.database.functions
+```
 
+I will get the following output:
 
+```text
+User 'Bill' added data labeled 'Notes'.
+User 'Jane' added data labeled 'reports'.
+User 'Bill' added data labeled 'directions'.
+User 'Jane' added data labeled 'directions'.
+User 'Jane' added data labeled 'description'.
+User 'Jane' added data labeled 'reports'.
+User 'Brian' added data labeled 'reports'.
+User 'Walter' added data labeled 'www'.
 
+Label 'zed' does not exist.
+User 'Noone' does not exist.
+User 'Jane' does not use label 'www.
+User: Jane,  Label: reports,  Data: I would like to report that...,  Time: 2023-11-06 14:02:12.044012
+User: Jane,  Label: reports,  Data: more reports data,  Time: 2023-11-06 14:02:12.044012
 
+Bill
+Jane
+Brian
+Walter
 
+description
+directions
+reports
 
+User 'Bill' does not use Label 'reports'.
+Deleted 1 rows.
+Deleted 2 rows.
+```
 
+I used the *psql* program on the *postgres* database container to see the results of the database commands. First I execute the command on the container:
 
+```bash
+$ docker exec -it postgres_db psql --username userdata --dbname userdata
+```
 
+Then I read the data in the three tables:
 
+```text
+userdata=# select * from users;
+ id |  name  | info 
+----+--------+------
+  1 | Bill   | 
+  2 | Jane   | 
+  4 | Walter | 
+(3 rows)
 
+userdata=# select * from labels;
+ id |    name     
+----+-------------
+  1 | Notes
+  3 | directions
+  4 | description
+  5 | www
+(4 rows)
+
+userdata=# select * from storage;
+ id | user_id | label_id |     data_item      |         time_stamp         
+----+---------+----------+--------------------+----------------------------
+  1 |       1 |        1 | makes some notes   | 2023-11-06 00:00:33.389959
+  3 |       1 |        3 | Go west            | 2023-11-06 00:00:33.389959
+  4 |       2 |        3 | Go north then east | 2023-11-06 00:00:33.389959
+  5 |       2 |        4 | tall and dark      | 2023-11-06 00:00:33.389959
+  8 |       4 |        5 | Walter web data... | 2023-11-06 00:00:33.389959
+(5 rows)
+
+userdata=# quit
+$
+```
 
 
 
 ## The user interface
+
+At this point I have defined a database and created a set of functions that can manipulate data in the database. Now, I need to create a user interface so the program can be used.
+
+I decided to create a command-line interface. I chose to use the Python Standard Library's *[argparse](https://docs.python.org/3/library/argparse.html)* module because it is the "standard" CLI module for Python and I wanted to learn the basics before I tried other Python CLI libraries. Other popular libraries that help programmers build command-line interfaces are: *[Click](https://click.palletsprojects.com)*, *[DocOpt](http://docopt.org/)*, and *[Typer](https://typer.tiangolo.com/)*. 
+
+In the *interface* sub-package, I created the *cli.py* module:
+
+```text
+$ cd dbapp/interface
+$ nano cli.py
+```
+
+The interface is simple. I each database function I created in the *database/functions.py* module will correspond with a CLI sub-command. For example, the *dbapp.database.functions.data_read()* function will correspond to a command like `dbapp read <user> <label>`. 
+
+### Define CLI interface
+
+The first section in the *cli.py* module imports the *argparse* and *dbapp.database.functions* modules and documents the user interface. I found it useful to write a docstring that would be similar to what should be output by the command when the user requests help. This helped me understand the sub-commands I would create and the parameters required by each sub-command.
 
 ```python
 # dbapp/interface/cli.py
 
 import argparse
 
-from dbapp.interface.functions import read, write, update, delete
+import dbapp.database.functions as f
 
-def main(session):
+"""Database Application.
 
-    parser = argparse.ArgumentParser(description="Database Application")
-    subparsers = parser.add_subparsers(title='subcommands', dest='subparser_name')
+Usage: 
+  dbapp.py write USER LABEL DATA
+  dbapp.py delete USER LABEL
+  dbapp.py read USER LABEL
+  dbapp.py read_users
+  dbapp.py read_labels USER
+  dbapp.py -h | --help
+  dbapp.py -v | --version
 
-    read_parser = subparsers.add_parser('read')
-    read_parser.add_argument('user_id_list', nargs='+')
+Options:
+  -h --help         Show this help message and exit
+  --version         Show program version and exit
+"""
+```
 
-    write_parser = subparsers.add_parser('write')
+
+### The *create_parser()* function
+
+The *create_parser()* function builds the scafolding for the CLI and returns the *argparse* parser object to the program.
+
+The [*argparse* documentation](https://docs.python.org/3/library/argparse.html) and [tutorial](https://docs.python.org/3/howto/argparse.html#argparse-tutorial) are well-written so I won't re-create an explanation of how to create an *argparse* parser in this post.
+
+Basically, I created a parser for each "command" and a sub-parser for each "sub-command". Then I added help text to each command or sub-command and define arguments expected. This all helps that *argparse* library to manage the CLI and to print out context-appropriate help messages when requested.
+
+
+```python
+def create_parser():
+    parser = argparse.ArgumentParser(
+        description="Database Application"
+        )
+    subparsers = parser.add_subparsers(
+        title='subcommands', 
+        dest='subparser_name'
+        )
+
+    read_parser = subparsers.add_parser(
+        'read', 
+        aliases=['r'], 
+        help="Display rows that match name and label."
+        )
+    read_parser.add_argument('user_id')
+    read_parser.add_argument('label_id')
+
+    read_users_parser = subparsers.add_parser(
+        'read_users', 
+        aliases=['u'], 
+        help="Display all users in the database."
+        )
+
+    read_labels_parser = subparsers.add_parser(
+        'read_labels', 
+        aliases=['l'], 
+        help="Display labels used by a user."
+        )
+    read_labels_parser.add_argument('user_id')
+
+    write_parser = subparsers.add_parser(
+        'write', 
+        aliases=['w'], 
+        help="Add new data. Enter user name, label, and data.")
     write_parser.add_argument('user_id')
+    write_parser.add_argument('label_id')
     write_parser.add_argument('user_data')
 
-    update_parser = subparsers.add_parser('update')
-    update_parser.add_argument('user_id')
-    update_parser.add_argument('user_data')
+    delete_parser = subparsers.add_parser(
+        'delete', 
+        aliases=['d', 'del'], 
+        help="Delete rows that matche name and label.")
+    delete_parser.add_argument('user_id')
+    delete_parser.add_argument('label_id')
 
-    delete_parser = subparsers.add_parser('delete')
-    delete_parser.add_argument('user_id_list', nargs='+')
+    parser.add_argument(
+        '-v', '--version', 
+        action='version', 
+        version='dbapp 0.1')
+    
+    return parser
+```
 
+I liked using *argparse*. It let me design the CLI one command, or sub-command, at a time. Looking through the code in the *create_parser()* function, I can see how each command is expected to work.
+
+### The *get_cli_arguments()* function
+
+The *get_cli_arguments()* function just runs the parser's *parse_args()* method which returns the CLI arguments. 
+
+```python
+def get_cli_arguments(parser):
     args = parser.parse_args()
+    return args
+```
 
+### The *main()* function
+
+The *main()* function checks which sub-parser is in use, or which sub-command has been entered by the user. Then it gets the arguments associated with that sub-command and calls the appriopriate database function.
+
+```python
+def main(session, args):
     match args.subparser_name:
-        case 'read': 
-            read(session, args.user_id_list)
-        case'write': 
-            write(session, args.user_id, args.user_data)
-        case'update': 
-            update(session, args.user_id, args.user_data)
-        case'delete': 
-            delete(session, args.user_id_list)
-        case None:
+        case 'read' | 'r': 
+            f.data_read(session, args.user_id, args.label_id)
+        case 'read_users' | 'u': 
+            f.user_read(session)
+        case 'read_labels' | 'l': 
+            f.label_read(session, args.user_id)
+        case 'write' | 'w': 
+            f.data_write(session, args.user_id, args.label_id, args.user_data)
+        case 'delete' | 'del' | 'd': 
+            f.data_delete(session, args.user_id, args.label_id)
+        case None if not args.interactive:
             parser.print_help()
 ```
 
-Save the *cli.py* module.
+### The test code
 
+The test code for the *cli.py* module creates the parsers, gets the arguments that have been entered at the command-line interface, and runs the *main()* function. 
+
+```python
+if __name__ == "__main__":
+    from dbapp.database.models import db_setup
+    from dbapp.database.connect import engine, Session
+    db_setup(engine)
+
+    parser = create_parser()
+    args = get_cli_arguments(parser)
+    with Session.begin() as session:
+        main(session, args)
+```
+
+### The *cli.py* module complete
+
+I saved the *cli.py* module. I can test it by calling the module as follows:
+
+```text
+$ cd ../..
+$ python -m dbapp.interface.cli --help
+```
+
+The above command should display the help text generated by the *argparse* library, as shown below:
+
+```text
+usage: cli.py [-h] [-v] {read,r,read_users,u,read_labels,l,write,w,delete,d,del} ...
+
+Database Application
+
+options:
+  -h, --help            show this help message and exit
+  -v, --version         show program's version number and exit
+
+subcommands:
+  {read,r,read_users,u,read_labels,l,write,w,delete,d,del}
+    read (r)            Display rows that match name and label.
+    read_users (u)      Display all users in the database.
+    read_labels (l)     Display labels used by a user.
+    write (w)           Add new data. Enter user name, label, and data.
+    delete (d, del)     Delete rows that matche name and label.
+```
+
+I can also use the sub-commands, as shown below:
+
+```text
+(.venv) $ python -m dbapp.interface.cli read_users
+Bill
+Jane
+Walter
+
+(.venv) $ python -m dbapp.interface.cli read_labels Bill
+Notes
+directions
+
+(.venv) $ python -m dbapp.interface.cli read Bill Notes
+User: Bill,  Label: Notes,  Data: makes some notes,  Time: 2023-11-06 14:02:12.044012
+```
 
 ## The *\_\_main\_\_.py* program
 
-So that the package runs 
+So that the package runs when the *dbapp* package is called, I need to create a module named *\_\_main\_\_.py* in the *dbapp* package directory, which will run when the package is run.
+
+```text
+(.venv) $ cd dbapp
+(.venv) $ nano __main__.py
+```
+
+The *\_\_main\_\_.py* is the entry point to the program. It calls the *dbapp.database.models.db_setup()* function, which creates the database tables if they do not already exist, then it creates a database session in a context manager, which automatically commits changes to the database when the context manager code block ends. The *dbapp.interface.cli.main()* function parses the command arguments and performs the appropriate database function.
+
+The *\_\_main\_\_.py* module is shown below:
 
 ```python
 from dbapp.interface import cli
@@ -668,424 +1032,27 @@ from dbapp.database.connect import Session
 
 db_setup()
 
+parser = create_parser()
+args = get_cli_arguments(parser)
 with Session.begin() as session:
-    session.expire_on_commit = False
-    cli.main(session)
+    main(session, args)
 ```
 
-
-
-Why use just one session? https://docs.sqlalchemy.org/en/20/orm/session_basics.html#session-frequently-asked-questions
-
-
-Save the *\_\_main\_\_.py* program.
-
-Test
+There is no test code in the *\_\_main\_\_.py* module. To test it, run the package in the Python intepreter. For example:
 
 ```bash
-(.venv) $ cd project/src
-(.venv) $ python -m dbapp write user1 "test data 1"
-(.venv) $ python -m dbapp write user2 "more test data"
-(.venv) $ python -m dbapp read all
+(.venv) $ cd ..
+(.venv) $ python -m dbapp write user1 label100 "test data 1"
+User 'user1' added data labeled 'label100'.
+(.venv) $ python -m dbapp write user2 label200 "more test data"
+User 'user2' added data labeled 'label200'.
+(.venv) $ python -m dbapp read_users
+Bill
+Jane
+Walter
+user1
+user2
+(.venv) $ python -m dbapp read_labels user1
+label100
 ```
-
-The output is:
-
-```
-ID = user1       DATA = test data 1           TIME = October 09 22:21
-ID = user2       DATA = more test data        TIME = October 09 22:22
-```
-
-
-
-
-
-
-
-
-Python package structure recommendation
-
-https://docs.python-guide.org/writing/structure/
-https://kennethreitz.org/essays/2013/01/27/repository-structure-and-python
-
-Good post on importing
-import submodules in \_\_init\_\_.py to make them importable from other packages (See Numpy example in:)
-https://note.nkmk.me/en/python-import-usage/#packages
-
-another good post on importing
-https://fortierq.github.io/python-import
-sys.path seems a clunky solution... may be useful when writing tests, though
-relative paths
-do you intend to build/install or run as script?
-
-see also
-https://blog.finxter.com/python-how-to-import-modules-from-another-folder/
-https://ioflood.com/blog/python-import-from-another-directory/
-
-"namespace packages" are the new tech, but may create confusion and seem best for advanced cases where sub-packages are distributed across different directories in teh filesystem and will be "re assembled" at run time
-
-https://peps.python.org/pep-0420/
-
-with relative imports and packages with blank \_\_init\_\_.py files, "python -m dbapp" works but "python dbapp/\_\_main\_\_.py" fails due to " ImportError: attempted relative import with no known parent package "
-
-
-From chatgpt:
-
-Whether you should use namespace packages or regular packages in your Python project depends on your project's specific requirements and goals. Both namespace packages and regular packages have their use cases, and understanding the differences between them can help you make an informed decision.
-
-1. Regular Packages:
-   - Regular packages are the most common type of packages in Python.
-   - They are used when you want to organize your code into hierarchical directories and create a clear package structure.
-   - Regular packages are self-contained and can include modules (Python files) and sub-packages (nested directories with an `__init__.py` file).
-   - They provide strong encapsulation, meaning that each regular package is its own namespace, and names within the package do not collide with names in other packages.
-
-   Example:
-   ```
-   mypackage/
-       __init__.py
-       module1.py
-       module2.py
-       subpackage/
-           __init__.py
-           module3.py
-   ```
-
-2. Namespace Packages:
-   - Namespace packages are used when you want to split a package across multiple directories or when you want to extend an existing package without modifying its source code.
-   - They are more suitable for scenarios where you have multiple packages that share a common namespace and you want to merge them dynamically.
-   - Namespace packages do not contain any actual code or `__init__.py` files. They are created by declaring a shared namespace in one or more distribution packages.
-   - Names within a namespace package can be spread across multiple locations, and they are merged at runtime.
-
-   Example (project structure with namespace packages):
-   ```
-   mynamespacepackage/
-       subpackage1/
-           module1.py
-       subpackage2/
-           module2.py
-   ```
-
-In summary, if you are building a self-contained package with a clear structure and want strong encapsulation, regular packages are a good choice. On the other hand, if you need to extend or split a package dynamically across multiple directories or collaborate on a shared namespace with other packages, namespace packages might be more appropriate.
-
-Consider your project's specific needs and whether you anticipate collaborating with other packages or distributing your code as part of a larger ecosystem when deciding whether to use regular packages or namespace packages.
-
-
-
-# Python scripts
-
-* Modules in one directory; no sub-directories
-* No \_\_init\_\_.py file
-* One file contains the main logic, other modules contain functions
-
-```
-project1
-├── functions.py
-└── program.py
-```
-
-functions.py:
-
-```
-def func1(message)
-    return message + " by func1"
-```
-
-program.py
-
-```
-import functions
-
-def main():
-    print(functions.func1("test"))
-
-if __name__ == "__main__":
-    main()
-```
-
-Run from project directory:
-
-```
-$ cd project1
-$ python3 -m program
-test by func1
-```
-
-```
-$ python3 program.py
-test by func1
-```
-
-Run from another directory
-
-```
-$ cd ..
-$ python3 -m project1.program
-Traceback (most recent call last):
-...
-  File "/home/brian/Projects/learning/python/imports/project1/program.py", line 1, in <module>
-    import functions
-ModuleNotFoundError: No module named 'functions'
-```
-
-```
-$ python3 project1/program.py
-test by func1
-```
-
-## Python package (normal)
-
-Add an empty file named *\_\_init\_\_.py* and the project directory becomes a *package*. Changes the way imports work. Now you need "relative" or "absolute" imports.
-
-```
-project2
-├── functions.py
-├── __init__.py
-└── program.py
-```
-
-```
-$ cd project2
-$ python3 -m program.py
-test by func1
-```
-```
-$ python3 program.py
-test by func1
-```
-```
-$ cd ..
-$ python3 -m project2.program
-Traceback (most recent call last):
-...
-  File "/home/brian/Projects/learning/python/imports/project2/program.py", line 1, in <module>
-    import functions
-ModuleNotFoundError: No module named 'functions'
-```
-```
-$ python3 project2/program.py
-test by func1
-```
-
-Seems to work the same as normal script modules.
-
-### Relative imports
-
-To make the case of `python3 -m project2.program` work, you need to use relative imports. *\_\_init\_\_.py* tells python that relative imports are allowed. Also the `python -m` flag tells Python that relative imports are allowed. Relative imports will not wotk when running as a script with `python program.py`
-
-Change *program.py* to:
-
-```
-from . import functions
-
-def main():
-    print(functions.func1("test"))
-
-if __name__ == "__main__":
-    main()
-```
-
-The import line was changed to `from . import functions`.
-
-Now, the following works:
-
-```
-$ python3 -m project2.program
-test by func1
-```
-
-The directory *project2* is now a *package* and Python searches for modules starting from the directory containing the *project* package directory, not from the *project2* directory, itself.
-???
-
-But the program can no longer be run as a Python script. It must be run as a module with the `-m` flag and it must be run as a package: identified as `project2`:
-
-```
-$ python3 project2/program.py
-Traceback (most recent call last):
-  File "/home/brian/Projects/learning/python/imports/project2/program.py", line 1, in <module>
-    from . import functions
-ImportError: attempted relative import with no known parent package
-```
-```
-$ cd project2
-$ python3 program.py
-Traceback (most recent call last):
-  File "/home/brian/Projects/learning/python/imports/project2/program.py", line 1, in <module>
-    from . import functions
-ImportError: attempted relative import with no known parent package
-```
-```
-$ python3 -m program
-Traceback (most recent call last):
-  File "/usr/lib/python3.10/runpy.py", line 196, in _run_module_as_main
-    return _run_code(code, main_globals, None,
-  File "/usr/lib/python3.10/runpy.py", line 86, in _run_code
-    exec(code, run_globals)
-  File "/home/brian/Projects/learning/python/imports/project2/program.py", line 1, in <module>
-    from . import functions
-ImportError: attempted relative import with no known parent package
-```
-
-## Namespace package
-
-You need to keep in mind how you will distribute the program. If you intend to "package" it using something like *setuptools*, then you may need to be careful about the metatdata you generate for the packaging process.
-adding some code to the \_\_init\_\_.py file to initialize the Python search path to include the package directory
-
-*\_\_init\_\_.py* would contain:
-
-```
-from pathlib import Path
-import  sys
-
-print(Path(__file__).parents[0])
-path_root = Path(__file__).parents[0]
-sys.path.append(str(path_root))
-print(sys.path)
-```
-
-Now all types of launches run 
-
-```
-$ cd project2
-$ python3 -m program.py
-test by func1
-```
-```
-$ python3 program.py
-test by func1
-```
-```
-$ cd ..
-$ python -m project2.program
-C:\Users\blinklet\Documents\learning\python\imports\project2
-test by func1
-```
-
-**(Note, the above call to the *project2.program* module caused the */_/_init.py/_/_* code to ruin. None of the other launches started the init file.)**
-
-```
-$ python3 project2/program.py
-test by func1
-```
-
-So, that's one way to make package module imports work for all cases
-
-
-
-
-
-
-Running a Python program using "python x.py" and "python -m x" can yield different results because they use different ways to execute Python code and have different implications for how modules and packages are treated. Here's an explanation of the differences:
-
-1. "python x.py":
-   - When you run "python x.py," you are executing the Python script "x.py" directly as a standalone script.
-   - The Python interpreter treats "x.py" as the main program and starts executing code from the top of the file.
-   - Any code within "x.py" that is not encapsulated in functions or classes will be executed immediately when you run the script.
-   - This method is suitable for standalone scripts and simple programs.
-
-2. "python -m x":
-   - When you run "python -m x," you are telling Python to run the module named "x" as a script.
-   - In this case, "x" should be a Python package or a module that can be imported.
-   - Python will search for the "x" module/package in its module search path, including the current directory.
-   - It treats "x" as a package or module and executes the code in the "\_\_main\_\_.py" file inside the "x" package (if it exists), or it runs the module "x" directly if there is no "\_\_main\_\_.py" file.
-   - This method is often used for running packages or modules within a larger Python project.
-
-Key Differences:
-- The "python -m x" method is typically used for structured Python projects where you want to utilize packages and modules, while "python x.py" is often used for standalone scripts.
-- Using "python -m x" allows you to avoid issues related to naming conflicts with other scripts or modules in the same directory or on the Python path.
-- When using "python -m x," the "\_\_name\_\_" attribute of the script/module will be "\_\_main\_\_," just like when running a standalone script, so you can still use conditional logic based on "\_\_name\_\_" to control script behavior.
-
-In summary, the choice between "python x.py" and "python -m x" depends on the structure and purpose of your Python code. If it's a simple standalone script, "python x.py" is sufficient. If you're working with modules and packages in a more complex project, "python -m x" is a better choice for running your code as a module.
-
-
-
-
-
-
-
-The error message you're encountering, "ImportError: attempted relative import with no known parent package," is related to the way you are running your Python script and the use of relative imports.
-
-In Python, relative imports are used within packages (directories containing an `__init__.py` file) to reference other modules or sub-packages within the same package. However, when you run a script directly with "python3 .\dbapp\interface\cli.py," Python treats it as a standalone script, not as part of a package, which is why relative imports fail.
-
-To resolve this issue, you have a few options:
-
-1. Run the script as a module with the `-m` flag:
-
-   ```
-   python3 -m dbapp.interface.cli
-   ```
-
-   This method treats the script as a module within the `dbapp` package and allows you to use relative imports correctly.
-
-2. Change your project structure:
-
-   If you intend to use relative imports within your script, consider organizing your project structure as a package. To do this:
-
-   - Ensure that the top-level directory (`dbproject` in your case) contains an `__init__.py` file. This makes it a Python package.
-   - Move your script (`cli.py`) to the appropriate location within the package. For example, if `dbapp` is your package and `cli.py` is a module within it, your directory structure might look like this:
-
-     ```
-     dbproject/
-     ├── dbapp/
-     │   ├── __init__.py
-     │   ├── interface/
-     │   │   ├── __init__.py
-     │   │   └── cli.py
-     ├── ...
-     ```
-
-   With this structure, you can run your script as a module with relative imports:
-
-   ```
-   python3 -m dbapp.interface.cli
-   ```
-
-3. Use absolute imports:
-
-   Instead of relying on relative imports, you can use absolute imports by specifying the full path to the module you want to import. For example:
-
-   ```python
-   from dbapp.interface import db
-   ```
-
-   This approach works both when running the script as a standalone file and when using it as a module.
-
-Choose the approach that best fits your project structure and requirements. If you intend to work with packages and modules within your project, I recommend organizing your project as a package to leverage the benefits of relative imports and better code organization.
-
-
-
-References??
-
-Certainly! Here are some reference links that provide more information on the topics discussed:
-
-1. **Python Official Documentation**:
-   - [Python Modules](https://docs.python.org/3/tutorial/modules.html)
-   - [Packages](https://docs.python.org/3/tutorial/modules.html#packages)
-   - [Command line and environment](https://docs.python.org/3/using/cmdline.html)
-
-2. **PEP 328 - Imports: Multi-Line and Absolute/Relative**:
-   - [PEP 328](https://www.python.org/dev/peps/pep-0328/) explains the rationale behind relative imports and their usage.
-
-3. **Python Module vs. Script**:
-   - [Python Module vs. Script](https://realpython.com/run-python-scripts/) - An article explaining the differences between running Python modules and scripts.
-
-4. **Structuring Your Project**:
-   - [Structuring Your Project](https://docs.python-guide.org/writing/structure/) - A guide on structuring Python projects, including the use of packages and modules.
-
-5. **Absolute vs. Relative Imports in Python**:
-   - [Absolute vs. Relative Imports in Python](https://realpython.com/absolute-vs-relative-python-imports/) - A Real Python article that delves into the details of absolute and relative imports in Python.
-
-6. **Python's -m Switch**:
-   - [Python's -m Switch](https://docs.python.org/3/using/cmdline.html#cmdoption-m) - Python documentation on the `-m` switch for running modules as scripts.
-
-These resources should provide you with a deeper understanding of Python modules, packages, and the differences between running scripts and modules, as well as how to handle imports effectively.
-
-
-
-
-Example: in *dbproject/dbapp/dbsetup/models.py*
-    Change:
-        from dbapp.dbsetup import database
-    To:
-        from . import database
-
 
