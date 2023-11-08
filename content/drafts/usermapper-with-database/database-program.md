@@ -4,13 +4,26 @@ summary: I describe how I used Python and the SQLAlchemy ORM to create tables an
 date: 2023-11-9
 modified: 2023-11-9
 category: Python
-<!--status: Published-->
+status: Published
 
-I created a simple command-line-interface utilty that modifies data in a database. It can add, update, or delete data. I created the program to practice working with databases in Python programs. While doing this I also learned how to use Python libraries to build CLI programs.
+<!--
+A bit of extra CSS code to center all images in the post
+-->
+<style>
+img
+{
+    display:block; 
+    float:none; 
+    margin-left:auto;
+    margin-right:auto;
+}
+</style>
+
+I created a simple command-line-interface utilty that modifies data in a database. It can add, read, or delete data. I created the program to practice working with databases in Python programs. While doing this I also learned how to use Python libraries to build CLI programs.
 
 My goals were to:
 
-* Write a "real program" using the [packaging concepts I learned]({filename}/articles/022-modern-packaging/modern-packaging.md) over the past few months
+* Write a "real program" using the [packaging concepts I learned]({filename}/articles/022-modern-packaging/modern-packaging.md) over the past few weeks
 * Excercise more relational database concepts, like relationships between tables
 * Learn to manage SQLAlchemy sessions in different types of programs
 * Learn one of the Python CLI libraries
@@ -38,7 +51,6 @@ dbproject/
    │       │   └── __init__.py
    │       ├── interface/
    │       │   ├── cli.py
-   │       │   ├── functions.py
    │       │   └── __init__.py
    │       ├── config.py
    │       ├── .env
@@ -52,13 +64,11 @@ dbproject/
 
 ### The project folder
 
-Everything is in a directory named *dbproject*. I could have chosen any name for the project directory because the actual name used to run the program is set in the program's package sub-directory, not the project directory. 
+The files are in a directory named *dbproject*. I could have chosen any name for the project directory because the actual name used to run the program is set in the program's package sub-directory, not the project directory. 
 
 When using source control, I prefer the project directory name to be the same as the source control remote repository name. If I were to publish this on [GitHub](https://github.com/blinklet), I would call the repository "dbproject". 
 
-The project metadata is in the root level of the *dbproject* directory. I created all the files necessary for packaging, which includes a *README.md* file, a license file, Git files (if using source control), and a *requirements.txt* file[^2]. I organized the rest of the project into three sub-directories named *src*, *docs*, and *tests*. 
-
-[^2]: I do not intend to publish this package to the Python Package Index so I do not need a *pyproject.toml* file.
+The project metadata is in the root level of the *dbproject* directory. I created all the files necessary for packaging, which includes a *README.md* file, a license file, Git files (if using source control), and a *requirements.txt* file. I organized the rest of the project into three sub-directories named *src*, *docs*, and *tests*. 
 
 ### The *docs* directory
 
@@ -153,6 +163,8 @@ Since the database server will run on a Docker container on my local machine, it
 
 I created a dotenv file named *.env* that was used to load these configurations into variables in the *config.py* module. Some of these variables will also be used by the Docker *run* command[^3] when I create my database container.
 
+[^3]: Alternatively, one can export environment variables from the dotenv file to the shell environment. Then, set each of the container's environment variables using the shell variables. I that case, I would [load the environment variables in my dotenv file into my Bash shell](https://andrew.red/posts/how-to-load-dotenv-file-from-shell), then run my Docker command. I could have used the Bash shell's [*set* builtin](https://www.gnu.org/software/bash/manual/html_node/The-Set-Builtin.html) to temporarily modify my Bash shell so each variable sourced from the dotenv file is given the export attribute and marked for export to the shell environment. Then, I would run the command: `set -a; source .env; set +a`
+
 I created the file in the *src/dbapp* directory (the current working directory is *dbproject*). 
 
 ```bash
@@ -172,7 +184,7 @@ POSTGRES_USER=userdata
 POSTGRES_PASSWORD=abcd1234
 ```
 
-[^3]: Alternatively, one can export environment variables from the dotenv file to the shell environment. Then, set each of the container's environment variables using the shell variables. I that case, I would [load the environment variables in my dotenv file into my Bash shell](https://andrew.red/posts/how-to-load-dotenv-file-from-shell), then run my Docker command. I could have used the Bash shell's [*set* builtin](https://www.gnu.org/software/bash/manual/html_node/The-Set-Builtin.html) to temporarily modify my Bash shell so each variable sourced from the dotenv file is given the export attribute and marked for export to the shell environment. Then, I would run the command: `set -a; source .env; set +a`
+
 
 
 ### Create the database server
@@ -539,7 +551,7 @@ def data_write(session, user_name, label_name, data_item):
 
 In the function's first stanza, I check to see if the contents of the *user_name* parameter matches the name of any user in the *users* table. If so, I get that *User* instance from the database. If not, I create a new *User* instance, which will add a new row to the *users* table when added to the session. In that case, I also [flush the session](https://docs.sqlalchemy.org/en/20/orm/session_basics.html#session-flushing) so that the database will automatically populate the table's *id* column with a valid key and return that key to the session so it can be used later in the function.
 
-In the function's second stanze, I do the same with the *label_name* parameter.
+In the function's second stanza, I do the same with the *label_name* parameter.
 
 And, finally, I create a *Storage* instance and add it to the session. This will result in a new row in the *storage* table that has the user ID, label ID, and the data. The timestamp column and the storage ID column will get automatically populated by the database when the session is committed.
 
@@ -596,7 +608,7 @@ I am using the [*select()* function](https://docs.sqlalchemy.org/en/20/orm/query
 
 ### The *data_delete()* function
 
-The *data_delete()* function deletes user data from the database. After deleting the rows that match both the *user_name* and *label_name*, teh function checks if the label and/or the user are still have data associated with them in the *storage* table. If not, the leftover label or user is deleted from the *labels* or *users* table.
+The *data_delete()* function deletes user data from the database. After deleting the rows that match both the *user_name* and *label_name*, the function checks if the label and/or the user are still have data associated with them in the *storage* table. If not, the leftover label or user is deleted from the *labels* or *users* table.
 
 This function uses the new SQLAlchemy ORM *delete()* function to perform a bulk-delete of *storage* table rows that match both the user ID and the label ID.
 
@@ -920,24 +932,14 @@ def create_parser():
 
 I liked using *argparse*. It let me design the CLI one command, or sub-command, at a time. Looking through the code in the *create_parser()* function, I can see how each command is expected to work.
 
-### The *get_cli_arguments()* function
+### The *cli()* function
 
-The *get_cli_arguments()* function just runs the parser's *parse_args()* method which returns the CLI arguments. 
+The *cli()* function provides the main logic for the cli-based program. It creates the parsers, then it gets the arguments that have been entered at the command-line interface. 
 
-```python
-def get_cli_arguments(parser):
-    args = parser.parse_args()
-    return args
-```
-
-### The *main()* function
-
-The *main()* function provides the main logic for the cli-based program. It creates the parsers, then it gets the arguments that have been entered at the command-line interface. 
-
-The *main()* function checks which sub-parser is in use, or which sub-command has been entered by the user. Then, it gets the arguments associated with that sub-command and calls the appriopriate database function.
+The *cli()* function checks which sub-parser is in use, or which sub-command has been entered by the user. Then, it gets the arguments associated with that sub-command and calls the appriopriate database function.
 
 ```python
-def main():
+def cli():
 
     db_setup(engine)
 
@@ -960,13 +962,13 @@ def main():
                 parser.print_help()
 ```
 
-### The *test code
+### The test code
 
-There is no test code in this module. If you run it as a script, it simply executes the *main()* function and runs the program.
+There is no test code in this module. If you run it as a script, it simply executes the *cli()* function and runs the program.
 
 ```python
 if __name__ == "__main__":
-    main()
+    cli()
 ```
 
 ### The *cli.py* module complete
@@ -1023,7 +1025,7 @@ So that the package runs when the *dbapp* package is called, I need to create a 
 (.venv) $ nano __main__.py
 ```
 
-The *\_\_main\_\_.py* is the entry point to the program, when running it as a package. It simply calls the *dbapp.interface.cli.main()* function, which runs the cli program.
+The *\_\_main\_\_.py* is the entry point to the program, when running it as a package. It simply calls the *dbapp.interface.cli.cli()* function, which runs the cli program.
 
 The *\_\_main\_\_.py* module is shown below:
 
@@ -1033,7 +1035,7 @@ The *\_\_main\_\_.py* module is shown below:
 import dbapp.interface.cli
 
 def main():
-    dbapp.interface.cli.main()
+    dbapp.interface.cli.cli()
 
 if __name__ == "__main__":
     main()
@@ -1063,7 +1065,7 @@ label100
 
 ## Packaging the application
 
-To make it easy for others to use this program I will package it as a *wheel*. I do not intend to publish a "toy" program like this to PyPI so I will perform a simpler packaging procedure than would normally be required.
+To make it easy for others to use this program I will [package it as a *wheel*]({filename}/articles/022-modern-packaging/modern-packaging.md). I do not intend to publish a "toy" program like this to PyPI so I will perform a simpler packaging procedure than would normally be required. If I needed to distribute the package so that a colleague could install it on their PC, I would just send them a link to a shared folder that contains the wheel file.
 
 ### The *pyproject.toml* file
 
@@ -1150,7 +1152,7 @@ sqlalchemy.exc.OperationalError: (psycopg2.OperationalError) connection to serve
         Is the server running locally and accepting connections on that socket?
 ```
 
-The error occurred because the environment variables that describe the database connection information are not defined. The *dbapp* package does not copy the *.env* file. I have to create the environment variables in the shell, as shown below:
+The error occurred because the environment variables that describe the database connection information are not defined. The *dbapp* package does have a copy of the *.env* file in its directory. This is a good thing, because the *.env* file can contain sensitive information that you don't want to distribute to just anyone. And, in this case, every user may want to use a different database and so will create the environment variables that describe their database in their shell, as shown below:
 
 ```text
 (.venv2) $ export DB_SERVER_ADDRESS=localhost
@@ -1162,7 +1164,7 @@ The error occurred because the environment variables that describe the database 
 
 Then, the program will run. 
 
-When I am testing, I prefer to re-use the *.env* file to create the environment variables. So I run the following command while in the *dbproject* directory:
+When I am testing, I prefer to re-use the *.env* file that is in the *dbapp* directory to create the environment variables. So, instead of exporting environment variables one-by-one, I run the following command while in the *dbproject* directory:
 
 ```text
 (.venv2) $ set -a; source src/dbapp/.env; set +a
@@ -1200,6 +1202,8 @@ $ docker stop postgres_db
 
 ## Conclusion
 
-I created a Python database application and practiced building relationships between database tables, writing to and reading from a database, and building a command-line intefrace.
+I created a Python database application and practiced building relationships between database tables, writing to and reading from a database, and building a command-line intefrace. While working on this project, I learned more about structuring Python projects, how to handle module namespaces in import statements, and basic database relationships. I actually learned a lot about database relationships that I decided would be better covered in another post. I also learned a lot about the Python libraries that support command-line interfaces and will write more about those in yet another post.
+
+If I plan to further explore using database relationships and constraints to simplify my Python program code, I need to finally learn Python type hints, which makes it much easier to read and understand the database models in the Python code, and type hints are the "modern" way to work with databases in Python.
 
 
