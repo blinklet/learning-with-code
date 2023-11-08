@@ -1,3 +1,11 @@
+title: Package Python module imports
+slug: python-packaging-modern
+summary: How Python module namespaces affect import statements
+date: 2023-9-18
+modified: 2023-9-18
+category: Python
+status: Draft
+
 ## Python packages
 
 A well-structured program separates functionality into discrete modules. In more complex apps, modules may be organized in a folder structure called packages. Python automatically detects packages when it finds Python modules organized in folders. 

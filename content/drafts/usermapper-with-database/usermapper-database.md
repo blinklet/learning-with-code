@@ -78,7 +78,7 @@ The browser window should show the web app's first page, as shown in the screens
 
 ![Usermapper Web App running on local PC in development mode]({attach}usermapper-01.png){width=90%}
 
-For more information about the *usermapper-web* application and how to use it, either refer to the instructions on the web page or read [my web app tutorial post]({filename}/content/articles/003-flask-web-app-tutorial/flask-web-app-tutorial.md) that describes how I developed and use it.
+For more information about the *usermapper-web* application and how to use it, either refer to the instructions on the web page or read [my web app tutorial post]({filename}/articles/003-flask-web-app-tutorial/flask-web-app-tutorial.md) that describes how I developed and use it.
 
 After you finish testing the *usermapper-web* application, quit the Flask app by typing *CTRL-C* in the terminal window. 
 

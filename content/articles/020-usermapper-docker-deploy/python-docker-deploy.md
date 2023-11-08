@@ -25,7 +25,7 @@ This post shows you how to use Docker to containerize an existing Python applica
 
 ## Identify an existing web app
 
-First, identify an existing application you wish to containerize. In this post, I will use the first version of my [usermapper-web application]({filename}/content/articles/003-flask-web-app-tutorial\flask-web-app-tutorial.md) from Github. It's tagged as version 0.1. Run the following commands to get the application files.
+First, identify an existing application you wish to containerize. In this post, I will use the first version of my [usermapper-web application]({filename}/articles/003-flask-web-app-tutorial/flask-web-app-tutorial.md) from Github. It's tagged as version 0.1. Run the following commands to get the application files.
 
 ```bash
 $ wget https://github.com/blinklet/usermapper-web/archive/refs/tags/v0.1.tar.gz
@@ -66,7 +66,7 @@ Install the application's dependencies:
 
 ### Create a dotenv file
 
-The Flask frameworks needs some information from its environment so it knows which file to run. You can set environment variables on a server manually or you can store them in a file and access them using the [Python *dotenv* package]({filename}/content/articles/011-use-environment-variables/use-environment-variables.md). When you downloaded version 0.1 of the *usermapper-web* project, you did not get the file named *.env* because I did not need it for that version of the application. In version 0.1, I set environment variables manually in the shell and on the web app. 
+The Flask frameworks needs some information from its environment so it knows which file to run. You can set environment variables on a server manually or you can store them in a file and access them using the [Python *dotenv* package]({filename}/articles/011-use-environment-variables/use-environment-variables.md). When you downloaded version 0.1 of the *usermapper-web* project, you did not get the file named *.env* because I did not need it for that version of the application. In version 0.1, I set environment variables manually in the shell and on the web app. 
 
 But for a Docker container that can be deployed anywhere, it is convenient to have the environment variables stored as a file in the container,alongside the application that needs them. Create the dotenv file, named *.env*, using your favorite text editor:
 
@@ -110,7 +110,7 @@ The browser window should show the web app's first page, as shown in the screens
 
 ![Usermapper Web App running on local PC in development mode]({attach}usermapper-01.png){width=90%}
 
-For more information about the web app and how to use it, either refer to the instructions on the web page or read [my web app tutorial post]({filename}/content/articles/003-flask-web-app-tutorial/flask-web-app-tutorial.md) that describes how I developed and use it.
+For more information about the web app and how to use it, either refer to the instructions on the web page or read [my web app tutorial post]({filename}/articles/003-flask-web-app-tutorial/flask-web-app-tutorial.md) that describes how I developed and use it.
 
 After you finish testing the *usermapper-web* application, quit the Flask app by typing *CTRL-C* in the terminal window. Then, deactivate the virtual environment:
 
@@ -169,7 +169,7 @@ SECRET_KEY=D9Oci7p2l9bqM8_uChJKA09tqXFOK7Db-FxKr6rGoDk
 
 ### Create the Dockerfile
 
-To create a Docker image that contains the Python packages and the application files, write a Dockerfile that contains the commands needed to build the image. If you need more information, please see my previous post where I cover [building a Docker image]({filename}/content/articles/018-postgresql-docker/postgresql-docker.md).
+To create a Docker image that contains the Python packages and the application files, write a Dockerfile that contains the commands needed to build the image. If you need more information, please see my previous post where I cover [building a Docker image]({filename}/articles/018-postgresql-docker/postgresql-docker.md).
 
 In the Dockerfile, choose a base image. I chose an [official Python image](https://hub.docker.com/_/python) based on the *Alpine* Linux distribution, which is a very lightweight image. Then, [document](https://stackoverflow.com/questions/22111060/what-is-the-difference-between-expose-and-publish-in-docker/47594352#47594352) the TCP port that the application expects to use. Create the app's working directory on the container. Copy the files from the current directory on your PC, which contains the Dockerfile and all the application files and directories, to the working directory on the container. Run Linux commands that install software needed by the application. Finally, set the command that the container will run when it starts up.
 
