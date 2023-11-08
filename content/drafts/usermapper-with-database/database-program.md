@@ -1,8 +1,8 @@
-title: A command-line utility that updates a database
+title: Create a database command-line utility
 slug: sqlalchemy-database-cli-program
-summary: How to use Python and the SQLAlchemy ORM to create a table in a database, write data to it, and read it back.
-date: 2023-10-25
-modified: 2023-10-25
+summary: I describe how I used Python and the SQLAlchemy ORM to create tables and relationships in an SQL database and how I created a command-line interface that allows a user to write data to the database, and read it back.
+date: 2023-11-9
+modified: 2023-11-9
 category: Python
 <!--status: Published-->
 
@@ -932,39 +932,41 @@ def get_cli_arguments(parser):
 
 ### The *main()* function
 
-The *main()* function checks which sub-parser is in use, or which sub-command has been entered by the user. Then it gets the arguments associated with that sub-command and calls the appriopriate database function.
+The *main()* function provides the main logic for the cli-based program. It creates the parsers, then it gets the arguments that have been entered at the command-line interface. 
+
+The *main()* function checks which sub-parser is in use, or which sub-command has been entered by the user. Then, it gets the arguments associated with that sub-command and calls the appriopriate database function.
 
 ```python
-def main(session, args):
-    match args.subparser_name:
-        case 'read' | 'r': 
-            f.data_read(session, args.user_id, args.label_id)
-        case 'read_users' | 'u': 
-            f.user_read(session)
-        case 'read_labels' | 'l': 
-            f.label_read(session, args.user_id)
-        case 'write' | 'w': 
-            f.data_write(session, args.user_id, args.label_id, args.user_data)
-        case 'delete' | 'del' | 'd': 
-            f.data_delete(session, args.user_id, args.label_id)
-        case None if not args.interactive:
-            parser.print_help()
-```
+def main():
 
-### The test code
-
-The test code for the *cli.py* module creates the parsers, gets the arguments that have been entered at the command-line interface, and runs the *main()* function. 
-
-```python
-if __name__ == "__main__":
-    from dbapp.database.models import db_setup
-    from dbapp.database.connect import engine, Session
     db_setup(engine)
 
     parser = create_parser()
-    args = get_cli_arguments(parser)
+    args = parser.parse_args()
+
     with Session.begin() as session:
-        main(session, args)
+        match args.subparser_name:
+            case 'read' | 'r': 
+                f.data_read(session, args.user_id, args.label_id)
+            case 'read_users' | 'u': 
+                f.user_read(session)
+            case 'read_labels' | 'l': 
+                f.label_read(session, args.user_id)
+            case 'write' | 'w': 
+                f.data_write(session, args.user_id, args.label_id, args.user_data)
+            case 'delete' | 'del' | 'd': 
+                f.data_delete(session, args.user_id, args.label_id)
+            case None if not args.interactive:
+                parser.print_help()
+```
+
+### The *test code
+
+There is no test code in this module. If you run it as a script, it simply executes the *main()* function and runs the program.
+
+```python
+if __name__ == "__main__":
+    main()
 ```
 
 ### The *cli.py* module complete
@@ -1017,36 +1019,34 @@ User: Bill,  Label: Notes,  Data: makes some notes,  Time: 2023-11-06 14:02:12.0
 So that the package runs when the *dbapp* package is called, I need to create a module named *\_\_main\_\_.py* in the *dbapp* package directory, which will run when the package is run.
 
 ```text
-(.venv) $ cd dbapp
+(.venv) $ cd ..
 (.venv) $ nano __main__.py
 ```
 
-The *\_\_main\_\_.py* is the entry point to the program. It calls the *dbapp.database.models.db_setup()* function, which creates the database tables if they do not already exist, then it creates a database session in a context manager, which automatically commits changes to the database when the context manager code block ends. The *dbapp.interface.cli.main()* function parses the command arguments and performs the appropriate database function.
+The *\_\_main\_\_.py* is the entry point to the program, when running it as a package. It simply calls the *dbapp.interface.cli.main()* function, which runs the cli program.
 
 The *\_\_main\_\_.py* module is shown below:
 
 ```python
-from dbapp.interface import cli
-from dbapp.database.models import db_setup
-from dbapp.database.connect import Session
+# dbproject/src/dbapp/__main__.py
+ 
+import dbapp.interface.cli
 
 def main():
-    db_setup(engine)
-
-    parser = cli.create_parser()
-    args = cli.get_cli_arguments(parser)
-    with Session.begin() as session:
-        cli.main(session, args)
-
+    dbapp.interface.cli.main()
 
 if __name__ == "__main__":
     main()
 ```
 
-There is no test code in the *\_\_main\_\_.py* module since it is the main program starting point. To test it, run the package in the Python intepreter. For example:
+To test the *\_\_main\_\_.py* module, run the *dbapp* package in the Python intepreter. For example:
 
 ```bash
 (.venv) $ cd ..
+(.venv) $ python -m dbapp read_users
+Bill
+Jane
+Walter
 (.venv) $ python -m dbapp write user1 label100 "test data 1"
 User 'user1' added data labeled 'label100'.
 (.venv) $ python -m dbapp write user2 label200 "more test data"
@@ -1067,13 +1067,19 @@ To make it easy for others to use this program I will package it as a *wheel*. I
 
 ### The *pyproject.toml* file
 
+In the *dbproject* directory, I built a wheel using the *setuptools* package. First, I created a *pyproject.toml* file that provides *setuptools* with the information it needs to build the *dbapp* package.
+
 ```text
+(.venv) $ deactivate
 $ cd ..
 $ nano pyproject.toml
 ```
 
+The *pyproject.toml* file looks like the listing below:
 
 ```text
+# dbproject/pyproject.toml
+
 [build-system]
 requires = ["setuptools"]
 build-backend = "setuptools.build_meta"
@@ -1090,28 +1096,110 @@ include = ["dbapp*"]
 exclude = ["tests", "docs"]
 
 [project.scripts]
-dbapp = "dbapp:main"
+dbapp = "dbapp.__main__:main"
 ```
 
+I set the entry point to be the *main()* function in the  *dbproject/src/dbapp/\_\_main\_\_.py* module. Setuptools does not allow me to run the *dbproject/src/dbapp/\_\_main\_\_.py* module as a script. It imports the *main()* function instead, which then runs the main program. 
+
+
+### Build the *dbapp* package
+
+To build the *dbapp* package, create a new virtual environment for building the package and install the *wheel* and *build* tools.
 
 ```text
 $ python3 -m venv .bld
 $ source .bld/bin/activate
 (.bld) $ pip install wheel
 (.bld) $ pip install build
-(.bld) $ python -m build
+```
 
+The, build the *dbapp* package
+
+```text
+(.bld) $ python -m build
+```
+
+After the build is complete, the wheel should be in a new directory under the project folder named *dist*.
+
+```text
 (.bld) $ ls dist
 dbapp-0.1-py3-none-any.whl  dbapp-0.1.tar.gz
 ```
 
+### Test the *dbapp* wheel
 
-
+To test the wheel, I installed it in a new virtual environment.
 
 ```text
 $ (.bld) deactivate
 $ python3 -m venv .venv2
 $ source .venv2/bin/activate
 (.venv2) $ pip install dist/dbapp-0.1-py3-none-any.whl
+```
+
+Then, I ran the program as shown below:
+
+```text
+(.venv2) $ dbapp read_users
+```
+
+I encountered an error because the application could not find the database.
+
+```text
+sqlalchemy.exc.OperationalError: (psycopg2.OperationalError) connection to server on socket "/var/run/postgresql/.s.PGSQL.5432" failed: No such file or directory
+        Is the server running locally and accepting connections on that socket?
+```
+
+The error occurred because the environment variables that describe the database connection information are not defined. The *dbapp* package does not copy the *.env* file. I have to create the environment variables in the shell, as shown below:
+
+```text
+(.venv2) $ export DB_SERVER_ADDRESS=localhost
+(.venv2) $ export DB_SERVER_TCP_PORT=5432
+(.venv2) $ export POSTGRES_DB=userdata
+(.venv2) $ export POSTGRES_USER=userdata
+(.venv2) $ export POSTGRES_PASSWORD=abcd1234
+```
+
+Then, the program will run. 
+
+When I am testing, I prefer to re-use the *.env* file to create the environment variables. So I run the following command while in the *dbproject* directory:
+
+```text
 (.venv2) $ set -a; source src/dbapp/.env; set +a
 ```
+
+This reads in the variables in the *.env* file and exports them as environment variables.
+
+When the environment variables have been set -- and, they can be set many different ways -- I can run the application from any directory on my PC:
+
+```text
+(.venv2) $ cd $HOME
+(.venv2) $ dbapp u
+Bill
+Jane
+Walter
+user1
+user2
+(.venv2) $ dbapp l Jane
+description
+directions
+(.venv2) $ dbapp r Jane directions
+User: Jane,  Label: directions,  Data: Go north then east,  Time: 2023-11-06 14:02:12.044012
+```
+
+## Clean up
+
+The *dbapp* program is completed and tested. So I will shut down the virtual environment and the database server:
+
+```text
+(.venv2) $ deactivate
+$ rm -r .venv2
+$ rm -r .bld
+$ docker stop postgres_db
+```
+
+## Conclusion
+
+I created a Python database application and practiced building relationships between database tables, writing to and reading from a database, and building a command-line intefrace.
+
+
