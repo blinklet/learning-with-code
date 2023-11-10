@@ -19,7 +19,7 @@ img
 }
 </style>
 
-I created a simple command-line-interface utilty that modifies data in a database. It can add, read, or delete data. I created the program to practice working with databases in Python programs. While doing this I also learned how to use Python libraries to build CLI programs.
+I created a simple command-line-interface utility that modifies data in a database. It can add, read, or delete data. I created the program to practice working with databases in Python programs. While doing this I also learned how to use Python libraries to build CLI programs.
 
 My goals were to:
 
@@ -76,7 +76,7 @@ The *docs* directory contains a *dotenv_example.txt* file because the real [*dot
 
 ### The *tests* directory
 
-The *tests* directory contains one program named *test.py*. I am not proficient in writing real tests yet so it is just a simple script. In the future, I will write more complex test modules and store them in this directory.
+The *tests* directory contains one program named *test.py*. I am not proficient in writing real tests yet so it is just an empty file. In the future, I will write more complex test modules and store them in this directory.
 
 ### The *src* directory
 
