@@ -1,17 +1,15 @@
-title: Install and run a large language model on your laptop
+title: Install and run a machine learning model on your laptop
 slug: llm-laptop-ollama
-summary: Run machine learning models, such as large language models, on consumer-grade computers using the Ollama project
+summary: Discover how to run machine learning models, such as large language models, on consumer-grade computers using the Ollama project.
 date: 2023-12-18
 modified: 2023-12-18
 category: Machine Learning
-<!-- status: Published -->
+status: Published
 
 
 One way to experiment with the large language models that are creating so much excitement is to use a hosted solution like *[Replicate](https://replicate.com/)*, which lets you host your own instances of many open-source models. Or, you can use the proprietary AI services offered by cloud services like *[OpenAI](https://openai.com/product)*/*[Azure](https://azure.microsoft.com/en-us/solutions/ai)*, *[Google AI](https://ai.google/build)*, or *[Amazon AWS](https://aws.amazon.com/machine-learning/ai-services/)*.
 
-However, it is also interesting to experiment with ways to run open-source machine learning models on your own hardware, like your laptop computer. 
-
-Currently, the easiest-to-use tool that enables users to run machine learning models on their personal computers is *[ollama.ai](https://ollama.ai/)*. Some other available tools are *[h2oGPT](https://github.com/h2oai/h2ogpt)*, *[GPT4All](https://gpt4all.io/index.html)*, and *[LLM](https://llm.datasette.io/en/stable/)*.
+However, running open-source machine learning models on your own hardware like your laptop computer offers a unique hands-on experience. Currently, the easiest-to-use tool that enables users to run machine learning models on their personal computers is *[Ollama](https://ollama.ai/)*. Some other available tools are *[h2oGPT](https://github.com/h2oai/h2ogpt)*, *[GPT4All](https://gpt4all.io/index.html)*, and *[LLM](https://llm.datasette.io/en/stable/)*.
 
 This post will describe how to install Ollama on your local PC and use it to run open-source models.
 
@@ -25,7 +23,7 @@ Ollama enables you to keep multiple models available on your local PC. You can u
 
 ## Installing Ollama
 
-You may install Ollama on a Linux PC a couple of different ways. I prefer to use the Ollama container, available in the DockerHub container registry. Use the following Docker command to download the container and run it.
+You may [install Ollama on a Linux PC](https://github.com/jmorganca/ollama/blob/main/docs/linux.md) a couple of different ways. I prefer to use the [Ollama container](https://hub.docker.com/r/ollama/ollama), available in the DockerHub container registry. Use the following Docker command to download the container and run it.
 
 ```text
 $ docker run -d \
@@ -35,67 +33,181 @@ $ docker run -d \
   ollama/ollama
 ```
 
-This pulls the Ollama image from the Docker Hub repository and starts it.
+I am using an old Thinkpad T480 that has no GPU, so the procedure shown above runs a container that uses only the CPU. To use a GPU, see the [Ollama Docker image instructions](https://hub.docker.com/r/ollama/ollama).
+
+Docker pulls the Ollama image from the Docker Hub repository and starts it. The models, which can be very large files, will be stored in a Docker volume named *ollama*:
+
+```text
+$ docker volume list
+DRIVER    VOLUME NAME
+local     ollama
+```
 
 ## Using Ollama
 
-A running Ollama model can be accessed several ways: 
+A running Ollama model can be used several ways:
 
-* Using Ollama's prompt-based interface,
-* Using a REST API
-* Using Python LLM frameworks, such as *[LangChain](https://python.langchain.com/docs/integrations/providers/ollama)* or *[LlamaIndex](https://docs.llamaindex.ai/en/stable/getting_started/installation.html)*.
+* Using a REST API, via the [Python *requests* library](https://requests.readthedocs.io/en/latest/), or the Linux *[curl](https://curl.se/)* command.
+* Using Ollama's command-line interface.
+* Using LLM frameworks, such as *[Lang](https://python.langchain.com/docs/integrations/providers/ollama)[Chain](https://python.langchain.com/docs/guides/local_llms)* or *[LlamaIndex](https://docs.llamaindex.ai/en/stable/getting_started/installation.html)*.
 
+### Getting models
 
+To use Ollama machine learning models, you *pull* a model you want to use and then *run* it. Go to the [Ollama repository](https://ollama.ai/library) to find models that will run on your hardware. In my case, because I am running an old laptop with a 6th-Gen Intel i5 and only 16 GB of memory, I will look for models designed to run on CPU-only with less than 16 GB of RAM.
 
+Typically, models trained with 7 billion parameters or less are good candidates to run on a laptop computer without a dedicated GPU. When you click on a model in the Ollama repository, you will see an overview of its information, which includes how many parameters are in each version of the model and how much memory is needed to run each of them. Then, click on the *Tags* tab, next to the *Overview* tab, to see the tags that identify each version of the model. 
 
+Click on the tag you wish to use. The next page will show you some more information about the model and will usually show you some instructions about how to use the model.
 
+### Ollama REST API
 
+I chose to use the [*orca-mini:3b* model](https://ollama.ai/library/orca-mini), which was created by Microsoft researchers and is [based](https://huggingface.co/papers/2306.02707) on the open-source Llama2 model. It is designed to be a small model that cam deliver performance similar to larger models.
 
+I wrote a simple Python script to access Ollama's REST API. 
 
+```python
+import requests
+import json
 
+url = "http://localhost:11434/api/generate"
 
-Running Open Source LLMs Locally Using Ollama: A Step-by-Step Guide
-https://medium.com/@kbdhunga/running-open-source-llms-locally-using-ollama-a-step-by-step-guide-cf2ab62c817a
+data = {
+    "model": "orca-mini:3b",
+    "system": "Answer using 10 words or less.",
+    "prompt": "Tell me why the sky is blue."
+}
 
- 
-
-
-
-https://python.langchain.com/docs/guides/local_llms
-
-
-
-
-https://ollama.ai/blog/ollama-is-now-available-as-an-official-docker-image
-
-My T480 has no graphics card so use CPU-only
-
-
-
-Use 7b llama model because it needs only 16 GB memory
-
+response = requests.post(url, json=data)
+print(response.text)
 ```
+
+I saved the script as *orca.py* and ran it. This resulted in an error because the model was not yet downloaded. 
+
+```text
+$ python3 orca.py 
+{"error":"model 'orca-mini:3b' not found, try pulling it first"}
+```
+
+Use the API's [*pull* endpoint](https://github.com/jmorganca/ollama/blob/main/docs/api.md#pull-a-model) to download the model. I wrote another Python script to pull the model I wanted:
+
+```python
+import requests
+
+url = "http://localhost:11434/api/pull"
+
+data = {
+    "name": "orca-mini:3b"
+}
+
+response = requests.post(url, json=data)
+print(response.text)
+```
+
+I saved this script as *pull.py* and ran it. The console displays a large amount of responses as Ollama downloads the model. The output below shows the end of the operation:
+
+```text
+python3 pull.py
+...
+...
+{"status":"pulling fd52b10ee3ee","digest":"sha256:fd52b10ee3ee9d753b9ed07a6f764ef2d83628fde5daf39a3d84b86752902182","total":455}
+{"status":"pulling fd52b10ee3ee","digest":"sha256:fd52b10ee3ee9d753b9ed07a6f764ef2d83628fde5daf39a3d84b86752902182","total":455,"completed":455}
+{"status":"verifying sha256 digest"}
+{"status":"writing manifest"}
+{"status":"removing any unused layers"}
+{"status":"success"}
+```
+
+Now, I ran the original *orca.py* script to run the Orca model. Remember that script included a *[system prompt](https://huggingface.co/blog/llama2#how-to-prompt-llama-2)* that requested that the model behave in a certain way and a *[user prompt]()*, that asked the model why the sky is blue.
+
+```text
+$ python3 orca.py
+{"model":"orca-mini:3b","created_at":"2023-12-16T20:37:18.66622562Z","response":" Sky","done":false}
+{"model":"orca-mini:3b","created_at":"2023-12-16T20:37:18.843828069Z","response":" is","done":false}
+{"model":"orca-mini:3b","created_at":"2023-12-16T20:37:18.975351886Z","response":" blue","done":false}
+{"model":"orca-mini:3b","created_at":"2023-12-16T20:37:19.104637855Z","response":".","done":false}
+{"model":"orca-mini:3b","created_at":"2023-12-16T20:37:19.234764526Z","response":"","done":true,"context":[31822,13,8458,31922,3244,31871,13,3838,397,363,7421,8825,342,5243,10389,5164,828,31843,9530,362,988,362,365,473,31843,13,13,8458,31922,9779,31871,13,10568,281,1535,661,31822,31853,31852,2665,31844,1831,515,674,3465,322,266,7661,31843,13,13,8458,31922,13166,31871,13,8296,322,4842,31843],"total_duration":7058888990,"prompt_eval_count":57,"prompt_eval_duration":6662088000,"eval_count":4,"eval_duration":390769000}
+```
+
+The model returns JSON responses and each response contains one word, or part of a word.
+I add some code to the *orca.py* script to parse the response tokens from the json and join it into a readable paragraph:
+
+```python
+import requests
+import json
+
+url = "http://localhost:11434/api/generate"
+
+data = {
+    "model": "orca-mini:3b",
+    "system": "Answer using 10 words or less.",
+    "prompt": "Tell me why the sky is blue."
+}
+
+response = requests.post(url, json=data)
+data = response.text.splitlines()
+response_list = [json.loads(line)['response'] for line in data]
+
+print(''.join(response_list))
+```
+
+Running the program multiple time produces results that are different, but that relate to the original prompt.
+
+```text
+$ python3 orca.py
+ Blue.
+$ python3 orca.py
+ I'm sorry, but as an AI language model, I cannot see the sky.
+$ python3 orca.py
+ Blue.
+$ python3 orca.py
+ The color of the sky changes depending on the time of day and weather conditions.
+```
+
+Performance is OK. It takes about 5 to 10 seconds for each response to be completed.
+
+#### Using *curl* with the Ollama REST API
+
+If you don't want to write Python scripts to access the REST API, you can use the *curl* command. Pipe the output into the *jq* command to parse the responses from the JSON output and join them together into a readable paragraph:
+
+```text
+$ curl -s -X POST http://localhost:11434/api/generate -d '{
+    "model": "orca-mini:3b", 
+    "prompt":"What color is the ocean?"
+  }' \
+  | jq -j .response
+```
+
+In this case, I did not include a system prompt, which is optional. The model responds correctly:
+
+```text
+ The ocean appears to be a deep blue color, often referred to as 
+ dark navy or indigo.
+```
+
+
+### Ollama command-line interface
+
+Ollama also offers a command-line interface. I will test another model to demonstrate the Ollama CLI. I used the *mistral:7b* model because it needs less than 16GB of memory. Use Docker to send the ollama commands to the container:
+
+```text
+$ docker exec -it ollama ollama pull mistral:7b
+```
+
+Then run the model:
+
+```text
 $ docker exec -it ollama ollama run mistral:7b
 ```
 
-4.1 GB file download
+The model's CLI prompt appears:
 
-```
-pulling manifest 
-pulling c70fa74a8e81... 100%                         
-pulling e6836092461f... 100%                        
-pulling 1128f85489e0... 100%                          
-pulling 70ded05e7c58... 100%                        
-verifying sha256 digest 
-writing manifest 
-removing any unused layers 
-success 
+```text
 >>> Send a message (/? for help)
 ```
 
-At the >>> prompt, ask your questuions
+At the `>>>` prompt, ask your questions:
 
-```
+```text
 >>> How fast can a moose run?
 A moose is one of the largest species of deer in the world and they are 
 known for their swift running abilities. On average, a moose can run at 
@@ -106,135 +218,19 @@ quick movements. Moose are also excellent swimmers and can easily cover
 several hundred yards in a lake or river.
 ```
 
-Fairly slow (try to compare with ChatGPT online)
+The performance on my laptop was fairly slow, because I am running a larger model. It tool over 30 seconds to return a result.
 
-```
->>> write a short story about a boy and his dog
- Title: The Unbreakable Bond
+Different models seems to offer different feature. For example. the *mistral* model seems to remember the context of your previous prompts. For example, I asked it to tell me a short story about a boy and his dog. *Mistral* produced a decent story. Then, I asked *msitral* to reqrite the story except replace the dog with a cat. It seemed top remember the plot of the previous story and wrote a very similar story featuring a very loyal cat. 
 
-Once upon a time in the quaint little town of Meadowbrook, lived a young 
-boy named Timmy. Timmy was an ordinary boy with an extraordinary companion 
-- his loyal and faithful dog, Max. Max was a beautiful Golden Retriever 
-with a heart as golden as his coat. They shared an unbreakable bond that 
-brought joy and comfort to each other's lives.
+The base *mistral* model also seems to do a good job writing code, and there are specific models that are fine-tuned to write code, like *[codellama](https://ollama.ai/library/codellama)*
 
-Timmy and Max were inseparable. Every morning, they would wake up together,
-Max wagging his tail excitedly at the first sign of sunlight, while Timmy 
-smiled at the sight of his beloved friend. They spent their days exploring 
-the vast meadows surrounding Meadowbrook, playing fetch by the tranquil 
-creek, and basking in the warmth of the sun together.
+For example, I asked *mistral* to write a Python function:
 
-One autumn afternoon, as they frolicked in the golden leaves, a sudden hush
-fell upon the land. Dark clouds gathered on the horizon, foretelling an 
-impending storm. Timmy looked worriedly at Max, who seemed unusually 
-restless. The winds began to howl, and raindrops started pelting down. 
-Realizing that they needed to seek shelter, they hurried towards their cozy
-cabin by the woods.
-
-As they reached the doorstep, a loud crack echoed through the forest, 
-followed by a series of thunderous roars. A giant oak tree had fallen on 
-the cabin, leaving Timmy and Max trapped outside in the storm. The boy was 
-petrified as he clung onto Max, who nuzzled against him, trying to offer 
-what little comfort he could.
-
-The hours passed slowly as they huddled together under a tree, waiting for 
-the storm to subside. Timmy's fears subsided as he felt the warmth of Max's
-presence and the reassuring beat of his heart. The dog remained steadfast, 
-refusing to leave his boy's side even in the face of danger.
-
-When dawn finally broke, they emerged from their hiding place to find that 
-the storm had passed. The townspeople were amazed at how the two had 
-survived the calamity, and everyone marveled at the bond between Timmy and 
-Max. Their tale spread far and wide, inspiring awe and admiration in all 
-who heard it.
-
-From then on, their bond grew even stronger, proving that love knows no 
-bounds, not even the fury of nature itself. And so, they continued their 
-days filled with joy, adventure, and most importantly, their unbreakable 
-bond.
-
->>> Send a message (/? for help)
-```
-
-So, mistral works well.
-
-Context? Ask it to revisit the story
-
-```
->>> rewrite the story with a cat
- Title: The Purrfect Companion
-
-Once upon a time in the quaint little town of Meadowbrook, lived a young 
-boy named Timmy. Timmy was an ordinary boy with an extraordinary companion 
-- his loyal and wise cat, Whiskers. Whiskers was a beautiful Siamese with 
-piercing blue eyes and a coat as soft as silk. They shared an unbreakable 
-bond that brought joy and comfort to each other's lives.
-
-Timmy and Whiskers were inseparable. Every morning, they would wake up 
-together, Whiskers purring softly at the first sign of sunlight, while 
-Timmy smiled at the sight of his cherished friend. They spent their days 
-exploring the quiet corners of Meadowbrook, curling up by the fireplace 
-during chilly afternoons, and sharing whispered secrets in the stillness of
-the night.
-
-One winter evening, as they settled down for a cozy nap by the hearth, the 
-winds began to howl outside, foretelling an impending blizzard. Timmy 
-looked nervously at Whiskers, who seemed unusually restless. The snow 
-started falling heavily, blanketing the town in white. Realizing that they 
-needed to find shelter before the storm worsened, they braved the elements 
-and set out towards their cottage by the lake.
-
-As they reached the doorstep, a sudden gust of wind knocked it open, 
-revealing a tree branch teetering precariously above them. Timmy froze in 
-fear as he realized that the branch was about to fall on them. Whiskers, 
-sensing his boy's terror, leapt into action. He scratched and meowed 
-fiercely at the branch until it finally gave way. The tree limb crashed 
-harmlessly away from them, leaving Timmy amazed and grateful for his brave 
-companion.
-
-They managed to reach their cottage just in time, huddling together by the 
-fireplace as the blizzard raged outside. Whiskers kept watch over Timmy, 
-never leaving his side even for a moment. The boy's fears subsided as he 
-felt the warmth of his cat's presence and the gentle purring that resonated
-through the cabin.
-
-When morning dawned, they emerged from their refuge to find that the storm 
-had passed. The townspeople marveled at how Timmy and Whiskers had survived
-the blizzard, and everyone was in awe of the bond between the boy and his 
-cat. Their tale spread far and wide, inspiring admiration and wonder in all
-who heard it.
-
-From then on, their bond grew even stronger, proving that love knows no 
-bounds, not even the harshest winter storms. And so, they continued their 
-days filled with warmth, companionship, and most importantly, their 
-unbreakable bond.
-
->>> Send a message (/? for help)
-```
-
-```
->>> That was great. No rewrite it so it is half as long.
- Title: The Unbreakable Bond (Short)
-
-In the tranquil town of Meadowbrook lived a boy named Timmy and his 
-extraordinary cat, Whiskers. Their bond was unbreakable as they spent their
-days exploring and sharing secrets. During a winter storm, Timmy and 
-Whiskers huddled together for safety. With Whiskers' brave actions, they 
-survived and the town marveled at their unbreakable bond.
-
->>> Send a message (/? for help)
-```
-
-So, not exactly accurate because it was 1/8 as long instead of 1/2 as long, but still an impressive result running on an 8-year old laptop with no GPU
-
-
-Try code:
-
-```
+```text
 >>> Write a python function that implements the min max algorithm
 ```
 
-The output is:
+The output was:
 
     Title: MinMax Algorithm Function (Python)
 
@@ -281,113 +277,33 @@ The output is:
     of a given board state, generate possible moves for a given board state, 
     and create a copy of the current board state, respectively.
 
+This seemed to be a satisfactory result. *Mistral* also tried to explain the code to the user.
 
+### Managing models using the Ollama CLI
 
-Use the API. In another terminal window:
+To manage a model, use the *ollama* CLI commands, which are preceded by a forward slash. You can see all available commands using the `/?` command. 
 
-```
-$ curl -X POST http://localhost:11434/api/generate -d '{
-  "model": "mistral:7b",
-  "prompt":"What color is the sky?"
- }'
-```
+To exit the model prompt, run the `/bye` command:
 
-Output is provided in small chunks. I show a portion of the total output below.
-
-```
-{"model":"mistral:7b","created_at":"2023-12-14T20:29:38.176298946Z","response":" The","done":false}
-{"model":"mistral:7b","created_at":"2023-12-14T20:29:38.488782789Z","response":" color","done":false}
-{"model":"mistral:7b","created_at":"2023-12-14T20:29:38.822915843Z","response":" of","done":false}
-{"model":"mistral:7b","created_at":"2023-12-14T20:29:39.139350724Z","response":" the","done":false}
-{"model":"mistral:7b","created_at":"2023-12-14T20:29:39.456925434Z","response":" sky","done":false}
-{"model":"mistral:7b","created_at":"2023-12-14T20:29:39.777533809Z","response":" can","done":false}
-{"model":"mistral:7b","created_at":"2023-12-14T20:29:40.095794941Z","response":" vary","done":false}
-{"model":"mistral:7b","created_at":"2023-12-14T20:29:40.409452609Z","response":" depending","done":false}
-{"model":"mistral:7b","created_at":"2023-12-14T20:29:40.737500539Z","response":" on","done":false}
-{"model":"mistral:7b","created_at":"2023-12-14T20:29:41.051624152Z","response":" the","done":false}
-{"model":"mistral:7b","created_at":"2023-12-14T20:29:41.369585894Z","response":" time","done":false}
-...
-...
-{"model":"mistral:7b","created_at":"2023-12-14T20:30:19.391460176Z","response":"","done":true,"context":[733,16289,28793,28705,1824,3181,349,272,7212,28804,733,28748,16289,28793,415,3181,302,272,7212,541,11204,10085,356,272,727,302,1370,304,28446,27552,294,4331,28723,6213,264,3081,1370,28725,272,7212,8045,298,347,264,6833,5045,3181,2940,298,272,21635,302,22950,486,272,13789,28723,1794,4376,24035,304,4376,673,28725,272,7212,541,4249,264,2819,302,9304,2490,2760,28713,28725,12937,28713,28725,442,5897,28725,304,3276,2815,390,272,4376,28742,28713,408,748,460,25028,1059,680,302,272,8599,28742,28713,13789,28723,1794,2125,28725,272,7212,349,6741,2687,28725,562,378,541,506,7448,28725,272,11375,28725,304,799,9645,374,505,9401,9141,10085,356,15912,4331,28723],"total_duration":45452942787,"prompt_eval_count":15,"prompt_eval_duration":4544940000,"eval_count":119,"eval_duration":40902512000}
+```text
+>>> \bye
 ```
 
-To make the output human readable, parse it with the `jq` command. Also, use the `curl` command's`-s` option to silence the progress status bar:
+Depending on the model, you may have more CLI commands available to you. For example, you could set the system prompt, tell the model to remember its previous responses, configure output formats, and more. 
 
-```
-$ curl -s -X POST http://localhost:11434/api/generate -d '{
-    "model": "mistral:7b", 
-    "prompt":"What color is the ocean?"
-  }' \
-  | jq -j .response
-```
+### Stopping Ollama
 
-Now each chunk that was returned in the JSON *response* field is parsed out and joined into one readable paragraph: 
+When you are done using Ollama, stop the Ollama container:
 
-
-```
- The color of the ocean can vary depending on its depth, location, and the presence of suspended
- particles or organisms. In general, the open ocean, particularly in clear weather conditions, 
- appears shades of blue or green due to the absorption and scattering of sunlight by water 
- molecules and dissolved substances. However, shallow waters near coastlines may appear 
- turquoise, green, or other colors depending on their depth, sediment content, and water 
- clarity. Additionally, the ocean's surface color can change due to weather conditions, such as 
- overcast skies or strong waves, which can affect the amount of sunlight reflected or absorbed.
+```text
+$ docker stop ollama
 ```
 
-Good for text but some work required to get usable code format from API:
+You can start it again when you need to use it.
 
-```
-$ curl -s -X POST http://localhost:11434/api/generate -d '{
-    "model": "mistral:7b", 
-    "prompt":"Write a python function that implements the min max algorithm"
-    }' | jq -j .response
-```
+## Conclusion
 
-Here is the response, whcih includes some explanation and a cose sample:
-
-    Here is an example of how to implement the MinMax algorithm for a two-player zero-sum game using Python. In this example, I will assume that you are implementing this algorithm for a simple 2x2 game. Please note that this is just one way of implementing MinMax and there might be other variations depending on the specific use case.
-
-    ```python
-    def minmax(board, depth, maximizing_player):
-        if depth == 0 or check_if_game_over(board):
-            return evaluate_score(board)
-
-        if maximizing_player:
-            best = float('-inf')
-            for move in possible_moves(board):
-                score = minmax(make_move(board, move), depth - 1, False)
-                best = max(best, score)
-            return best
-        else:
-            best = float('inf')
-            for move in possible_moves(board):
-                score = minmax(make_move(board, move), depth - 1, True)
-                best = min(best, score)
-            return best
-
-    def check_if_game_over(board):
-        # Check for a win or a draw here.
-        # This function should return a boolean value indicating if the game is over.
-        pass
-
-    def evaluate_score(board):
-        # Evaluate the score of the board based on some given criteria.
-        # In a simple 2x2 game, this could be just returning 1 for a win and -1 for a loss.
-        pass
-
-    def possible_moves(board):
-        # Return a list of valid moves for the current player.
-        pass
-
-    def make_move(board, move):
-        # Make a move on the board and return the updated board.
-        pass
-    ```
-
-    This code defines a `minmax()` function that recursively calls itself with alternating players to find the best possible move based on the Maximizing (Max) or Minimizing (Min) strategy. The `check_if_game_over()`, `evaluate_score()`, `possible_moves()`, and `make_move()` functions are placeholders for your specific game logic, such as checking if the game is over, evaluating the score of a board state, finding valid moves, and making a move on the board.
-
-
-    https://huggingface.co/
+Running AI models locally is an educational journey, offering deeper insights and more [configuration options](https://huggingface.co/blog/llama2#how-to-prompt-llama-2) than cloud-based solutions. It's especially beneficial for those with powerful hardware, enabling experimentation without relying on third-party services.
 
 
 
