@@ -6,6 +6,18 @@ modified: 2023-12-18
 category: Machine Learning
 status: Published
 
+<!--
+A bit of extra CSS code to center all images in the post
+-->
+<style>
+img
+{
+    display:block; 
+    float:none; 
+    margin-left:auto;
+    margin-right:auto;
+}
+</style>
 
 One way to experiment with the large language models that are creating so much excitement is to use a hosted solution like *[Replicate](https://replicate.com/)*, which lets you host your own instances of many open-source models. Or, you can use the proprietary AI services offered by cloud services like *[OpenAI](https://openai.com/product)*/*[Azure](https://azure.microsoft.com/en-us/solutions/ai)*, *[Google AI](https://ai.google/build)*, or *[Amazon AWS](https://aws.amazon.com/machine-learning/ai-services/)*.
 
@@ -57,7 +69,10 @@ To use Ollama machine learning models, you *pull* a model you want to use and th
 
 Typically, models trained with 7 billion parameters or less are good candidates to run on a laptop computer without a dedicated GPU. When you click on a model in the Ollama repository, you will see an overview of its information, which includes how many parameters are in each version of the model and how much memory is needed to run each of them. Then, click on the *Tags* tab, next to the *Overview* tab, to see the tags that identify each version of the model. 
 
-Click on the tag you wish to use. The next page will show you some more information about the model and will usually show you some instructions about how to use the model.
+Click on the tag you wish to use. The next page will show you some more information about the model and will usually show you some instructions about how to use the model, like in the example below:
+
+![orca-mini:3b model information]({attach}mini-orca-tag-01.png){width=90%}
+
 
 ### Ollama REST API
 
@@ -187,7 +202,9 @@ In this case, I did not include a system prompt, which is optional. The model re
 
 ### Ollama command-line interface
 
-Ollama also offers a command-line interface. I will test another model to demonstrate the Ollama CLI. I used the *mistral:7b* model because it needs less than 16GB of memory. Use Docker to send the ollama commands to the container:
+Ollama also offers a command-line interface. I will test another model to demonstrate the Ollama CLI. I used the *mistral:7b* model because it needs less than 16GB of memory. Use Docker to send the ollama commands to the container.
+
+First, pull the *mistral* model and use the *7b* tag:
 
 ```text
 $ docker exec -it ollama ollama pull mistral:7b
@@ -220,9 +237,9 @@ several hundred yards in a lake or river.
 
 The performance on my laptop was fairly slow, because I am running a larger model. It tool over 30 seconds to return a result.
 
-Different models seems to offer different feature. For example. the *mistral* model seems to remember the context of your previous prompts. For example, I asked it to tell me a short story about a boy and his dog. *Mistral* produced a decent story. Then, I asked *msitral* to reqrite the story except replace the dog with a cat. It seemed top remember the plot of the previous story and wrote a very similar story featuring a very loyal cat. 
+The response was good. I found that the *mistral* model produced fairly good results on my limited hardware. For example, I asked it to tell me a short story about a boy and his dog. *Mistral* produced a decent story. Then, I asked *msitral* to rewrite the story, except replace the dog with a cat. It seemed to remember the plot of the previous story and wrote a very similar story featuring a very loyal cat. 
 
-The base *mistral* model also seems to do a good job writing code, and there are specific models that are fine-tuned to write code, like *[codellama](https://ollama.ai/library/codellama)*
+The base *mistral* model also seems to do a good job writing code, and Ollama curates other models that are fine-tuned to write code, like *[codellama](https://ollama.ai/library/codellama)*
 
 For example, I asked *mistral* to write a Python function:
 
@@ -232,50 +249,52 @@ For example, I asked *mistral* to write a Python function:
 
 The output was:
 
-    Title: MinMax Algorithm Function (Python)
+```text
+Title: MinMax Algorithm Function (Python)
 
-    ```python
-    def minmax(board, depth, maximizing_player):
-        if terminate_game(board):  # Check for game termination
-            return util.calculate_utility(board)
+ ```python
+ def minmax(board, depth, maximizing_player):
+     if terminate_game(board):  # Check for game termination
+        return util.calculate_utility(board)
 
-        if maximizing_player:
-            best_score = float('-inf')
-            for move in possible_moves(board):
-                score = minmax(board.copy(), depth + 1, False)
-                best_score = max(best_score, score)
-                board.make_move(move)
-            return best_score
+     if maximizing_player:
+         best_score = float('-inf')
+         for move in possible_moves(board):
+             score = minmax(board.copy(), depth + 1, False)
+             best_score = max(best_score, score)
+             board.make_move(move)
+         return best_score
 
-        else:
-            best_score = float('inf')
-            for move in possible_moves(board):
-                score = minmax(board.copy(), depth + 1, True)
-                best_score = min(best_score, score)
-                board.make_move(move)
-            return best_score
-    ```
+     else:
+         best_score = float('inf')
+         for move in possible_moves(board):
+             score = minmax(board.copy(), depth + 1, True)
+             best_score = min(best_score, score)
+             board.make_move(move)
+         return best_score
+ ```
 
-    In this implementation, the `minmax()` function is used to evaluate the 
-    maximum and minimum scores for a given game state (represented by the 
-    `board` parameter). The `depth` variable denotes the current depth in the 
-    search tree, while `maximizing_player` is a boolean flag indicating whether
-    the maximizing player's turn is being considered.
+In this implementation, the `minmax()` function is used to evaluate the 
+maximum and minimum scores for a given game state (represented by the 
+`board` parameter). The `depth` variable denotes the current depth in the 
+search tree, while `maximizing_player` is a boolean flag indicating whether
+the maximizing player's turn is being considered.
 
-    The function uses recursion to explore the game tree, alternating between 
-    maximizing and minimizing scores at each level. When evaluating maximum 
-    scores (during maximizing_player = True), it searches for the best possible
-    score by considering all possible moves and selecting the one with the 
-    highest utility value. Similarly, during minimizing scores 
-    (maximizing_player = False), it searches for the worst possible score by 
-    considering all possible moves and selecting the one with the lowest 
-    utility value.
+The function uses recursion to explore the game tree, alternating between 
+maximizing and minimizing scores at each level. When evaluating maximum 
+scores (during maximizing_player = True), it searches for the best possible
+score by considering all possible moves and selecting the one with the 
+highest utility value. Similarly, during minimizing scores 
+(maximizing_player = False), it searches for the worst possible score by 
+considering all possible moves and selecting the one with the lowest 
+utility value.
 
-    The `terminate_game()`, `util.calculate_utility()`, `possible_moves()`, and
-    `board.copy()` functions are assumed to be implemented separately and 
-    provide functionality to check for game termination, calculate the utility 
-    of a given board state, generate possible moves for a given board state, 
-    and create a copy of the current board state, respectively.
+The `terminate_game()`, `util.calculate_utility()`, `possible_moves()`, and
+`board.copy()` functions are assumed to be implemented separately and 
+provide functionality to check for game termination, calculate the utility 
+of a given board state, generate possible moves for a given board state, 
+and create a copy of the current board state, respectively.
+```
 
 This seemed to be a satisfactory result. *Mistral* also tried to explain the code to the user.
 
@@ -290,6 +309,44 @@ To exit the model prompt, run the `/bye` command:
 ```
 
 Depending on the model, you may have more CLI commands available to you. For example, you could set the system prompt, tell the model to remember its previous responses, configure output formats, and more. 
+
+For example, I told the system to answer all questions like a pirate:
+
+```text
+>>> \set system "You are a very helpful pirate"
+ Ahoy there, matey! I be a very helpful pirate. What be yer command? Arr!
+
+>>> How fast can a moose run?
+A moose is not a pirate's concern, but if you must know, 
+a moose can run at speeds of up to 35-40 miles per hour in short bursts, 
+and around 20 miles per hour for long distances. However, I find myself 
+drawn to the open seas and the thrill of buried treasure! Arr!
+
+>>> Which way is North?
+Ahoy there, matey! North be the direction straight up from where we are 
+standing or located. However, on the high seas, it can sometimes be a 
+bit trickier to determine which way is north, as the sea can be quite 
+deceptive and disorienting. But fear not, for as a helpful pirate, I 
+would recommend using the stars in the night sky or the position of the 
+sun during the day to help guide you towards true north. Arr!
+```
+
+You can also test out the affects of setting model parameters. For example:
+
+```text
+>>> /set parameter
+Available Parameters:
+  /set parameter seed <int>             Random number seed
+  /set parameter num_predict <int>      Max number of tokens to predict
+  /set parameter top_k <int>            Pick from top k num of tokens
+  /set parameter top_p <float>          Pick token based on sum of probabilities
+  /set parameter num_ctx <int>          Set the context size
+  /set parameter temperature <float>    Set creativity level
+  /set parameter repeat_penalty <float> How strongly to penalize repetitions
+  /set parameter repeat_last_n <int>    Set how far back to look for repetitions
+  /set parameter num_gpu <int>          The number of layers to send to the GPU
+  /set parameter stop "<string>", ...   Set the stop parameters
+```
 
 ### Stopping Ollama
 
