@@ -30,3 +30,10 @@ It's basically a look at how the field of AI and these smart text-generating mod
 
 The conclusion of the PDF focuses on the rapid advancement and potential of open-source large language models (LLMs), highlighting their growing capabilities in various domains. It underscores the narrowing performance gap between these models and proprietary ones like ChatGPT. The conclusion also emphasizes the importance of these developments for both research and business sectors, providing valuable insights for future investigations and practical applications. The document concludes by advocating for continued exploration and improvement of open-source LLMs to harness their full potential.
 
+
+
+
+Also see:
+"Many options for running Mistral models in your terminal using LLM"
+https://simonwillison.net/2023/Dec/18/mistral/
+
