@@ -19,9 +19,9 @@ img
 }
 </style>
 
-One way to experiment with the large language models that are creating so much excitement is to use a hosted solution like *[Replicate](https://replicate.com/)*, which lets you host your own instances of many open-source models. Or, you can use the proprietary AI services offered by cloud services like *[OpenAI](https://openai.com/product)*/*[Azure](https://azure.microsoft.com/en-us/solutions/ai)*, *[Google AI](https://ai.google/build)*, or *[Amazon AWS](https://aws.amazon.com/machine-learning/ai-services/)*.
+One way that researchers experiment with open-source machine learning models is to use hosted solutions like *[Replicate](https://replicate.com/)* or *[RunPod](https://docs.runpod.io/docs)*. Or, they can use the proprietary AI services offered by cloud services like *[OpenAI](https://openai.com/product)*/*[Azure](https://azure.microsoft.com/en-us/solutions/ai)*, *[Google AI](https://ai.google/build)*, or *[Amazon AWS](https://aws.amazon.com/machine-learning/ai-services/)*.
 
-However, running open-source machine learning models on your own hardware like your laptop computer offers a unique hands-on experience. Currently, the easiest-to-use tool that enables users to run machine learning models on their personal computers is *[Ollama](https://ollama.ai/)*. Some other available tools are *[h2oGPT](https://github.com/h2oai/h2ogpt)*, *[GPT4All](https://gpt4all.io/index.html)*, and *[LLM](https://llm.datasette.io/en/stable/)*.
+However, running open-source machine learning models on your own hardware like your laptop computer offers a unique hands-on experience. One of the easiest-to-use tools that enables this is *[Ollama](https://ollama.ai/)*. Some other available tools are *[h2oGPT](https://github.com/h2oai/h2ogpt)*, *[GPT4All](https://gpt4all.io/index.html)*, and *[LLM](https://llm.datasette.io/en/stable/)*.
 
 This post will describe how to install Ollama on your local PC and use it to run open-source models.
 
