@@ -1,5 +1,5 @@
 title: How Open-Source Large Language Models are evolving
-slug: open-source-lmm
+slug: open-source-lmm-evolving
 summary: New research suggests that open-source machine learning models like Llama have a chance to match the capabilities and performance of proprietary models like ChatGPT.
 date: 2023-12-27
 modified: 2023-12-27
