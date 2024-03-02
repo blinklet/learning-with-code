@@ -65,14 +65,14 @@ To create a simple WordPress instance, follow the steps described below:
 
 First, create a new directory in which you will create the docker compose file. I named my directory *wordpress*.
 
-```bash
+```text
 $ mkdir wordpress
 $ cd wordpress
 ```
 
 Use your favourite text editor to create a Docker Compose file in the new directory:
 
-```bash
+```text
 $ nano docker-compose.yml
 ```
 
@@ -126,7 +126,7 @@ This Docker Compose file defined two services named *wordpress* and *db*, and tw
 
 Run the `docker compose up -d` command to start the two containers. Docker will automatically create a network that connects the two containers together and to the *localhost* IP address on your PC. The `-d` or `--detach` option tells Docker to start the containers in detached mode which lets you use the terminal after the containers start.
 
-```bash
+```text
 $ docker compose up --detach
 ```
 
@@ -216,16 +216,16 @@ The plugin should be installed. Next, click the *Activate* button on the plugin 
 >
 > First, you need to install an editor in the WordPress container. Run the following commands:
 >
->    $ docker exec -it wordpress apt update
->    $ docker exec -it wordpress apt install nano
+>     $ docker exec -it wordpress apt update
+>     $ docker exec -it wordpress apt install nano
 >
 > Edit the */var/www/html/wp-config.php* file in the WordPress container. 
 > 
->    $ docker exec -it wordpress nano /var/www/html/wp-config.php
+>     $ docker exec -it wordpress nano /var/www/html/wp-config.php
 >
 > Add the following text after the last line in the file:
 >
->    define('FS_METHOD', 'direct');
+>     define('FS_METHOD', 'direct');
 >
 > If you are using *nano*, press *CTRL-X* to save the file and exit. This should stop the unwanted FTP dialog from appearing in the future.
 
@@ -307,20 +307,20 @@ For example, in my case I need to disable the old theme and plugins. To accompli
 
 First, connect to a Bash shell in the wordpress container:
 
-```bash
+```text
 $ docker exec -it wordpress bash
 ```
 
 You should now be connected to the wordpress container and already be in the */var/www/html/* directory. Go to the *wp-content/themes/* directory and rename the directory related to the active theme which, in this example, is named *standard-theme*:
 
-```bash
+```text
 # cd wp-content/themes
 # mv standard-theme standard-theme-old
 ```
 
 Then, refresh the browser at the WordPress Dashboard URL: `http://localhost:8080/wp-admin`. If you see a WordPress login screen, then you have probably solved the issue. If you still see an error, move the *plugins* directory:
 
-```
+```text
 # cd ..
 # mv plugins plugins-old
 ```
@@ -333,7 +333,7 @@ At this point you might troubleshoot by re-installing themes and plugins until y
 
 To revert back to an empty configuration, stop all containers and then delete the Docker volumes. Then, restart the WordPress container and database container:
 
-```
+```text
 $ docker compose down
 $ docker volume rm wordpress_db_data
 $ docker volume rm wordpress_html 
@@ -368,13 +368,13 @@ Your changes persist in the Docker volumes you created so you can stop the WordP
 
 To stop the local servers, run the command:
 
-```bash
+```text
 $ docker compose stop
 ```
 
 Then, at some point in the future, you can start the servers again:
 
-```bash
+```text
 $ docker compose start
 ```
 
