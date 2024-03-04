@@ -1,6 +1,6 @@
 title: Create a local copy of a WordPress blog
 slug: wordpress-local-copy-docker
-summary: Use Docker containers to create a WordPress server on your local PC and restore your WordPress backup files to create a local copy of your site.
+summary: Use Docker containers to create a WordPress server on your local PC and restore your WordPress backup files to it.
 date: 2024-03-02
 modified: 2024-03-02
 category: Blogging
@@ -19,7 +19,7 @@ img
 }
 </style>
 
-This post describes how to use Docker containers to create a WordPress server on your local PC and restore your WordPress backup files to create a local copy of your site.
+This post describes how to use Docker containers to create a WordPress server on your local PC and restore your WordPress backup files to it. This creates a local copy of your site.
 
 ## Why create a local copy of WordPress?
 
