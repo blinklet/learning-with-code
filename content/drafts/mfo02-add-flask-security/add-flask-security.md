@@ -264,7 +264,11 @@ class User(db.Model, fsqla.FsUserMixin):
 user_datastore = SQLAlchemyUserDatastore(db, User, Role)
 ```
 
-> **TODO** explain the default model for User and Roles and how to expand them
+> **TODO** explain the default model for User and Roles and how to expand them. Also explai what *fsqla.FsModels.set_db_info* does
+
+
+
+
 
 Back in the *database* folder, create a *setup.py* file that creates the SQLAlchemy database object and the Flask-Security-Too datastore object:
 
@@ -341,6 +345,52 @@ if __name__ == "__main__":
 
 The web site works the same because Flask adds routes to */login* and */register*, among others. My *accounts* blueprint no loger points to the correct routes.
 
+
+# Authorization
+
+Simplest way to use security is to set some views as requiring a logged-in-user
+
+I will set the */account* view to require login. Simply add the *@auth_required* decorator to each route in the *account.py* view file.
+
+```python
+import flask
+from flask_security import auth_required
+
+
+bp = flask.Blueprint(
+    'account',
+    __name__,
+    static_folder='static',
+    template_folder='templates',
+    url_prefix='/account',
+    )
+
+
+@bp.route('/')
+@auth_required()
+def index():
+    return flask.render_template('/account/index.html')
+
+@bp.route('/login')
+@auth_required()
+def login():
+    return flask.render_template('/account/login.html')
+
+@bp.route('/register')
+@auth_required()
+def register():
+    return flask.render_template('/account/register.html')
+```
+
+Now, go to the */account* page in the app and see that you get a request to log in
+
+![](./images/account-login-required-01.png)
+
+
+### Register
+
+First create a user.
+
 Go to `http://127.0.0.1:5000/register`
 
 ![](./images/register-01.png)
@@ -355,88 +405,119 @@ password = password
 Click on the *submit* button
 
 
-config
-Add database setup and models
-add flask-security config to app.py
-add correct links to account page
+After registering, you are automatically also logged in so if you go to the */login* route, you will be redirected to the */* route, the home page:
 
-test
-show that the login screen loses my nav bar and formtting
-fix by customizing templates
-show the security templates in Github or in the venv folder
+![](./images/home-01.png)
 
-show database content
-show the user and roles classes in Github or in the venv folder
+test that you are logged in by accessing the *account* page:
+
+Now you can see the */account* page
+
+![](./images/account-login-accepted-01.png)
 
 
-Default account routes used by Flask-Security-Too are /login and /register. So my old system with an *account* blueprint using /account/login and /account/register will not work.
+### Fix links
 
-I could maybe try to "overload" parts of the *security* blueprint by creating and registering my own security blueprint, or I could configure settings like SECURITY_LOGIN_URL (https://flask-security-too.readthedocs.io/en/stable/configuration.html) so the routes appear where I want them but, let's keep things simple and let Flask-Security-Too do what it wants, for now. I will remove the *account* route from my program and use the routes provided by Flask-Security-Too
+The Nav bar can be updated to include linke to the */login*, */logout*, and */register* routes. They can be found using the *security_url_for()* method. 
 
-I changed the *home* blueprint so it has link that allow users to login and register.
-Also, the /templates/shared_layout.html -- changed the nav links
+```html
+<!-- templates/shared_layout.html -->
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>{% block title %}Music Festival Website{% endblock %}</title>
+    <link rel="stylesheet" href="/static/css/styles.css" />
+    {% block additional_css %}{% endblock %}
+</head>
+
+<body>
+    <nav>
+        <a href="/">Home</a>
+        <a href="{{ url_for('admin.index') }}">Admin</a>
+        <a href="{{ url_for('account.index') }}">Account</a>
+        <a href="{{ url_for_security('login') }}">Login</a>
+        <a href="{{ url_for_security('register') }}">Register</a>
+        <a href="{{ url_for_security('logout') }}">Logout</a>
+    </nav>
+    <div class="main_content">
+        {% block main_content %}
+        <h1>This is a simple example page</h1>
+        {% endblock %}
+    </div>
+</body>
+</html>
+```
+
+### Logout
+
+You need to logout, click on the new *Logout* link in teh navbar or just enter the rout manually in the browser: `http://127.0.0.1:5000/logout`
+After you logout, you are redirected to the home page again so you get no feedback,
+
+![](./images/logout-01.png)
+
+You can verify you are logged out by trying to access the account page again.
+
+### Login
+
+Click on the *Login* link or Manually type in the /login route, `http://127.0.0.1:5000/login`.
+
+![](./images/login-01.png)
+
+Notice that the navbar disappears. This is because I did not customize any of the Flask-Security-Too templates, yet. I'll cover that topic in another post.
+
+Enter the userid and password and you are logged in. Again, because this simple program does not do anything with user roles and permissions, there is not more to do.
 
 
-To override the templates used by Flask-Security: https://flask-security-too.readthedocs.io/en/stable/customizing.html
+# Final program
 
-1) Go to Flask-Security-Too Git repo
-2) Copy the login template (https://github.com/Flask-Middleware/flask-security/blob/master/flask_security/templates/security/login_user.html)
-3) Create a folder named security within my app's templates folder
-4) Create a template with the same name for the template you wish to override
-  a) In this case: /templates/security/login_user.html
-
-
-
-
-
-
-
-
-
-
-
-## app.py
-
-Add `from mfo.database import db` and `db.base.init_app(app)` to the app file to configure flask-sqlalchemy using the Flask app configuration established in the *config.py* file. The add the`db.create_all()` statement to build the database tables, if they do not yet exist
-
-```python
-# mfo/app.py
-
-import flask
-
-from mfo.database.setup import db
-
-from mfo.admin import admin
-from mfo.home import home
-from mfo.account import account
-
-
-app = flask.Flask(__name__)
-app.config.from_pyfile('config.py', silent=True)
-
-# Configure Flask extensions
-db.init_app(app)
-
-# Register blueprints
-app.register_blueprint(home.bp)
-app.register_blueprint(account.bp)
-app.register_blueprint(admin.bp)
-
-
-if __name__ == "__main__":
-    app.run()
+```text
+mfo
+├── account
+│   ├── account.py
+│   ├── __init__.py
+│   ├── static
+│   └── templates
+│       └── account
+├── admin
+│   ├── admin.py
+│   ├── __init__.py
+│   └── templates
+│       └── admin
+│           └── index.html
+├── database
+│   ├── __init__.py
+│   ├── models
+│   │   └── users.py
+│   └── setup.py
+├── home
+│   ├── home.py
+│   ├── __init__.py
+│   └── templates
+│       └── home
+│           └── index.html
+├── __init__.py
+├── requirements.txt
+├── static
+│   └── css
+│       └── styles.css
+├── templates
+|   └── shared_layout.html
+|
+├── app.py
+├── config.py
+└── dotenv_example
 ```
 
 
+# Conclusion
 
-see:
-https://flask-security-too.readthedocs.io/en/stable/quickstart.html#basic-sqlalchemy-application
-https://github.com/hrishikeshrt/flask-bootstrap-anywhere/tree/master
+Added Flask-Security-Too
+Basic checks for user login on account page
 
-https://blog.teclado.com/user-authentication-flask-security-too/
-https://blog.teclado.com/customise-pages-emails-flask-security-too/
-https://blog.teclado.com/email-confirmation-flask-security-too/
+Lots more to learn. Many options can be configured
 
 
-https://jinja.palletsprojects.com/en/3.0.x/tricks/   explains the "set active_page" variable in flask-bootstrap-anywhere templates
-Useful for highlighting active page in nav bar
+
+
