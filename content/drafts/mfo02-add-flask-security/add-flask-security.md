@@ -87,6 +87,7 @@ To review how the project currently runs, activate the virtual environment
 ```text
 $ cd mfo
 $ python3 -m venv .venv
+$ source .venv/bin/activate
 (.venv) $ pip install -r requirements.txt
 ```
 
