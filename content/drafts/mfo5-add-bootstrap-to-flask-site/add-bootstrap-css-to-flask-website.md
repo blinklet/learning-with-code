@@ -73,6 +73,8 @@ https://wrapbootstrap.com
 Free stock photos
 https://unsplash.com
 
+Examples
+https://getbootstrap.com/docs/5.0/examples/
 
 # Boostrap-Flask
 
@@ -263,7 +265,9 @@ Then text the page. Go to the *Login* page
 
 ![](./images/bootstrap-002.png)
 
-See that the form is styled more attractively but the fields stretch all the way accross the page. We may want to make the login panel fit into a more compact space. One way to do this is to use the Boostrap grid.
+See that the form is styled more attractively but the fields stretch all the way accross the page. We may want to make the login panel fit into a more compact space. One way to do this is to use the Boostrap grid. We'll look at that later.
+
+Do the same for other template that have forms in them. At this point, that is the *security/change_password.html* and *security/register_user.html* templates.
 
 ## Navbar
 
@@ -296,7 +300,90 @@ In *templates/shared_layout.html*, replace the *<nav>..</nav>* section with the 
                 <a class="nav-link" href="{{ url_for_security('logout') }}">Logout</a>
             {% endif %}
         </div>
-      </div>
     </div>
-  </nav>
-  ```
+</nav>
+```
+
+# Bootstrap styles for information pages
+
+## Remove custom styles
+
+First, I commented out the CSS styles I previously created in the files, *static/css/style.css* and *account/static/css/styles.css*.
+
+## Style the shared layout
+
+Change the `<bod>` tag to `<body class="bg-light">` to give the background a light-grey color
+
+Change the `<div class="main_content">` to `<div class="container_fluid p-3">` to give each page a bit of padding around it
+
+
+## Style the login page
+
+Center the login form. Place the form in a smaller space.
+
+Around the login content create divs for the Bootstrap row and column. You need these so that the table element lign up with the heading on the login page, and to give some space around the login form. Also, color the row white so it stands out a bit.
+
+```html
+<div class="row pt-4 pb-4 bg-white">
+  <div class="col-sm-2">
+  </div>
+  <div class="col-sm-8">
+    ...
+  </div>
+  <div class="col-sm-2">
+  </div>
+</div>
+```
+
+[Add Bootstrap classes](https://stackoverflow.com/questions/34659619/flask-security-and-bootstrap) to the *render_field_with_errors* and *render_field* macros in the *templates/login_user.html* file. Use the `class_=` attribute
+
+For example:
+
+```html
+{{ render_field_with_errors(login_user_form.email, class_="form-control mb-2") }}
+```
+
+the template will look like the following:
+
+```html
+<div class="row pt-4 pb-4">
+    <div class="col-sm-2">
+    </div>
+    <div class="col-sm-8">
+        {% include "security/_messages.html" %}
+        <h1 class="legend">{{ _fsdomain('Login') }}</h1>
+        <form action="{{ url_for_security('login') }}{{ prop_next() }}" method="post" name="login_user_form">
+            {{ login_user_form.hidden_tag() }}
+            {{ render_form_errors(login_user_form) }}
+            {% if "email" in identity_attributes %}{{ render_field_with_errors(login_user_form.email, class_="form-control mb-2") }}{% endif %}
+            {% if login_user_form.username and "username" in identity_attributes %}
+            {% if "email" in identity_attributes %}<h3>{{ _fsdomain("or") }}</h3>{% endif %}
+            {{ render_field_with_errors(login_user_form.username, class_="form-control mb-2") }}
+            {% endif %}
+            {{ render_field_with_errors(login_user_form.password, class_="form-control mb-2") }}
+            {{ render_field_with_errors(login_user_form.remember, class="form-check-input mb-3 ms-2") }}
+            {{ render_field_errors(login_user_form.csrf_token) }}
+            {{ render_field(login_user_form.submit, class_="btn btn-primary mb-2") }}
+        </form>
+        <!-- removed other content -->
+    </div>
+    <div class="col-sm-2">
+    </div>
+</div>
+```
+
+And this reults in a "good-enough" login page:
+
+![](./images/bootstrap-010.png)
+
+
+Now, do the same to the *Register* template and the *Change Password* template
+
+# Conclusion
+
+I still need to add styles to teh *Home* page, *Admin* page, and *Account* page but I'll do that when I create content for those pages.
+
+For now, you can see that the default Bootstrap styles, along with the container padding I defoned in teh sgared layout template, create a not-bad-looking home page:
+
+![](./images/bootstrap-011.png)
+
