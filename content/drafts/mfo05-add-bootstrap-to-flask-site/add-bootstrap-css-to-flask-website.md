@@ -381,9 +381,9 @@ Now, do the same to the *Register* template and the *Change Password* template
 
 # Conclusion
 
-I still need to add styles to teh *Home* page, *Admin* page, and *Account* page but I'll do that when I create content for those pages.
+I still need to add styles to the *Home* page, *Admin* page, and *Account* page but I'll do that when I create content for those pages.
 
-For now, you can see that the default Bootstrap styles, along with the container padding I defoned in teh sgared layout template, create a not-bad-looking home page:
+For now, you can see that the default Bootstrap styles, along with the container padding I defined in the sgared layout template, create a not-bad-looking home page:
 
 ![](./images/bootstrap-011.png)
 
