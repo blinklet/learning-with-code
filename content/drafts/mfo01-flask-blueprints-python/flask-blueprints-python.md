@@ -1,10 +1,10 @@
 title: Use blueprints to organize a Flask application
-slug: flask-blueprints-python
-summary: I wrote this post to clearly describe the rules Flask follows when searching for template files in blueprint folders, and to provide concrete examples.
+slug: flask-blueprints-python-templates
+summary: This post demonstrates Flask blueprints and clearly describes the rules Flask follows when searching for template files in blueprint folders, and provides concrete examples.
 date: 2024-04-01
 modified: 2024-04-01
 category: Flask
-status: Draft
+<!-- status: published -->
 
 
 <!--
@@ -22,35 +22,55 @@ img
 
 I am starting a large Flask project so I needed to define the project structure. After some research and testing, I decided I will organize application code and resources into [Flask Blueprints](https://flask.palletsprojects.com/en/3.0.x/blueprints/). 
 
-I wrote this post to clearly describe the rules Flask follows when searching for template files in blueprint folders, and to provide concrete examples. Flask searches for blueprint resources in template files using different rules than when it searches for static files. If you do not read the Flask documentation very carefully, you might end up getting confused. I want to save readers from experiencing the same aggravation I encountered when developing the view functions and template files in large Flask applications.
+I wrote this post to clearly describe the rules Flask follows when searching for template files, and to provide concrete examples. Flask searches for blueprint templates in all registered template folders. I hope this post helps readers better understand which template or static file will be rendered by each view function. I want to save readers from experiencing the same aggravation I encountered when I started developing the view functions and template files in a large Flask application.
 
-# Start with a small example
+## A small example
 
-I structured this post like a tutorial that you can follow along with. I start with a small "toy" application similar to that which you may have seen in many other Flask tutorials. Then, I will add blueprints and additional functionality.
+I start with a small "toy" application, similar to that which you may have seen in many other Flask tutorials. Then, I will add blueprints and additional functionality.
 
 First, I created a project folder that contains a sub-folder with the application source code. The project folder also contains a *[dotenv](https://learningwithcode.com/use-environment-variables-python)* file that defines environment variable values used to configure the application, and a *requirements.txt* file.
+
+```text
+$ mkdir project
+$ cd project
+$ mkdir mfo
+$ mkdir mfo/templates
+$ touch mfo/templates/index.html
+$ mkdir -p mfo/static/css
+$ touch mfo/static/css/style.css
+$ touch requirements.txt
+$ touch .env
+$ touch mfo/app.py
+$ touch mfo/config.py
+```
 
 The initial project structure is shown below:
 
 ```text
 project
 ├── mfo
-│   ├── static
-│   │   └── css
-│   │       └── styles.css
-│   ├── templates
-│   │   └── base.html
-│   ├── app.py
-│   └── config.py
+│   ├── app.py
+│   ├── config.py
+│   ├── static
+│   │   └── css
+│   │       └── style.css
+│   └── templates
+│       └── index.html
 ├── .env
 └── requirements.txt
 ```
 
 The application is called *MFO* so the application folder is named *mfo*.
 
-## The Flask application file
+### The Flask application file
 
-In this simple example, the Flask application file *app.py* creates the Flask app object, configures it, and defines a single view function. The file is listed below:
+In this simple example, the Flask application file *app.py* creates the Flask app object, configures it, and defines a single view function. 
+
+```text
+$ nano mfo/app.py
+```
+
+The file is listed below:
 
 ```python
 # mfo/app.py
@@ -74,11 +94,19 @@ def create_app():
     return app
 ```
 
-## The configuration files
+### The configuration files
 
 Two files work together to provide some initial configuration to the Flask application: the *config.py* file and the *dotenv* file.
 
+#### config.py
+
 The *config.py* file reads environment variable values and uses them to define the [application configuration values](https://flask.palletsprojects.com/en/3.0.x/config/#builtin-configuration-values).
+
+```text
+$ nano mfo/config.py
+```
+
+The *config.py* file contents are listed below:
 
 ```python
 # mfo/config.py
@@ -96,7 +124,15 @@ EXPLAIN_TEMPLATE_LOADING = os.environ.get("FLASK_EXPLAIN_TEMPLATE_LOADING")
 
 By default, the *dotenv.load_dotenv()* method looks for the *dotenv* file in the current working directory or any parent directories and sets the shell's environment variables with the values found in that file. If environment variables are already set in the shell, the *load_dotenv()* method will not overwrite them.
 
-The *dotenv* file, *.env*, is stored in the project folder and is listed below: 
+#### .env
+
+Create a *dotenv* file, named *.env*:
+
+```text
+$ nano .env
+```
+
+The *.env* file contents are listed below: 
 
 ```python
 # .env
@@ -109,11 +145,19 @@ FLASK_DEBUG = True
 FLASK_EXPLAIN_TEMPLATE_LOADING = True
 ```
 
-## The template file
+Note that the *FLASK_EXPLAIN_TEMPLATE_LOADING* variable must be set to *True* so that Flask will display the template search paths on the terminal when it tries to render a template file. We will use this when debugging template problems later in this tutorial.
+
+### The template file
 
 Most Flask sites use a base template that defines the common look of the web site. Other templates will extend the base template to create specific web pages.
 
-Create the base template, *project/mfo/templates/base.html* as listed below:
+Create the base template, *mfo/templates/base.html*:
+
+```text
+$ nano mfo/templates/base.html
+```
+
+The base template is listed below:
 
 ```html
 <!-- mfo/templates/base.html -->
@@ -138,23 +182,32 @@ Create the base template, *project/mfo/templates/base.html* as listed below:
 
 Then, create an *index.html* template that contains the content to be displayed when the application calls the *index* view function.
 
+```text
+$ nano mfo/templates/index.html
+```
+
 ```html
 <!-- mfo/templates/index.html -->
 
 {% extends "base.html" %}
 
-{% block title %}Main App Index page page{% endblock %}
+{% block title %}Home page{% endblock %}
 
 {% block content %}
-    <h1>Main Index Page</h1>
+    <h1>Home page</h1>
 {% endblock %}
-
 ```
 
 
-## The CSS file
+### The CSS file
 
 Flask applications store CSS files in the *static* folder. To demonstrate how blueprints use their own *static* folders, I created a small bit of CSS styling for the base template. The base CSS file is named *styles.css* and is stored in the *mfo/static/css* directory:
+
+```text
+$ nano mfo/static/css/styles.css
+```
+
+The file contents are listed below:
 
 ```css
 /*  mfo/static/css/styles.css  */
@@ -176,7 +229,13 @@ To test this simple example, install the required packages and run the Flask pro
 
 First, create a *requirements.txt* file in the project folder:
 
+```text
+$ nano requirements.txt
 ```
+
+The file contents are listed below:
+
+```text
 # requirements.txt
 
 flask
@@ -191,8 +250,8 @@ $ python3 -m venv .venv
 
 Finally, activate the virtual environment and install the requirements:
 
-```
-$ source venv/bin/activate
+```text
+$ source .venv/bin/activate
 (venv) $ pip install -r requirements.txt
 ```
 
@@ -202,14 +261,14 @@ From the project folder, run the flask application:
 $ flask --app mfo.app run
 ```
 
-Open a web browser and navigate to *http//:localhost:5000*. You will see that the app serves up the base template and that its HTML code is styled as defined by the base CSS file:
+Open a web browser and navigate to *http://localhost:5000*. You will see that the app serves up the base template and that its HTML code is styled as defined by the base CSS file:
 
-![](./images/basic-page-01.png)
+![Home page]({attach}basic-page-01.png)
 
 When you look at the terminal screen, you should see some output that shows how Flask searched for the *index.html* and *base.html* templates and the CSS file.
 
 ```text
-[2024-04-28 16:24:40,270] INFO in debughelpers: Locating template '/index.html':
+[2024-04-30 12:31:18,140] INFO in debughelpers: Locating template '/index.html':
     1: trying loader of application 'mfo.app'
        class: jinja2.loaders.FileSystemLoader
        encoding: 'utf-8'
@@ -217,7 +276,7 @@ When you look at the terminal screen, you should see some output that shows how 
        searchpath:
          - /home/brian/project/mfo/templates
        -> found ('/home/brian/project/mfo/templates/index.html')
-[2024-04-28 16:24:40,274] INFO in debughelpers: Locating template 'base.html':
+[2024-04-30 12:31:18,144] INFO in debughelpers: Locating template 'base.html':
     1: trying loader of application 'mfo.app'
        class: jinja2.loaders.FileSystemLoader
        encoding: 'utf-8'
@@ -225,39 +284,51 @@ When you look at the terminal screen, you should see some output that shows how 
        searchpath:
          - /home/brian/project/mfo/templates
        -> found ('/home/brian/project/mfo/templates/base.html')
-127.0.0.1 - - [28/Apr/2024 16:24:40] "GET / HTTP/1.1" 200 -
-127.0.0.1 - - [28/Apr/2024 16:24:40] "GET /static/css/styles.css HTTP/1.1" 200 -
+127.0.0.1 - - [30/Apr/2024 12:31:18] "GET / HTTP/1.1" 200 -
+127.0.0.1 - - [30/Apr/2024 12:31:18] "GET /static/css/styles.css HTTP/1.1" 200 -
 ```
 
 No blueprints are defined yet so Flask has only one search path for template files. As you can see in the example above, the current search path is: *project/mfo/templates/*.
 
-## Next steps
+### Next steps
 
 That was the basic scenario: Flask had only one folder in which it could look to find template files and one folder in which it could look to find static files like CSS files.
 
 Next, we will move the view functions into Flask blueprint folders and register Flask blueprints. This will show how Flask finds template and static files in those folders.
 
-# Create a Flask blueprint for the home page
+## Create a Flask blueprint for the home page
 
-Creating Flask blueprints is easy and is a great way to organize your application's view functions.
+Flask Blueprints are a powerful feature in Flask that allow you to organize your application into smaller, reusable components, which improves application maintainability and scalability. A Flask blueprint organizes a related group of views, templates, static files, and other code around a specific feature or sub-application. 
 
-First, I want to move the view function in the *app.py* file into a blueprint so I can write all my view functions in other files. This way, the *app.py* file will exclusively contain application configuration code and all the application's actual functionality will be separated into easy-to-manage blueprints.
+When you define a blueprint, you can specify folders for templates and static files that are local to that blueprint. This encapsulation makes it easier to manage resources that are specific to a component.
 
-Note that the *home* blueprint is a special case. It contains the view functions used by the application's home page so we want the URL prefix to be the application's root folder instead of the blueprint folder. 
+By default, Flask looks for templates in the templates folder at the root of your application. For blueprints, you can set a *template_folder* that points to a folder relative to the blueprint's Python file. This allows blueprints to have their own isolated set of templates.
+
+Similar to templates, you can specify a *static_folder* for each blueprint to keep its static files, such as CSS, JavaScript, and images, organized and separate from those of other blueprints or the main application.
+
+### Create the blueprint folder
+
+Create a new folder named *home* in the *mfo* folder:
 
 ```text
 $ pwd
-/home/brian/project/mfo
-$ mkdir home
+/home/brian/project/
+$ mkdir mfo/home
 ```
 
 Then create a file named *views.py* in the *home/* folder. 
 
-```
-$ nano home/views.py
+```text
+$ nano mfo/home/views.py
 ```
 
-Move the *index* view function from the *app.py* file to this new *views.py* file and declare it as a blueprint view function. In this special case, we do not need to define the blueprint's *templates* or *static* folder.:
+### Move view functions from app to blueprint
+
+Move the *index* view function from the *app.py* file to this new *views.py* file and declare it as a blueprint view function. This way, the *app.py* file will exclusively contain application configuration code and all the application's actual functionality will be separated into easy-to-manage blueprints.
+
+The *home* blueprint is a special case. It contains the view functions used by the application's home page so we want the URL prefix to be the application's root folder instead of the blueprint folder. We did not need to create any template files for the home blueprint's *index.html* function because the blueprint's URL prefix is the application's root folder so the existing *index.html* template in the *mfo/templates* folder will be used.
+
+
 
 ```python
 # mfo/home/views.py
@@ -275,7 +346,15 @@ def index():
     return flask.render_template('/index.html')
 ```
 
+In this special case, the bluepint's *url_prefix* is the same as the main application's prefix, which is the root URL, "/". So, we do not need to define the blueprint's *template_folder* or *static_fol.
+
+### Register the *home* blueprint
+
 Then, change the *app.py* file. Remove the view function and replace it with the blueprint registration. Be sure to import the file containing the blueprint.
+
+```text
+$ nano mfo/app.py
+```
 
 The new *app.py* file looks like the following:
 
@@ -299,65 +378,221 @@ def create_app():
     return app
 ```
 
-We did not need to create any template files for the home blueprint's *index.html* function because the blueprint's URL is the application's root folder so the existing *index.html* template in the *mfo/templates* folder will be used.
+When testing the application, now, it should appear to work the same as before. We re-organized the application but did not change or add any functionality. We moved the view function logic for the home page routes to the *home* blueprint.
 
-When testing the application now, it should appear to work the same as before. All we did was move the view function logic for home page routes to the *home* blueprint.
+## Create the *account* blueprint
 
-# Create an *accounts* page blueprint
-
-I want to create a new page for "accounts". It will eventually support account functions like logging into a user acount, displaying user information if the user is logged in, and registering new users. For now, it will just be a dummy page with two links to a "login" dummy page and a "register" dummy page. 
+I want to create a new page for "accounts". It will eventually support functions like logging into a user account, displaying user information if the user is logged in, and registering new users. For now, it will just be a dummy page with two links to a "login" dummy page and a "register" dummy page. The URL for the account page will be */account*, and the same URL will be the prefix for all account management pages.
 
 I will implement this new page as a blueprint with its own view functions, templates, and static files.
 
-In the *mfo* application folder, I created a new folder named *account*. In that folder, I created a blueprint file containing the blueprint definition and the routes supported by the blueprint. I also created new subfolders named *template* and *static*, which will contain the template files and CSS files that support the "accounts" page.
-
-```
-$ mkdir account
-$ mkdir account/templates
-$ mkdir -p account/static/css
-```
-
-
-
-
-
-
-
-
-The blueprint folder structure will look like below:
+In the *mfo* application folder, I created a new folder named *account*. In that folder, I also created new subfolders named *template* and *static*, which will contain the template files and CSS files that support the "accounts" page.
 
 ```text
-mfo
-├── account
-│   ├── views.py
-│   ├── static
-│   │   └── css
-│   │       └── styles.css
-│   └── templates
-│       └── account
-│           ├── index.html
-│           ├── login.html
-│           └── register.html
-...
+$ mkdir mfo/account
+$ mkdir mfo/account/templates
+$ mkdir -p mfo/account/static/css
 ```
 
-I modified the main Flask application file, *app.py*, so it registered the new *account* blueprint. In addition, I changed the main template name to *shared_layout.html* because it will be a shared resource used by all the blueprint templates. It contains navigation links to the different site pages which are, at this point, the *home* page and the *account* page.
+### Create the blueprint
 
-The remaining files in the application folder have the following structure, which is the same as the simple example I started with, except the template's file name is different:
+In the *account* blueprint folder, I created a views file containing the blueprint definition and the routes supported by the blueprint. 
 
 ```text
-...
-├── static
-│   └── css
-│       └── styles.css
-├── templates
-│   ├── base.html
-│   └── index.html
-├── app.py
-└── config.py
+$ nano mfo/account/views.py
 ```
 
-## The blueprint file
+Define the *account* blueprint. This time we will declare the template and static folder because we will have a unique URL prefix for this blueprint and we want it to have its own resources.
+
+```python
+# account/views.py
+
+import flask
+
+bp = flask.Blueprint(
+    'account',
+    __name__,
+    static_folder='static',
+    template_folder='templates',
+    url_prefix='/account',
+    )
+```
+
+Set the *url_prefix* to */account*. All URLs related to this blueprint will start with that prefix. For example, Flask will look for templates in the *mfo/account/templates* folder. 
+
+Then, create the view functions that will render the *index.html* template associated with the *account* blueprint:
+
+
+```python
+@bp.route('/')
+def index():
+    return flask.render_template('/index.html')
+```
+
+> **Note:** This is actually incorrect, but I am using it to illustrate the main thesis of this post.
+
+### Register the blueprint
+
+Modify the main Flask application file so it imports the *account* blueprint and registers it. 
+
+```text
+$ nano mfo/app.py
+```
+
+The new *app.py* file will look like below:
+
+```python
+# mfo/app.py
+
+import flask
+import mfo.home.views
+import mfo.account.views
+
+def create_app():
+
+    # Create app object
+    app = flask.Flask(__name__)
+
+    # Configure the app
+    app.config.from_pyfile('config.py')
+
+    # Register blueprints
+    app.register_blueprint(mfo.home.views.bp)
+    app.register_blueprint(mfo.account.views.bp)
+
+    return app
+```
+
+### The blueprint static folder
+
+Create a CSS file named *styles.css* in the *account* template to demonstrate how the blueprint finds its own bundled static files. 
+
+```text
+$ nano mfo/account/static/css/styles.css
+```
+
+The main application's CSS file colored all *Heading1* tags black, along with other styles, but the CSS file in the *account* blueprint will change *Heading1* text to red. 
+
+```css
+/* mfo/account/static/css/styles.css */
+
+h1 {
+    color: rgb(255, 0, 0);
+  }
+```
+
+Any template used by the *account* blueprint can add this additional CSS file and, in this example, the *login.html* template will add this CSS file. 
+
+### The *account* blueprint's *index.html* template
+
+Create an *index.html* template that will serve as the *account* main page. It will contain some information about a user's account.
+
+```text
+$ nano mfo/account/templates/index.html
+```
+
+The new template also points to the blueprint's CSS file using the Flask *url_for()* method. The blueprint's CSS file will extend the CSS from the Flask application's main CSS file. This demonstrates how the blueprint finds its own bundled static files.
+
+```html
+<!-- account/templates/index.html -->
+
+{% extends "base.html" %}
+{% block title %}User Information{% endblock %}
+
+{% block content %}
+    <div>
+        <h1>Your user account</h1>
+
+        <div>
+            Welcome to your account!
+        </div>
+    </div>
+{% endblock %}
+
+{% block additional_css %}
+    <link rel="stylesheet" href="{{ url_for('account.static', filename='css/styles.css') }}" >
+{% endblock %}
+```
+
+### *url_for()* usage with blueprints
+
+In Flask, the handling of static files and templates can vary significantly between the main application and blueprints, primarily due to how Flask's *url_for()* method resolves paths. For the main application, templates and static files are typically stored in default directories (templates and static, respectively). When referencing these files, *url_for()* simply requires the filename as its argument, since it automatically refers to these default directories. 
+
+However, in the context of blueprints, each blueprint can have its own static and templates folders, which allows them to operate somewhat independently of the main application structure. When using *url_for()* to generate URLs for static files within a blueprint, you need to include the blueprint's name as a prefix. For example, *url_for('account.static', filename='css/styles.css')* tells Flask to look in the static folder of the *account* blueprint and to find the file *css/styles.css* in that static folder. 
+
+This organization helps in keeping resources localized to the blueprint, enhancing modularity and maintainability of the application. Templates within blueprints are referenced similarly, which ensures that Flask renders the correct template even if multiple blueprints have templates with the same name by maintaining a unique namespace for each blueprint.
+
+### Testing the *account* blueprint
+
+Test the blueprint by running the flask application and entering the *account* blueprint's URl, *http://localhost:5000/account*, in the web browser. 
+
+![Wrong template for *account* page]({attach}basic-page-02.png)
+
+You expect to see the account template with red text and some information about the account page. Instead, you see the main application's home page again.
+
+Look at the terminal and see how Flask searched for the template:
+
+```text
+[2024-04-30 12:51:53,481] INFO in debughelpers: Locating template '/index.html':
+    1: trying loader of application 'mfo.app'
+       class: jinja2.loaders.FileSystemLoader
+       encoding: 'utf-8'
+       followlinks: False
+       searchpath:
+         - /home/brian/project/mfo/templates
+       -> found ('/home/brian/project/mfo/templates/index.html')
+    2: trying loader of blueprint 'account' (mfo.account.views)
+       class: jinja2.loaders.FileSystemLoader
+       encoding: 'utf-8'
+       followlinks: False
+       searchpath:
+         - /home/brian/project/mfo/account/templates
+       -> found ('/home/brian/project/mfo/account/templates/index.html')
+Warning: multiple loaders returned a match for the template.
+  The template was looked up from an endpoint that belongs to the blueprint 'account'.
+  Maybe you did not place a template in the right folder?
+  See https://flask.palletsprojects.com/blueprints/#templates
+[2024-04-30 12:51:53,485] INFO in debughelpers: Locating template 'base.html':
+    1: trying loader of application 'mfo.app'
+       class: jinja2.loaders.FileSystemLoader
+       encoding: 'utf-8'
+       followlinks: False
+       searchpath:
+         - /home/brian/project/mfo/templates
+       -> found ('/home/brian/project/mfo/templates/base.html')
+    2: trying loader of blueprint 'account' (mfo.account.views)
+       class: jinja2.loaders.FileSystemLoader
+       encoding: 'utf-8'
+       followlinks: False
+       searchpath:
+         - /home/brian/project/mfo/account/templates
+       -> no match
+127.0.0.1 - - [30/Apr/2024 12:51:53] "GET /account/ HTTP/1.1" 200 -
+127.0.0.1 - - [30/Apr/2024 12:51:53] "GET /static/css/styles.css HTTP/1.1" 304 -
+```
+
+The wrong template was used because the application is looking in all *templates* folders for a file named *index.html*. It finds that file first in the main application's *templates* folder and it uses the first *index.html* file it finds.
+
+## Fix the template problem
+
+To solve this problem, you must give every Flask template file a unique name. The [Flask documentation recommends creating a seemingly-redundant folder](https://flask.palletsprojects.com/en/3.0.x/blueprints/#templates) in the blueprint's *templates* directory that has the same name as the blueprint, and storing the template files there. This creates a unique "namespace" for each blueprint's template files. 
+
+For example: all *account* template files will be stored in the folder: *mfo/account/templates/account* and will be referenced in the *render_template()* method with a name that includes the extra *account* folder as a prefix. For example, the *account* blueprint's index template would be referenced as *account/index.html*.
+
+First, create the *account* subfolder and move the *account* blueprint's *index.html* template file to it:
+
+```text
+$ mkdir mfo/account/templates/account
+$ mv mfo/account/templates/index.html mfo/account/templates/account/
+```
+
+Then, in the blueprint's *views.py* file, change the file name used when you call Flask's *render_template* method from */index.html* to */account/index.html*:
+
+```textvvvvvvvvv
+$ nano mfo/account/views.py
+```
+
+The new version of *views.py* will look like below:
 
 ```python
 # account/views.py
@@ -375,359 +610,33 @@ bp = flask.Blueprint(
 @bp.route('/')
 def index():
     return flask.render_template('/account/index.html')
-
-@bp.route('/login')
-def login():
-    return flask.render_template('/account/login.html')
-
-@bp.route('/register')
-def register():
-    return flask.render_template('/account/register.html')
 ```
 
-## Registering the blueprint
+If we want to use the file name *index.html* for the "main" template associated with each blueprint, then we also need to ensure the home page template has its own unique namespace. 
+
+To give the home page template its own namespace, move the application's home page to a new *home* subfolder it the main *templates* folder.
+
+```text
+$ mkdir mfo/templates/home
+$ mv mfo/templates/index.html mfo/templates/home/
+```
+
+Finally, modify the *home* blueprint's *views.py* file so it will reference the new home template location:
+
+```text
+$ nano mfo/home/views.py
+```
+
+The changes will look like below:
 
 ```python
-# app.py
-
-import flask
-
-app = flask.Flask(__name__)
-app.config.from_pyfile('config.py')
-
-# Register blueprint
-from mfo.account import account
-app.register_blueprint(account.bp)
-
-@app.route('/')
-def index():
-    return flask.render_template('/shared_layout.html')
-
-if __name__ == "__main__":
-    app.run()
-```
-
-## The blueprint static folder
-
-I bundles a CSS file named *styles.css* with the *account* template to demonstrate how the blueprint finds its own bundled static files. The main application CSS file will color all *Heading1* tags black, along with other styles, but the CSS file in the *account* blueprint will change *Heading1* text to red. 
-
-```css
-/* account/static/css/styles.css */
-
-h1 {
-    color: rgb(255, 0, 0);
-  }
-```
-
-Any template used by the *account* blueprint can add this additional CSS file and, in this example, the *login.html* template will add this CSS file. 
-
-## The blueprint templates
-
-I created templates for the three account pages: the main account page is *index.html*, the login page is *login.html*, and the registration page is *register.html*.
-
-### The main account page template
-
-```html
-<!-- account/templates/account/index.html -->
-
-{% extends "shared_layout.html" %}
-{% block title %}User Information{% endblock %}
-
-{% block main_content %}
-    <div>
-        <h1>Your user account</h1>
-
-        <div>
-            Welcome to your account!
-        </div>
-        <div>
-            What do you want to do?
-        </div>
-        <div>
-            <a href = "{{url_for('account.login')}}">Login</a>
-            <a href = "{{url_for('account.register')}}">Register</a>
-        </div>
-    </div>
-{% endblock %}
-
-{% block additional_css %}{% endblock %}
-```
-
-### The login page template
-
-The *login.html* template adds an additional CSS file, which will extend or overwrite the CSS from the Flask application's main CSS file. This demonstrates how the blueprint finds its own bundled static files.
-
-```html
-<!-- account/templates/account/login.html -->
-
-{% extends "shared_layout.html" %}
-{% block title %}Login to your account{% endblock %}
-
-{% block main_content %}
-    <div>
-        <h1>Login form</h1>
-
-        <div>
-            Placeholder for a login form
-        </div>
-    </div>
-{% endblock %}
-
-{% block additional_css %}
-    <link rel="stylesheet" href="{{ url_for('account.static', filename='css/styles.css') }}" >
-{% endblock %}
-```
-
-### The registration page template
-
-```html
-<!-- account/templates/account/register.html -->
-
-{% extends "shared_layout.html" %}
-{% block title %}Register a new user{% endblock %}
-
-{% block main_content %}
-    <div class="form-container">
-        <h1>Register form</h1>
-
-        <div>
-            Placeholder for a user registration form
-        </div>
-    </div>
-{% endblock %}
-
-{% block additional_css %}{% endblock %}
-```
-
-## The shared layout template
-
-In the main application template, now named *shared_layout.html*, I added navigation links in a nav bar
-
-```html
-<!-- templates/shared_layout.html -->
-
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <title>{% block title %}Music Festival Website{% endblock %}</title>
-    <link rel="stylesheet" href="/static/css/styles.css" />
-    {% block additional_css %}{% endblock %}
-</head>
-
-<body>
-    <nav>
-        <a href="/">Home</a>
-        <a href="{{ url_for('account.index') }}">Account</a>
-    </nav>
-
-    <div class="main_content">
-        {% block main_content %}
-        <h1>This is a simple example page</h1>
-        {% endblock %}
-    </div>
-</body>
-</html>
-```
-
-I also added some styles for the nav bar in the main CSS file, *static/css/styles.css*:
-
-```css
-/* static/css/styles.css */
-
-.main_content {
-    padding: 20px;
-}
-
-h1 {
-    font-weight: bold;
-    color: rgb(0, 0, 0);
-    font-size: 32px;
-  }
-
-nav {
-    background-color: rgb(15, 63, 196);
-    padding: 10px;
-    font-size: 15px;
-    color: white;
-}
-
-nav > a {
-    color: white;
-    margin-right: 10px;
-}
-```
-
-## testing the blueprint
-
-Home page
-
-![](./images/blueprint-pages-01.png)
-
-```text
-[2024-04-05 16:58:43,833] INFO in debughelpers: Locating template '/shared_layout.html':
-    1: trying loader of application 'mfo.app'
-       class: jinja2.loaders.FileSystemLoader
-       encoding: 'utf-8'
-       followlinks: False
-       searchpath:
-         - /home/brian/Projects/Music Festival Program/music-festival-organizer/mfo/templates
-       -> found ('/home/brian/Projects/Music Festival Program/music-festival-organizer/mfo/templates/shared_layout.html')
-    2: trying loader of blueprint 'account' (mfo.account.views)
-       class: jinja2.loaders.FileSystemLoader
-       encoding: 'utf-8'
-       followlinks: False
-       searchpath:
-         - /home/brian/Projects/Music Festival Program/music-festival-organizer/mfo/account/templates
-       -> no match
-127.0.0.1 - - [05/Apr/2024 16:58:43] "GET / HTTP/1.1" 200 -
-127.0.0.1 - - [05/Apr/2024 16:58:43] "GET /static/css/styles.css HTTP/1.1" 304 -
-```
-
-account page
-
-![](./images/blueprint-pages-02.png)
-
-```text
-[2024-04-05 17:00:57,986] INFO in debughelpers: Locating template '/account/index.html':
-    1: trying loader of application 'mfo.app'
-       class: jinja2.loaders.FileSystemLoader
-       encoding: 'utf-8'
-       followlinks: False
-       searchpath:
-         - /home/brian/Projects/Music Festival Program/music-festival-organizer/mfo/templates
-       -> no match
-    2: trying loader of blueprint 'account' (mfo.account.views)
-       class: jinja2.loaders.FileSystemLoader
-       encoding: 'utf-8'
-       followlinks: False
-       searchpath:
-         - /home/brian/Projects/Music Festival Program/music-festival-organizer/mfo/account/templates
-       -> found ('/home/brian/Projects/Music Festival Program/music-festival-organizer/mfo/account/templates/account/index.html')
-[2024-04-05 17:00:57,988] INFO in debughelpers: Locating template 'shared_layout.html':
-    1: trying loader of application 'mfo.app'
-       class: jinja2.loaders.FileSystemLoader
-       encoding: 'utf-8'
-       followlinks: False
-       searchpath:
-         - /home/brian/Projects/Music Festival Program/music-festival-organizer/mfo/templates
-       -> found ('/home/brian/Projects/Music Festival Program/music-festival-organizer/mfo/templates/shared_layout.html')
-    2: trying loader of blueprint 'account' (mfo.account.views)
-       class: jinja2.loaders.FileSystemLoader
-       encoding: 'utf-8'
-       followlinks: False
-       searchpath:
-         - /home/brian/Projects/Music Festival Program/music-festival-organizer/mfo/account/templates
-       -> no match
-127.0.0.1 - - [05/Apr/2024 17:00:57] "GET /account/ HTTP/1.1" 200 -
-127.0.0.1 - - [05/Apr/2024 17:00:58] "GET /static/css/styles.css HTTP/1.1" 304 -
-```
-
-login page
-
-![](./images/blueprint-pages-03.png)
-
-```text
-[2024-04-05 17:02:11,243] INFO in debughelpers: Locating template '/account/login.html':
-    1: trying loader of application 'mfo.app'
-       class: jinja2.loaders.FileSystemLoader
-       encoding: 'utf-8'
-       followlinks: False
-       searchpath:
-         - /home/brian/Projects/Music Festival Program/music-festival-organizer/mfo/templates
-       -> no match
-    2: trying loader of blueprint 'account' (mfo.account.views)
-       class: jinja2.loaders.FileSystemLoader
-       encoding: 'utf-8'
-       followlinks: False
-       searchpath:
-         - /home/brian/Projects/Music Festival Program/music-festival-organizer/mfo/account/templates
-       -> found ('/home/brian/Projects/Music Festival Program/music-festival-organizer/mfo/account/templates/account/login.html')
-127.0.0.1 - - [05/Apr/2024 17:02:11] "GET /account/login HTTP/1.1" 200 -
-127.0.0.1 - - [05/Apr/2024 17:02:11] "GET /static/css/styles.css HTTP/1.1" 304 -
-127.0.0.1 - - [05/Apr/2024 17:02:11] "GET /account/static/css/styles.css HTTP/1.1" 304 -
-```
-
-# Creating more blueprints
-
-This is where we could run into namespace issues for tempaltes
-
-Add an *admin* blueprint for an admin page and move the route for the home page to a *home* blueprint. The structure of the addition folders is:
-
-```text
-...
-├── admin
-│   ├── views.py
-│   ├── static
-│   │   └── css
-│   └── templates
-│       └── admin
-│           └── index.html
-├── home
-│   ├── views.py
-│   ├── static
-│   │   └── css
-│   └── templates
-│       └── home
-│           └── index.html
-...
-```
-
-## The *admin* view file
-
-```python
-# app.py
-
-import flask
-
-app = flask.Flask(__name__)
-app.config.from_pyfile('config.py')
-
-# Register blueprints
-import mfo.account.views
-import mfo.admin.views
-import mfo.home.views
-app.register_blueprint(mfo.account.views.bp)
-app.register_blueprint(mfo.admin.views.bp)
-app.register_blueprint(mfo.home.views.bp)
-
-if __name__ == "__main__":
-    app.run()
-```
-
-## The *admin* template
-
-```html
-<!-- admin/templates/admin/index.html -->
-
-{% extends "shared_layout.html" %}
-{% block title %}Admin page{% endblock %}
-
-{% block main_content %}
-    <div>
-        <h1>Administration page</h1>
-
-        <div>
-            Placeholder for admin tools
-        </div>
-    </div>
-{% endblock %}
-
-{% block additional_css %}{% endblock %}
-```
-
-## The *home* view file
-
-```python
-# home/views.py
+# mfo/home/views.py
 
 import flask
 
 bp = flask.Blueprint(
     'home',
     __name__,
-    static_folder='static',
-    template_folder='templates',
     url_prefix='/',
     )
 
@@ -735,266 +644,74 @@ bp = flask.Blueprint(
 def index():
     return flask.render_template('/home/index.html')
 ```
+ 
+### Verify that the template namespaces work
 
-## The *home* template
+When you run the Flask app again and go to the URL, *http://localhost:5000/account*, you see the page you expected, with red text in the header and displaying account options. 
 
-```html
-<!-- home/templates/home/index.html -->
+![Account page template]({attach}blueprint-pages-01.png)
 
-{% extends "shared_layout.html" %}
-{% block title %}Home page{% endblock %}
+This proves that the Flask application is serving the *account* blueprint's *index.html* template and is incorporating the *account* blueprint's additioanl CSS styles, saved in the blueprint's *static* folder.
 
-{% block main_content %}
-    <div>
-        <h1>Home page</h1>
-
-        <div>
-            Placeholder for website!
-        </div>
-    </div>
-{% endblock %}
-
-{% block additional_css %}{% endblock %}
-```
-
-## The updated *app.py* file
-
-Removed the original "/" route because it is now in the *home* blueprint. Registered the *admin* and *home* blueprints
-
-```python
-# app.py
-
-import flask
-
-app = flask.Flask(__name__)
-app.config.from_pyfile('config.py')
-
-# Register blueprints
-import mfo.account.views
-import mfo.admin.views
-import mfo.home.views
-app.register_blueprint(mfo.account.views.bp)
-app.register_blueprint(mfo.admin.views.bp)
-app.register_blueprint(mfo.home.views.bp)
-
-if __name__ == "__main__":
-    app.run()
-```
-
-Now, the *app.py* file contains no routes or view functions. It simply configures the Flask app object with configuration variables and blueprints.
-
-Currently, all program logic is in the blueprint folders. When I add a database or otehr common components, I may have to place program logic in other folders that are 
-
-## Testing new pages
-
-Admin page
-
-![](./images/blueprint-pages-05.png)
+You can also verify Flask found the correct app by tracing the template search paths in the terminal:
 
 ```text
-[2024-04-05 18:05:59,994] INFO in debughelpers: Locating template '/admin/index.html':
+[2024-04-30 15:07:22,602] INFO in debughelpers: Locating template '/account/index.html':
     1: trying loader of application 'mfo.app'
        class: jinja2.loaders.FileSystemLoader
        encoding: 'utf-8'
        followlinks: False
        searchpath:
-         - /home/brian/Projects/Music Festival Program/music-festival-organizer/mfo/templates
+         - /home/brian/project/mfo/templates
        -> no match
     2: trying loader of blueprint 'account' (mfo.account.views)
        class: jinja2.loaders.FileSystemLoader
        encoding: 'utf-8'
        followlinks: False
        searchpath:
-         - /home/brian/Projects/Music Festival Program/music-festival-organizer/mfo/account/templates
-       -> no match
-    3: trying loader of blueprint 'admin' (mfo.admin.views)
-       class: jinja2.loaders.FileSystemLoader
-       encoding: 'utf-8'
-       followlinks: False
-       searchpath:
-         - /home/brian/Projects/Music Festival Program/music-festival-organizer/mfo/admin/templates
-       -> found ('/home/brian/Projects/Music Festival Program/music-festival-organizer/mfo/admin/templates/admin/index.html')
-    4: trying loader of blueprint 'home' (mfo.home.views)
-       class: jinja2.loaders.FileSystemLoader
-       encoding: 'utf-8'
-       followlinks: False
-       searchpath:
-         - /home/brian/Projects/Music Festival Program/music-festival-organizer/mfo/home/templates
-       -> no match
-[2024-04-05 18:06:00,000] INFO in debughelpers: Locating template 'shared_layout.html':
+         - /home/brian/project/mfo/account/templates
+       -> found ('/home/brian/project/mfo/account/templates/account/index.html')
+[2024-04-30 15:07:22,607] INFO in debughelpers: Locating template 'base.html':
     1: trying loader of application 'mfo.app'
        class: jinja2.loaders.FileSystemLoader
        encoding: 'utf-8'
        followlinks: False
        searchpath:
-         - /home/brian/Projects/Music Festival Program/music-festival-organizer/mfo/templates
-       -> found ('/home/brian/Projects/Music Festival Program/music-festival-organizer/mfo/templates/shared_layout.html')
+         - /home/brian/project/mfo/templates
+       -> found ('/home/brian/project/mfo/templates/base.html')
     2: trying loader of blueprint 'account' (mfo.account.views)
        class: jinja2.loaders.FileSystemLoader
        encoding: 'utf-8'
        followlinks: False
        searchpath:
-         - /home/brian/Projects/Music Festival Program/music-festival-organizer/mfo/account/templates
+         - /home/brian/project/mfo/account/templates
        -> no match
-    3: trying loader of blueprint 'admin' (mfo.admin.views)
-       class: jinja2.loaders.FileSystemLoader
-       encoding: 'utf-8'
-       followlinks: False
-       searchpath:
-         - /home/brian/Projects/Music Festival Program/music-festival-organizer/mfo/admin/templates
-       -> no match
-    4: trying loader of blueprint 'home' (mfo.home.views)
-       class: jinja2.loaders.FileSystemLoader
-       encoding: 'utf-8'
-       followlinks: False
-       searchpath:
-         - /home/brian/Projects/Music Festival Program/music-festival-organizer/mfo/home/templates
-       -> no match
-127.0.0.1 - - [05/Apr/2024 18:06:00] "GET /admin/ HTTP/1.1" 200 -
-127.0.0.1 - - [05/Apr/2024 18:06:00] "GET /static/css/styles.css HTTP/1.1" 304 -
+127.0.0.1 - - [30/Apr/2024 15:07:22] "GET /account/ HTTP/1.1" 200 -
+127.0.0.1 - - [30/Apr/2024 15:07:22] "GET /static/css/styles.css HTTP/1.1" 304 -
+127.0.0.1 - - [30/Apr/2024 15:07:22] "GET /account/static/css/styles.css HTTP/1.1" 304 -
 ```
 
-Home page
+Here, you see the template */account/index.html* is found in only one place: the *mfo/account/templates/* folder. And you can see that the */css/styles.css* file is found in the *mfo/account/static/* folder.
 
-![](./images/blueprint-pages-06.png)
+### Explaining the template search path
 
-```text
-[2024-04-05 18:09:46,863] INFO in debughelpers: Locating template '/home/index.html':
-    1: trying loader of application 'mfo.app'
-       class: jinja2.loaders.FileSystemLoader
-       encoding: 'utf-8'
-       followlinks: False
-       searchpath:
-         - /home/brian/Projects/Music Festival Program/music-festival-organizer/mfo/templates
-       -> no match
-    2: trying loader of blueprint 'account' (mfo.account.views)
-       class: jinja2.loaders.FileSystemLoader
-       encoding: 'utf-8'
-       followlinks: False
-       searchpath:
-         - /home/brian/Projects/Music Festival Program/music-festival-organizer/mfo/account/templates
-       -> no match
-    3: trying loader of blueprint 'admin' (mfo.admin.views)
-       class: jinja2.loaders.FileSystemLoader
-       encoding: 'utf-8'
-       followlinks: False
-       searchpath:
-         - /home/brian/Projects/Music Festival Program/music-festival-organizer/mfo/admin/templates
-       -> no match
-    4: trying loader of blueprint 'home' (mfo.home.views)
-       class: jinja2.loaders.FileSystemLoader
-       encoding: 'utf-8'
-       followlinks: False
-       searchpath:
-         - /home/brian/Projects/Music Festival Program/music-festival-organizer/mfo/home/templates
-       -> found ('/home/brian/Projects/Music Festival Program/music-festival-organizer/mfo/home/templates/home/index.html')
-127.0.0.1 - - [05/Apr/2024 18:09:46] "GET / HTTP/1.1" 200 -
-127.0.0.1 - - [05/Apr/2024 18:09:46] "GET /static/css/styles.css HTTP/1.1" 304 -
-```
-
-# Templates in Flask blueprint folders
-
-The flask blueprint enables you to specify the folder in which all your static files will be found and it only looks in that folder. It does not search for other static files in other namespaces.
-
-But, templates work differently. The Flask developers wanted you to be able to "override" one template file with another of the same name if you wanted to.
+The Flask developers wanted you to be able to "override" one template file with another of the same name if you wanted to. So, [Flask searches every *templates* folder](https://realpython.com/flask-blueprint/#including-templates) in your application for templates with the same name and chooses the folder that was registered first. 
 
 This is why you need to use the naming convention we use with the seemingly unneccessary template folder structure. You need a unique string to identify the template if you are using generic filenames like *index.html*. So */account/index.html* is unique.
 
-Setting the template folder in the blueprint definition to *templates/account* and then referencing the template with only the filename *index.html* will not work. Flask will look for *index.html* in every other blueprint's template folder and in the main application templates folder and will use the first on that was registered
+This behaviour can be useful when working with Flask extensions. For example, you could replace the Flask-Security *login* template with one of your own simply by creating a template named *security/login.html* and placing it in your main application's *templates* folder.
 
-https://realpython.com/flask-blueprint/#including-templates
+## Project review
 
+After [learning the basics of Flask]([previous](https://learningwithcode.com/flask-web-app-tutorial)), I wanted to create a program structure that followed the generally-accepted practices of Flask application organization. So, I am using the [blueprint structure recommended in the Flask documentation](https://flask.palletsprojects.com/en/3.0.x/blueprints/), which keeps all code related to each blueprint in the its blueprint folder.
 
+I decided that each page served by the application will have its own blueprint and each blueprint, after the *home* blueprint, will be fully self-contained with its own resource files.
 
-
-
-
-
-
-# Final app structure   
-
-The final project structure is shown below. this supports navigating between blueprints and is a good base upon which to buid the rest of my application.
-
-```text
-project
-├── requirements.txt
-└── mfo
-    ├── account
-    │   ├── static
-    │   │   └── css
-    │   │       └── styles.css
-    │   ├── templates
-    │   │   └── account
-    │   │       ├── index.html
-    │   │       ├── login.html
-    │   │       └── register.html
-    │   └── views.py
-    |
-    ├── admin
-    │   ├── static
-    │   │   └── css
-    │   ├── templates
-    │   │   └── admin
-    │   │       └── index.html
-    │   └── views.py
-    |
-    ├── home
-    │   ├── static
-    │   │   └── css
-    │   ├── templates
-    │   │   └── home
-    │   │       └── index.html
-    │   └── views.py
-    |
-    ├── app.py
-    ├── config.py
-    ├── .env
-    ├── requirements.txt
-    ├── static
-    │   └── css
-    │       └── styles.css
-    └── templates
-        └── shared_layout.html
-```
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-# Project structure
-
-Below, I outline the folders and files that will support my Flask application. I decided that each page presented by the application will have its own blueprint and each blueprint will be fully self-contained with its own resource files.
-
-The high-level folder structure looks like below. In the application's root folder, I have the main flask app named *app.py*, a config file named *config.py* and the standard Flask resource folders, *static* and *templates*. Then, I have three blueprint folders named *account*, *admin*, and *home*. 
+The application's high-level folder structure looks like below.
 
 ```text
 mfo
 ├── account/
-├── admin/
 ├── home/
 │
 ├── static/
@@ -1004,308 +721,47 @@ mfo
 └── config.py
 ```
 
-Each blueprint folder will have its own view functions and its own *templates* and *static* sub-folders.
+In the application's root folder, I have the main flask app named *app.py*, a config file named *config.py* and the standard Flask resource folders, *static* and *templates*. Then, I have two blueprint folders named *account* and *home*. 
 
-## Why not create packages?
+The *account* blueprint folder has its own view functions and its own *templates* and *static* sub-folders.
 
-The Flask documentation [recommends implementing large applications as packages](https://flask.palletsprojects.com/en/3.0.x/patterns/packages/). I may do that later but, for now, I will implement the application as a set of modules. I think this makes it easier to understand the structure of the project. See the [official Flask tutorial](https://flask.palletsprojects.com/en/3.0.x/tutorial/layout/) for an example of implementing a Flask app as a package. 
+The *home* blueprint folder has its own view functions but, because I set the blueprint's *url_prefix* attribute to "/", which represents the application's root folder, I placed the *home* template and static files in the main *templates* and *static* folders so that those resources can still be found using the Flask *url_for()* method. 
 
-Also, see my [previous post about packaging Python applications](https://learningwithcode.com/python-packaging-modern) if you need more information about packaging.
-
-## Why this structure?
-
-After [learning the basics of Flask]([previous](https://learningwithcode.com/flask-web-app-tutorial)), I wanted to create a program structure that followed the generally-accepted practices of Flask application organization. So, I am using the [blueprint structure recommended in the Flask documentation](https://flask.palletsprojects.com/en/3.0.x/blueprints/). I prefer to keep all code related to each blueprint in the same blueprint folder.
+### Why this structure?
 
 There are some alternative application structures one could consider. These organize the blueprint view files all in one folder and have common *templates* and *static* folders for the entire application. See the [DigitalOcean Flask blueprint tutorial](https://www.digitalocean.com/community/tutorials/how-to-structure-a-large-flask-application-with-flask-blueprints-and-flask-sqlalchemy) for an example. 
 
+### The final structure
 
+I show my complete project structure, below. This is a good base to start almost any Flask project from.
 
-
-
-
-
-
-
-
-
-
-
-
-And, now, I want to create a template for the *home* blueprint. This template file will also be named *index.html* but it will be in the *home* blueprint's *templates* folder.
-
-```
-$ nano home/templates/index.html
-```
-
-The new template will contain some different text from the main application's *index.html* template, so you will know if the application is finding the correct template:
-
-```html
-<!-- mfo/home/templates/index.html -->
-
-{% extends "base.html" %}
-
-{% block title %}Home page{% endblock %}
-
-{% block content %}
-    <h1>Home page</h1>
-{% endblock %}
+```text
+project
+├── mfo
+│   ├── account
+│   │   ├── static
+│   │   │   └── css
+│   │   │       └── styles.css
+│   │   ├── templates
+│   │   │   └── account
+│   │   │       └── index.html
+│   │   └── views.py
+│   ├── home
+│   │   └── views.py
+│   ├── static
+│   │   └── css
+│   │       ├── style.css
+│   │       └── styles.css
+│   ├── templates
+│   │   ├── base.html
+│   │   └── home
+│   │       └── index.html
+│   ├── app.py
+│   └── config.py
+├── .env
+└── requirements.txt
 ```
 
-And, for the sake of this example, we'll add a new CSS file 
+## Conclusion
 
-```
-$ nano home/static/css/styles.css
-```
-
-The file will change the blueprint's heading text color to red:
-
-```css
-/*  mfo/home/static/css/styles.css  */
-
-h1 {
-    color: rgb(255, 0, 0);
-  }
-```
-
-When you run the Flask application again, and navigate to *http://localhost:5000* in your web browser, you see that the application is still serving the main index template, and not the blueprint template. Look at the terminal to see the path that Flask is searching.
-
-```
-[2024-04-28 20:44:28,726] INFO in debughelpers: Locating template '/index.html':
-    1: trying loader of application 'mfo.app'
-       class: jinja2.loaders.FileSystemLoader
-       encoding: 'utf-8'
-       followlinks: False
-       searchpath:
-         - /home/brian/project/mfo/templates
-       -> found ('/home/brian/project/mfo/templates/index.html')
-    2: trying loader of blueprint 'home' (mfo.home.views)
-       class: jinja2.loaders.FileSystemLoader
-       encoding: 'utf-8'
-       followlinks: False
-       searchpath:
-         - /home/brian/project/mfo/home/templates
-       -> found ('/home/brian/project/mfo/home/templates/index.html')
-Warning: multiple loaders returned a match for the template.
-  The template was looked up from an endpoint that belongs to the blueprint 'home'.
-  Maybe you did not place a template in the right folder?
-  See https://flask.palletsprojects.com/blueprints/#templates
-[2024-04-28 20:44:28,729] INFO in debughelpers: Locating template 'base.html':
-    1: trying loader of application 'mfo.app'
-       class: jinja2.loaders.FileSystemLoader
-       encoding: 'utf-8'
-       followlinks: False
-       searchpath:
-         - /home/brian/project/mfo/templates
-       -> found ('/home/brian/project/mfo/templates/base.html')
-    2: trying loader of blueprint 'home' (mfo.home.views)
-       class: jinja2.loaders.FileSystemLoader
-       encoding: 'utf-8'
-       followlinks: False
-       searchpath:
-         - /home/brian/project/mfo/home/templates
-       -> no match
-127.0.0.1 - - [28/Apr/2024 20:44:28] "GET / HTTP/1.1" 200 -
-127.0.0.1 - - [28/Apr/2024 20:44:28] "GET /static/css/styles.css HTTP/1.1" 304 -
-```
-
-You should see that Flask finds an *index.html* template twice. It finds it in the main application's template's folder at */home/brian/project/mfo/templates*, and in the *home* blueprint's templates folder at */home/brian/project/mfo/home/templates*. It uses the first template with the same name that it finds.
-
-The Flask developers wanted you to be able to "override" one template file with another of the same name if you wanted to. Flask wiAnd, now, I want to create a template for the *home* blueprint. This template file will also be named *index.html* but it will be in the *home* blueprint's *templates* folder.
-
-```
-$ nano home/templates/index.html
-```
-
-The new template will contain some different text from the main application's *index.html* template, so you will know if the application is finding the correct template:
-
-```html
-<!-- mfo/home/templates/index.html -->
-
-{% extends "base.html" %}
-
-{% block title %}Home page{% endblock %}
-
-{% block content %}
-    <h1>Home page</h1>
-{% endblock %}
-```
-
-And, for the sake of this example, we'll add a new CSS file 
-
-```
-$ nano home/static/css/styles.css
-```
-
-The file will change the blueprint's heading text color to red:
-
-```css
-/*  mfo/home/static/css/styles.css  */
-
-h1 {
-    color: rgb(255, 0, 0);
-  }
-```
-
-When you run the Flask application again, and navigate to *http://localhost:5000* in your web browser, you see that the application is still serving the main index template, and not the blueprint template. Look at the terminal to see the path that Flask is searching.
-
-```
-[2024-04-28 20:44:28,726] INFO in debughelpers: Locating template '/index.html':
-    1: trying loader of application 'mfo.app'
-       class: jinja2.loaders.FileSystemLoader
-       encoding: 'utf-8'
-       followlinks: False
-       searchpath:
-         - /home/brian/project/mfo/templates
-       -> found ('/home/brian/project/mfo/templates/index.html')
-    2: trying loader of blueprint 'home' (mfo.home.views)
-       class: jinja2.loaders.FileSystemLoader
-       encoding: 'utf-8'
-       followlinks: False
-       searchpath:
-         - /home/brian/project/mfo/home/templates
-       -> found ('/home/brian/project/mfo/home/templates/index.html')
-Warning: multiple loaders returned a match for the template.
-  The template was looked up from an endpoint that belongs to the blueprint 'home'.
-  Maybe you did not place a template in the right folder?
-  See https://flask.palletsprojects.com/blueprints/#templates
-[2024-04-28 20:44:28,729] INFO in debughelpers: Locating template 'base.html':
-    1: trying loader of application 'mfo.app'
-       class: jinja2.loaders.FileSystemLoader
-       encoding: 'utf-8'
-       followlinks: False
-       searchpath:
-         - /home/brian/project/mfo/templates
-       -> found ('/home/brian/project/mfo/templates/base.html')
-    2: trying loader of blueprint 'home' (mfo.home.views)
-       class: jinja2.loaders.FileSystemLoader
-       encoding: 'utf-8'
-       followlinks: False
-       searchpath:
-         - /home/brian/project/mfo/home/templates
-       -> no match
-127.0.0.1 - - [28/Apr/2024 20:44:28] "GET / HTTP/1.1" 200 -
-127.0.0.1 - - [28/Apr/2024 20:44:28] "GET /static/css/styles.css HTTP/1.1" 304 -
-```
-
-You should see that Flask finds an *index.html* template twice. It finds it in the main application's template's folder at */home/brian/project/mfo/templates*, and in the *home* blueprint's templates folder at */home/brian/project/mfo/home/templates*. It uses the first template with the same name that it finds.
-
-The Flask developers wanted you to be able to "override" one template file with another of the same name if you wanted to. Flask will look for *index.html* in every blueprint's templates folder and in the main application templates folder and will use the first on that was registered
-
-But, I want to keep blueprints self-contained in a folder with their own view functions and resources, I don't want to have to give every file a unique name.
-
-Another way to solve this problem, which is the way recommended by the Flask documentation, is to add a folder in the blueprint's templates folder that creates a unique namespace for the template files. For example, templates in the *home* template folder would be placed in the *home/templates/home* folder instead of the *home/templates* folder and then regerenced by a unique name like *home/index.html*.
-
-So, create the seemingly-redundant *home/templates/home* folder and move the *home* blueprint's *index.html* template file into it:
-
-```
-$ mkdir home/templates/home
-$ mv home/templates/index.html home/templates/home/
-```
-
-Then, change the *views.py* file to the new, unique template namespace:
-
-```
-
-```
-
-
-
-
-
-
-
-
-```
-[2024-04-28 16:58:50,350] INFO in debughelpers: Locating template '/index.html':
-    1: trying loader of application 'mfo.app'
-       class: jinja2.loaders.FileSystemLoader
-       encoding: 'utf-8'
-       followlinks: False
-       searchpath:
-         - /home/brian/project/mfo/templates
-       -> found ('/home/brian/project/mfo/templates/index.html')
-    2: trying loader of blueprint 'home' (mfo.home.views)
-       class: jinja2.loaders.FileSystemLoader
-       encoding: 'utf-8'
-       followlinks: False
-       searchpath:
-         - /home/brian/project/mfo/home/templates
-       -> no match
-[2024-04-28 16:58:50,354] INFO in debughelpers: Locating template 'base.html':
-    1: trying loader of application 'mfo.app'
-       class: jinja2.loaders.FileSystemLoader
-       encoding: 'utf-8'
-       followlinks: False
-       searchpath:
-         - /home/brian/project/mfo/templates
-       -> found ('/home/brian/project/mfo/templates/base.html')
-    2: trying loader of blueprint 'home' (mfo.home.views)
-       class: jinja2.loaders.FileSystemLoader
-       encoding: 'utf-8'
-       followlinks: False
-       searchpath:
-         - /home/brian/project/mfo/home/templates
-       -> no match
-127.0.0.1 - - [28/Apr/2024 16:58:50] "GET / HTTP/1.1" 200 -
-127.0.0.1 - - [28/Apr/2024 16:58:50] "GET /static/css/styles.css HTTP/1.1" 304 -
-```
-the main application templates folder and will use the first on that was registered
-
-But, I want to keep blueprints self-contained in a folder with their own view functions and resources, I don't want to have to give every file a unique name.
-
-Another way to solve this problem, which is the way recommended by the Flask documentation, is to add a folder in the blueprint's templates folder that creates a unique namespace for the template files. For example, templates in the *home* template folder would be placed in the *home/templates/home* folder instead of the *home/templates* folder and then regerenced by a unique name like *home/index.html*.
-
-So, create the seemingly-redundant *home/templates/home* folder and move the *home* blueprint's *index.html* template file into it:
-
-```
-$ mkdir home/templates/home
-$ mv home/templates/index.html home/templates/home/
-```
-
-Then, change the *views.py* file to the new, unique template namespace:
-
-```
-
-```
-
-
-
-
-
-
-
-
-```
-[2024-04-28 16:58:50,350] INFO in debughelpers: Locating template '/index.html':
-    1: trying loader of application 'mfo.app'
-       class: jinja2.loaders.FileSystemLoader
-       encoding: 'utf-8'
-       followlinks: False
-       searchpath:
-         - /home/brian/project/mfo/templates
-       -> found ('/home/brian/project/mfo/templates/index.html')
-    2: trying loader of blueprint 'home' (mfo.home.views)
-       class: jinja2.loaders.FileSystemLoader
-       encoding: 'utf-8'
-       followlinks: False
-       searchpath:
-         - /home/brian/project/mfo/home/templates
-       -> no match
-[2024-04-28 16:58:50,354] INFO in debughelpers: Locating template 'base.html':
-    1: trying loader of application 'mfo.app'
-       class: jinja2.loaders.FileSystemLoader
-       encoding: 'utf-8'
-       followlinks: False
-       searchpath:
-         - /home/brian/project/mfo/templates
-       -> found ('/home/brian/project/mfo/templates/base.html')
-    2: trying loader of blueprint 'home' (mfo.home.views)
-       class: jinja2.loaders.FileSystemLoader
-       encoding: 'utf-8'
-       followlinks: False
-       searchpath:
-         - /home/brian/project/mfo/home/templates
-       -> no match
-127.0.0.1 - - [28/Apr/2024 16:58:50] "GET / HTTP/1.1" 200 -
-127.0.0.1 - - [28/Apr/2024 16:58:50] "GET /static/css/styles.css HTTP/1.1" 304 -
-```
+This post described a folder structure for a "real" Flask application and excercised using Flask blueprints to divide application functions into separate folders and files. This makes large Flask programs easier to maintain.
