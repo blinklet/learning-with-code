@@ -1,10 +1,10 @@
-title: Add the Flask-Security-Too extension to your Python web app
+title: Add Roll-Based Access Control (RBAC) to your Python Flask web app
 slug: flask-security-too-python
-summary: Add the ability to manage user access and permissions to your web app. This post shows how I integrated the Flask-Security-Too extension into my existing web app. 
+summary: Add the ability to manage user access and permissions to your web app. This post shows how I integrated the *Flask-Security-Too* extension into my existing web app. 
 date: 2024-05-02
 modified: 2024-05-02
 category: Flask
-<!-- status: Published -->
+status: Published
 
 <!--
 A bit of extra CSS code to centre all images in the post
@@ -16,12 +16,13 @@ img
     float:none; 
     margin-left:auto;
     margin-right:auto;
+    width:80%;
 }
 </style>
 
-One crucial aspect of web app security is managing user access and permissions effectively. This not only helps in safeguarding sensitive information but also enhances the user experience by granting permissions tailored to individual user roles. The [Flask-Security-Too](https://flask-security-too.readthedocs.io/en/stable/) Flask extension provides a robust framework for handling common tasks such as user authentication, role management, and permission checks, making it an essential addition to any Flask-based application.
+One crucial aspect of web app security is managing users' access and permissions effectively. This not only helps in safeguarding sensitive information but also enhances the user experience by creating experiences tailored to individual user roles. The [*Flask-Security-Too*](https://flask-security-too.readthedocs.io/en/stable/) Flask extension provides a robust framework for handling common tasks such as user authentication, role management, and permission checks, making it an essential addition to any Flask-based application.
 
-In this blog post, I'll walk you through the process of integrating the Flask-Security-Too Flask extension into an existing web application. By leveraging this extension, I was able to add sophisticated authentication mechanisms and dynamic role-based access controls without having to build them from scratch.
+In this blog post, I'll walk you through the process of integrating the *Flask-Security-Too* Flask extension into an existing web application. By leveraging this extension, I was able to add basic authentication mechanisms and dynamic role-based access controls to my web app by adding only a few lines of code.
 
 ## The existing web application
 
@@ -31,36 +32,37 @@ The existing web app is a simple program that uses Flask blueprints to serve up 
 
 ```text
 music-festival-organizer
-├── mfo
-│   │
-│   ├── admin
-│   │   ├── static
-│   │   │   └── css
-│   │   │       └── styles.css
-│   │   ├── templates
-│   │   │   └── admin
-│   │   │       └── index.html
-│   │   └── views.py
-│   │
-│   ├── home
-│   │   ├── static
-│   │   │   └── css
-│   │   ├── templates
-│   │   │   └── home
-│   │   │       └── index.html
-│   │   └── views.py
-│   │
-│   ├── static
-│   │   └── css
-│   │       └── styles.css
-│   ├── templates
-│   │   └── base.html
-│   │
-│   ├── app.py
-│   └── config.py
 │
 ├── .env
-└── requirements.txt
+├── requirements.txt
+│
+└── mfo
+    │
+    ├── admin
+    │   ├── static
+    │   │   └── css
+    │   │       └── styles.css
+    │   ├── templates
+    │   │   └── admin
+    │   │       └── index.html
+    │   └── views.py
+    │
+    ├── home
+    │   ├── static
+    │   │   └── css
+    │   ├── templates
+    │   │   └── home
+    │   │       └── index.html
+    │   └── views.py
+    │
+    ├── static
+    │   └── css
+    │       └── styles.css
+    ├── templates
+    │   └── base.html
+    │
+    ├── app.py
+    └── config.py
 ```
 
 ### Download initial files
@@ -84,25 +86,25 @@ requirements.txt
 
 ### Add configuraion values
 
-Since the configuration is not stored in git, create a new *.env* file in the project folder:
+Since the environment configuration file, *.env*, is not stored in git, create a new *.env* file in the project folder:
 
 ```text
 $ nano .env
 ```
 
-The *.env* file contents are listed below: 
+Add the follwoing contents to the *.env* file: 
 
 ```python
 # .env
 
 FLASK_SECRET_KEY = abcdFakeKey1234
 FLASK_ENVIRONMENT = development
-FLASK_EXPLAIN_TEMPLATE_LOADING = True
+FLASK_EXPLAIN_TEMPLATE_LOADING = False
 ```
 
 ### Test the initial application
 
-To review how the project currently runs, create and activate a Python virtual environment, install the requirements, and run the program
+To review how the project currently runs, create and activate a Python virtual environment, and install the requirements.
 
 ```text
 $ python3 -m venv .venv
@@ -118,11 +120,13 @@ $ (.venv) flask --app mfo.app run --debug
 
 In a web browser, navigate to the URLs: *http://localhost:5000* and *http://localhost:5000/admin* to see the simple pages served at each application route.
 
+![Original application pages]({attach}./images/old-app-01.png)
+
 Stop the application using the *CTRL-C* key combination.
 
 ## Add Flask-Security-Too
 
-Flask-Security-Too implements a lot of functionality. It has its own way of doing things but it enables you to customize its functions, forms, and templates. For now, I will use its default functionality in teh simplest way possible. 
+*Flask-Security-Too* implements a lot of functionality. It has its own way of doing things but it enables you to customize its functions, forms, and templates. For now, I will use its default functionality in the simplest way possible. 
 
 ### Install the Flask-Security-Too package
 
@@ -136,7 +140,7 @@ python-dotenv
 Flask-Security-Too[fsqla,common]
 ```
 
-*Flask-Security-Too* also installs *Flask-SQLAlchemy*, *Flask-Login*, *Flask-WTF*, and other Flask extensions so you do not need to list them in the file, unless you are pinning them to a specific version.
+*Flask-Security-Too* also installs *Flask-SQLAlchemy*, *Flask-Login*, *Flask-WTF*, and other Flask extensions so you do not need to list them in the requirements file, unless you are pinning them to a specific version.
 
 Then, install the requirements into the virtual environment, again:
 
@@ -149,7 +153,7 @@ You will see pip installs many packages.
 
 ## Add a database
 
-Flask-Security-Too needs access to a database in which it can store user information. We need to add SQLAlchemy models to the application but, since we are using all the defaults, we can use the models provided by Flask-Security-Too.
+*Flask-Security-Too* needs access to a database in which it can store user information. We need to add SQLAlchemy models to the application but, since we are using all the defaults, we can use the models provided by *Flask-Security-Too*.
 
 Create a database folder named *database*. 
 
@@ -157,16 +161,16 @@ Create a database folder named *database*.
 (.venv) $ mkdir mfo/database
 ```
 
-### The database object, *db*
+### The database object, db
 
-In that folder create a file named *base.py* that creates the SQLAlchemy database object. 
+In that folder create a file named *base.py* that creates the *Flask-SQLAlchemy* database object. 
 
 
 ```text
 $ nano mfo/database/base.py
 ```
 
-This file uses the Flask-SQLAlchemy extension to set up the session factory and other functions as method of the database object.
+This file uses the *Flask-SQLAlchemy* extension to set up the session factory and other functions as method of the database object.
 
 ```python
 # mfo/database/base.py
@@ -183,9 +187,9 @@ db = SQLAlchemy(model_class=Base)
 
 We'll use the database object, named *db*, throughout our application.
 
-### The *users* model
+### The Role and User models
 
-In the database folder, create a *users.py* file, which will contain the SQLAlchemy model for users
+In the database folder, create a *users.py* file, which will contain the SQLAlchemy models.
 
 ```text
 (.venv) $ nano mfo/database/users.py
@@ -209,11 +213,11 @@ class User(db.Model, fsqla.FsUserMixin):
 user_datastore = SQLAlchemyUserDatastore(db, User, Role)
 ```
 
-You can see that we are defining two role models: *User* and *Admin*. By default, these two roles are supported by *Flask-Security-Too* and the fields and other model configuration are provided by the Flask-Security-Too classes *fsqla.FsRoleMixin* and *fsqla.FsUserMixin*. 
+By default, these model configuration are provided by the *Flask-Security-Too* classes *fsqla.FsRoleMixin* and *fsqla.FsUserMixin*. 
 
-We can add more roles and also define permissions for each role, if we want finer control over access and security. For now, we are doing the minimum.
+We can add more fields to the Role and User models and customize them with data relationships and other configurations. For now, though, we are doing the minimum.
 
-## Initiaize the Flask-Security-Too extension
+### Initiaize the Flask-Security-Too extension
 
 Initialize the *Flask-SQLAchemy* extension and the *Flask-Security-Too* extension in the *app.py* file.
 
@@ -256,15 +260,17 @@ def create_app():
     return app
 ```
 
-## protect routes with Flask-Security-Too
+Now we have completed adding the infrastrcture of the *Flask-Security-Too* extension to our app. The next step is to actually use the functions *Flask-Security-Too* provides to establish role-based access controls on each of the application's pages.
 
-Now we have set up Flask-Security-Too and can use it in our application view functions. We currently have two pages, a Home page and an Admin page. Let's set up the following authentication and access restructions for each page:
+## Protect routes with Flask-Security-Too
 
-For the home page, require that users must log in before they can use the home page. users with either the user role or Admin role may view the page.
+Now we have set up *Flask-Security-Too* and we can use its functions in our application. We currently have two pages, a *Home* page and an *Admin* page. Let's set up the following authentication and access restructions for each page:
 
-For the Admin page, require that only a logged-in user who has the Admin role can view the page.
+For the home page, require that users must log in before they can use the home page. users with either the *User* role or *Admin* role may view the page.
 
-Flask-Security-Too makes it easy to add simple requirements. It provides functions that can be applied as decororators.
+For the *Admin* page, require that only a logged-in user who has the *Admin* role can view the page.
+
+*Flask-Security-Too* makes it easy to add simple requirements. It provides functions that can be applied as decorators.
 
 ### The *Home* page
 
@@ -274,7 +280,7 @@ Open the *mfo/home/views.py* file and simply add a decorator to the home page ro
 $ nano mfo/home/views.py
 ```
 
-Add the the *auth_required()* decorator to the *index* view function. We want all roles to be able to view the home page so we don't specify which roles are required. If yu don't specify the roles that have access to a page, Flask-Security-Too will allow all logged-in users with any role to access that page.
+Add the the *auth_required()* decorator to the *index* view function. We want all roles to be able to view the home page, so we don't specify which roles are required. If you don't specify the roles that have access to a page, *Flask-Security-Too* will allow all logged-in users with any role to access that page.
 
 The new *mfo/home/views.py* file looks like below:
 
@@ -304,7 +310,7 @@ You can see how simple it was to add authentication protection to a page.
 
 ### The *Admin* page
 
-The *Admin* page will require that a user be both authenticated and be assigned the Admin role. Again, using Flask-Security-Too is simple. Add the *auth_required()* and the *roles_required()* decorators to the *index* view function in the *Admin* blueprint's *views* module.
+The *Admin* page will require that a user be both authenticated and be assigned the *Admin* role. Again, using *Flask-Security-Too* is simple. Add the *auth_required()* and the *roles_required()* decorators to the *index* view function in the *Admin* blueprint's *views* module.
 
 Edit the *mfo/admin/views.py* file:
 
@@ -312,7 +318,7 @@ Edit the *mfo/admin/views.py* file:
 $ nano mfo/admin/views.py
 ```
 
-After adding the Flask-Security-Too decorators, the file will look like below:
+After adding the *Flask-Security-Too* decorators, the file will look like below:
 
 ```python
 # mfo/admin/views.py
@@ -339,9 +345,9 @@ def index():
 
 *Flask-Security-Too* offers a lot of functionality that is controlled with configuration variables. For example, you can turn different types of authentication on or off, and you can decide if you want the extension to send confirmation e-mails or not.
 
-In addition, the other packages that Flask-Security-Too uses also need configuration. For example, you need to configure the Flask-SQLAlchemy extension and may need to configure other dependencies if you use them.
+The other packages that *Flask-Security-Too* uses also need configuration. For example, you need to configure the *Flask-SQLAlchemy* extension and may need to configure other dependencies if you use them.
 
-### Config.py
+### The config.py file
 
 To add the minimum level of user management functionaity, modify the *config.py* file:
 
@@ -378,12 +384,13 @@ SECURITY_SEND_REGISTER_EMAIL = False
 
 # Flask-SQLAlchemy variables
 if ENVIRONMENT == "development":
-    # For development, use a SQLite database located in the project folder
+    # In the development environment, use a SQLite database located in the project folder
     SQLALCHEMY_DATABASE_URI = os.environ.get("SQLALCHEMY_DATABASE_URI")\
         or 'sqlite:///' + os.path.join(project_dir, 'app.sqlite')
 else:
-    # For production, get the database URI from environment variable
+    # For other environments, get the database URI from environment variable
     SQLALCHEMY_DATABASE_URI = os.environ.get("SQLALCHEMY_DATABASE_URI")
+
 SQLALCHEMY_ECHO = os.environ.get("SQLALCHEMY_ECHO")
 SQLALCHEMY_TRACK_MODIFICATIONS = os.environ.get("SQLALCHEMY_TRACK_MODIFICATIONS")
 # The docs made the following recommendation to set the SQLAlchemy Engine Options 
@@ -392,7 +399,7 @@ SQLALCHEMY_TRACK_MODIFICATIONS = os.environ.get("SQLALCHEMY_TRACK_MODIFICATIONS"
 SQLALCHEMY_ENGINE_OPTIONS = {"pool_pre_ping": True}  
 ```
 
-### .env
+### The .env file
 
 Next, in the *.env* file, assign actual values to the environment variables.
 
@@ -400,7 +407,7 @@ Next, in the *.env* file, assign actual values to the environment variables.
 $ nano .env
 ```
 
-I am using the *.env* file to store values that would not usually be stored in your source control system. For example, you don't want yout real secret key to be stored in a public repository. I also could define in this file values that change depending on the app's environment. For example, you may have a different database URI for your testing environment and would want to be able to change that using environment variables.
+I am using the *.env* file to store values that would not usually be stored in your source control system. For example, you don't want your real secret key to be stored in a public repository. I also could define in this file values that change depending on the app's environment. For example, you may have a different database URI for your testing environment and would want to be able to change that using environment variables.
 
 Define the following values to support a basic development environment:
 
@@ -423,9 +430,9 @@ SQLALCHEMY_ECHO = True
 SECURITY_PASSWORD_SALT  = 307680677384259925768439955171685999662
 ```
 
-## Add custom command to create the database
+## Add a custom command to create the database
 
-The database needs to be created before the application can run. I chose to create a custom command that will create an empty database from the models defined by Flask-Security-Too.
+The database needs to be created before the application can run. I chose to create a [Flask custom command](https://flask.palletsprojects.com/en/3.0.x/cli/#custom-commands) that will create an empty database from the models defined by *Flask-Security-Too*.
 
 Create a new file named *commands* in the *database* folder. 
 
@@ -454,7 +461,7 @@ def create():
     base.db.create_all()
 ```
 
-Custom CLI commands will be the place we create larger database initialization commands as the application grows. For example, when we have a lot of roles and permissions defined, we might want to create them all at once in a new database, instead of adding them one at a time using the Flask-Security-Too CLI commands. For now, we are doing the minimum to get an app started.
+Custom CLI commands may be used to create more database initialization commands as the application grows. For example, when we have a lot of roles and permissions defined, we might want to create them all at once in a new database, instead of adding them one at a time using the *Flask-Security-Too* CLI commands. For now, we are doing the minimum to get an app started.
 
 Next edit the *app.py* file:
 
@@ -501,7 +508,7 @@ def create_app():
 
 ## Test the app 
 
-Now let's see the app work with users. 
+Now let's see the app work with user authentication and roles. we will create a development database, add some initial roles information and user configuration to the database, then run the app and try to access it using a user account and an admin account.
 
 ### initialize the database
 
@@ -534,29 +541,29 @@ Then, add a user with the *Admin* role to the database and another user with the
 
 Go to the app's home page at: *http://localhost:5000/*.
 
-Flask-Security-Too will prevent you from accessing the page and will redirect you to the new */login* route. You should see a screen that give you the option to login or register a new user.
+*Flask-Security-Too* will prevent you from accessing the page and will redirect you to the new */login* route. You should see a screen that give you the option to login or register a new user.
 
-![](./images/auth-001.png)
+![Login page]({attach}./images/auth-001.png)
 
 You need to login. You could use either of the users you created in the database but let's start with registering a new user.
 
 Click on the *Register* link on the *Login* page. Fill in the user's email and password and click the *Register* button:
 
-![](./images/auth-002.png)
+![Register page]({attach}./images/auth-002.png)
 
 The new user is created and logged in at the same time and can now view the home page
 
-![](./images/auth-003.png)
+![Home page]({attach}./images/auth-003.png)
 
 #### Default user role not assigned
 
 Actually, the user that the *register* page created has no role assigned. This still works because the home page only checks that the user is logged and does not require a specific role to view it. But this will be a problem as the app gets more complex and we have more views that check users' roles.
 
-The [new user registration process](https://flask-security-too.readthedocs.io/en/stable/features.html#user-registration) does not assign any roles. Some other procedure is required to assign a role to a user. To add a role to a uer, you could:
+The [new user registration process](https://flask-security-too.readthedocs.io/en/stable/features.html#user-registration) does not assign any roles. Some other procedure is required to assign a role to a user. To add a role to a user, you could:
 
 * Write forms and functions that enable a user to select their own role after logging in for the first time, or write similar forms and functions that an Admin can use to assign roles to new users as part of the user onboarding process.
-* [Write a Flask-Security-Too event handler](https://stackoverflow.com/questions/76892576/assign-user-role-on-signup-flask-security-too) to assign a default role every time it sees the [signal](https://flask-security-too.readthedocs.io/en/stable/api.html#signals) that a new user is registered.
-* Use the [Flask-Security-Too user-management CLI commands](https://flask-security-too.readthedocs.io/en/stable/features.html#command-line-interface) to add roles to new users. This option is not scalable and I do not recommend it even though I will use it, below.
+* [Write a *Flask-Security-Too* event handler](https://stackoverflow.com/questions/76892576/assign-user-role-on-signup-flask-security-too) to assign a default role every time it sees the [signal](https://flask-security-too.readthedocs.io/en/stable/api.html#signals) that a new user is registered.
+* Use the [*Flask-Security-Too* user-management CLI commands](https://flask-security-too.readthedocs.io/en/stable/features.html#command-line-interface) to add roles to new users. This option is not scalable and I do not recommend it even though I will use it, below.
 
 For now, I will use a CLI command to add the *User* role to the user you created. In this case, I opened a new terminal window and run the following commands
 
@@ -565,38 +572,81 @@ For now, I will use a CLI command to add the *User* role to the user you created
 Role "User" added to user "testuser@testmail.com" successfully.
 ```
 
-### Admin role
+### Admin route
 
 Now navigate to the */admin* route and see that the user with the role "User" cannot view the *Admin* page because it requires the user have the *Admin* role:
 
-![](./images/auth-004.png)
+![Forbidden!]({attach}./images/auth-004.png)
 
-You got an [HTTP 403 Forbidden error](https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/403) because the Flask-Security-Too extension detected your user did not have the *Admin* role.
+You got an [HTTP 403 Forbidden error](https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/403) because the *Flask-Security-Too* extension detected your user did not have the *Admin* role.
 
 #### Log out 
 
 You need to be an Admin user to view the *Admin* page. Log out the current user so you can log in as an Admin user.
 
-To log out, go to the */logout* route by typing `http://127.0.0.1:5000/logout`in the browser's navigation bar. The *logout* route was provided automatically by Flask-Security-Too. This route will log you out and send you to the */login* route.
+To log out, go to the */logout* route by typing `http://127.0.0.1:5000/logout`in the browser's navigation bar. The *logout* route was provided automatically by *Flask-Security-Too*. This route will log you out and send you to the */login* route.
 
-#### Correct role
+#### Admin role
 
 This time, login as the Admin user you previously created, *admin@testmail.com*:
 
-![](./images/auth-005.png)
+![Log in as admin user]({attach}./images/auth-005.png)
 
-You will see the normal home page after you log in. Now, navigate to the */admin* route by typing *http://localhost:5000/admin* into the browser search bar. Since you are an Admin user, you shoule be allowed to access the *Admin* page.
+You will see the normal home page after you log in. Navigate to the */admin* route by typing *http://localhost:5000/admin* into the browser search bar. Since you are now an Admin user, you should be allowed to access the *Admin* page.
 
-![](./images/auth-006.png)
+![Admin page]({attach}./images/auth-006.png)
 
+## The application structure
 
-# Conclusion
+The new application structure is shown below. You can see that we added the *database* folder to support the SQLAlchemy configuration and setup.
 
-I added role-based access control to my simple web app by integrating the Flask-Security-Too extension.
+```text
+music-festival-organizer
+│
+├── .env
+├── requirements.txt
+│
+└── mfo
+    ├── admin
+    │   ├── static
+    │   │   └── css
+    │   │       └── styles.css
+    │   ├── templates
+    │   │   └── admin
+    │   │       └── index.html
+    │   └── views.py
+    │
+    ├── database
+    │   ├── base.py
+    │   ├── commands.py
+    │   └── users.py
+    │
+    ├── home
+    │   ├── static
+    │   │   └── css
+    │   │       └── styles.css
+    │   ├── templates
+    │   │   └── home
+    │   │       └── index.html
+    │   └── views.py
+    │
+    ├── static
+    │   └── css
+    │       └── styles.css
+    ├── templates
+    │   └── base.html
+    │
+    ├── app.py
+    └── config.py
+```
 
-To do this, I installed the extension in my app's virtual environment and added a few lines of code in the app. The Flask-Security-Too extension brings a lot of functionality and I only implemented the simplest system. 
+## Conclusion
 
-I showed how Flask-Security-Too adds its own routes to the web app: */login*, */register*, and */logout*.
+I added role-based access control to my simple web app by integrating the *Flask-Security-Too* extension.
+
+To do this, I installed the extension in my app's virtual environment and added a few lines of code in the app. The *Flask-Security-Too* extension brings a lot of functionality and I only implemented the simplest system. 
+
+I showed how *Flask-Security-Too* adds its own routes to the web app: */login*, */register*, and */logout*.
 The extension provides other routes and many helper functions. It is worth your time to explore everything this extension offers.
 
 
