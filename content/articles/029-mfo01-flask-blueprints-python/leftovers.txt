@@ -112,78 +112,14 @@ The remaining files in the application folder have the following structure:
 └── config.py
 ```
 
-## Add a navigation bar to the base template
-
-In the main application template, named *base.html*, I added navigation links in a nav bar so we can navigate to the different application routes. The new *base.html* file looks like below:
-
-```html
-<!-- mfo/templates/base.html -->
-
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <title>{% block title %}Music Festival Website{% endblock %}</title>
-    <link rel="stylesheet" href="/static/css/styles.css" />
-    {% block additional_css %}{% endblock %}
-</head>
-
-<body>
-    <nav>
-        <a href="/">Home</a>
-        <a href="{{ url_for('account.index') }}">Account</a>
-        <a href="{{ url_for('admin.index') }}">Admin</a>
-    </nav>
-
-    <div class="content">
-        {% block content %}
-        <h1>This is a simple example page</h1>
-        {% endblock %}
-    </div>
-</body>
-</html>
-```
-
-I also added some styles for the nav bar in the main CSS file, *mfo/static/css/styles.css*:
-
-```css
-/* mfo/static/css/styles.css */
-
-.main_content {
-    padding: 20px;
-}
-
-h1 {
-    font-weight: bold;
-    color: rgb(0, 0, 0);
-    font-size: 32px;
-  }
-
-nav {
-    background-color: rgb(15, 63, 196);
-    padding: 10px;
-    font-size: 15px;
-    color: white;
-}
-
-nav > a {
-    color: white;
-    margin-right: 10px;
-}
-```
-
-
-# Creating more blueprints
-
-Add an *admin* blueprint for an admin page 
 
 
 
-```
-$ mkdir admin
-$ mkdir -p admin/templates/admin
-$ mkdir -p admin/static/css
-```
+
+
+
+
+
 
 ## The *admin* view file
 

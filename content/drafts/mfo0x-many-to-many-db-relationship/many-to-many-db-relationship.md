@@ -1,3 +1,12 @@
+title: Implementing many-to-many relationships in SQL database
+slug: flask-security-too-many-to-many-relationship
+summary: Add many-to-many relationship to Flask-Security-Too User model and custom Profile model so users can "manage" many profiles and each profile can show which users are associated with it 
+date: 2024-07-30
+modified: 2024-07-30
+category: SQLAlchemy
+status: Draft
+
+
 Bi-directional many-to-many relationship
 
 https://docs.sqlalchemy.org/en/20/orm/basic_relationships.html#setting-bi-directional-many-to-many

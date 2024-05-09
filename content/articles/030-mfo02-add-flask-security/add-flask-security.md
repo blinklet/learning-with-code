@@ -16,7 +16,6 @@ img
     float:none; 
     margin-left:auto;
     margin-right:auto;
-    width:80%;
 }
 </style>
 
@@ -72,7 +71,7 @@ If you prefer to get the project files directly, instead of working through the 
 ```
 $ wget https://github.com/blinklet/music-festival-organizer/archive/refs/tags/0.001.zip
 $ unzip 0.001.zip
-$ $ ls -1
+$ ls -1
 0.001.zip
 music-festival-organizer-0.001
 $ cd music-festival-organizer-0.001
@@ -92,7 +91,7 @@ Since the environment configuration file, *.env*, is not stored in git, create a
 $ nano .env
 ```
 
-Add the follwoing contents to the *.env* file: 
+Add the following contents to the *.env* file: 
 
 ```python
 # .env
@@ -120,7 +119,7 @@ $ (.venv) flask --app mfo.app run --debug
 
 In a web browser, navigate to the URLs: *http://localhost:5000* and *http://localhost:5000/admin* to see the simple pages served at each application route.
 
-![Original application pages]({attach}./images/old-app-01.png)
+![Original application pages]({attach}./images/old-app-01.png){ width="90%" }
 
 Stop the application using the *CTRL-C* key combination.
 
@@ -151,7 +150,7 @@ Then, install the requirements into the virtual environment, again:
 You will see pip installs many packages.
 
 
-## Add a database
+### Add a database
 
 *Flask-Security-Too* needs access to a database in which it can store user information. We need to add SQLAlchemy models to the application but, since we are using all the defaults, we can use the models provided by *Flask-Security-Too*.
 
@@ -161,7 +160,7 @@ Create a database folder named *database*.
 (.venv) $ mkdir mfo/database
 ```
 
-### The database object, db
+#### The database object, db
 
 In that folder create a file named *base.py* that creates the *Flask-SQLAlchemy* database object. 
 
@@ -187,7 +186,7 @@ db = SQLAlchemy(model_class=Base)
 
 We'll use the database object, named *db*, throughout our application.
 
-### The Role and User models
+#### The Role and User models
 
 In the database folder, create a *users.py* file, which will contain the SQLAlchemy models.
 
@@ -213,9 +212,9 @@ class User(db.Model, fsqla.FsUserMixin):
 user_datastore = SQLAlchemyUserDatastore(db, User, Role)
 ```
 
-By default, these model configuration are provided by the *Flask-Security-Too* classes *fsqla.FsRoleMixin* and *fsqla.FsUserMixin*. 
+By default, these model configurations are provided by the *Flask-Security-Too* classes, *fsqla.FsRoleMixin* and *fsqla.FsUserMixin*. 
 
-We can add more fields to the Role and User models and customize them with data relationships and other configurations. For now, though, we are doing the minimum.
+If you want to add more functionality, you may add more fields to the *Role* and *User* models and customize them with data relationships and other configurations. For now, though, we are doing the minimum.
 
 ### Initiaize the Flask-Security-Too extension
 
@@ -272,7 +271,7 @@ For the *Admin* page, require that only a logged-in user who has the *Admin* rol
 
 *Flask-Security-Too* makes it easy to add simple requirements. It provides functions that can be applied as decorators.
 
-### The *Home* page
+### The Home page
 
 Open the *mfo/home/views.py* file and simply add a decorator to the home page route.
 
@@ -308,7 +307,7 @@ def index():
 
 You can see how simple it was to add authentication protection to a page.
 
-### The *Admin* page
+### The Admin page
 
 The *Admin* page will require that a user be both authenticated and be assigned the *Admin* role. Again, using *Flask-Security-Too* is simple. Add the *auth_required()* and the *roles_required()* decorators to the *index* view function in the *Admin* blueprint's *views* module.
 
@@ -343,7 +342,7 @@ def index():
 
 ## Configuration
 
-*Flask-Security-Too* offers a lot of functionality that is controlled with configuration variables. For example, you can turn different types of authentication on or off, and you can decide if you want the extension to send confirmation e-mails or not.
+*Flask-Security-Too* offers a lot of functionality that is controlled with configuration variables. For example, you can turn different types of authentication on or off, and you can decide whether the extension will send confirmation e-mails or not.
 
 The other packages that *Flask-Security-Too* uses also need configuration. For example, you need to configure the *Flask-SQLAlchemy* extension and may need to configure other dependencies if you use them.
 
@@ -422,7 +421,7 @@ FLASK_EXPLAIN_TEMPLATE_LOADING = False
 # Flask-SQLAlchemy variables
 # --------------------------
 SQLALCHEMY_DATABASE_URI = ""
-SQLALCHEMY_ECHO = True
+SQLALCHEMY_ECHO = False
 
 # Flask-Security variables
 # ------------------------
@@ -543,17 +542,17 @@ Go to the app's home page at: *http://localhost:5000/*.
 
 *Flask-Security-Too* will prevent you from accessing the page and will redirect you to the new */login* route. You should see a screen that give you the option to login or register a new user.
 
-![Login page]({attach}./images/auth-001.png)
+![Login page]({attach}./images/auth-001.png){ width="85%" }
 
 You need to login. You could use either of the users you created in the database but let's start with registering a new user.
 
 Click on the *Register* link on the *Login* page. Fill in the user's email and password and click the *Register* button:
 
-![Register page]({attach}./images/auth-002.png)
+![Register page]({attach}./images/auth-002.png){ width="85%" }
 
 The new user is created and logged in at the same time and can now view the home page
 
-![Home page]({attach}./images/auth-003.png)
+![Home page]({attach}./images/auth-003.png){ width="85%" }
 
 #### Default user role not assigned
 
@@ -576,7 +575,7 @@ Role "User" added to user "testuser@testmail.com" successfully.
 
 Now navigate to the */admin* route and see that the user with the role "User" cannot view the *Admin* page because it requires the user have the *Admin* role:
 
-![Forbidden!]({attach}./images/auth-004.png)
+![Forbidden!]({attach}./images/auth-004.png){ width="85%" }
 
 You got an [HTTP 403 Forbidden error](https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/403) because the *Flask-Security-Too* extension detected your user did not have the *Admin* role.
 
@@ -590,11 +589,138 @@ To log out, go to the */logout* route by typing `http://127.0.0.1:5000/logout`in
 
 This time, login as the Admin user you previously created, *admin@testmail.com*:
 
-![Log in as admin user]({attach}./images/auth-005.png)
+![Log in as admin user]({attach}./images/auth-005.png){ width="85%" }
 
 You will see the normal home page after you log in. Navigate to the */admin* route by typing *http://localhost:5000/admin* into the browser search bar. Since you are now an Admin user, you should be allowed to access the *Admin* page.
 
-![Admin page]({attach}./images/auth-006.png)
+![Admin page]({attach}./images/auth-006.png){ width="85%" }
+
+## Optional additions
+
+At this point, you have successfully added Flask-Security-Too to your web app. You can make a few additional changes to make the app easier to user or set up.
+
+Consider cleaning up any error pages you expect users to see.
+
+And, consider pre-populating a new database with information needed by every install of the application. In this case, have the application add the roles used by the application to the database when you create it.
+
+
+### Handle error messages gracefully
+
+A professional-looking web app should display useful error messages to help users. For example, if a user who does not have the *Admin* role assigned attempts to access the application's */admin* route, the application should redirect that user to a page that explains the problem.
+
+Add a [Flask error handler](https://flask.palletsprojects.com/en/3.0.x/errorhandling/#error-handlers) to the *Admin* blueprint that catches the [HTTP Forbidden (403) exception](https://werkzeug.palletsprojects.com/en/2.3.x/exceptions/#werkzeug.exceptions.Forbidden) and renders a new template containing error information.
+
+```python
+# mfo/admin/views.py
+
+import flask
+import flask_security
+from werkzeug.exceptions import Forbidden
+
+bp = flask.Blueprint(
+    'admin',
+    __name__,
+    static_folder='static',
+    template_folder='templates',
+    url_prefix='/admin',
+    )
+
+@bp.route('/')
+@flask_security.auth_required()
+@flask_security.roles_required('Admin')
+def index():
+    return flask.render_template('/admin/index.html')
+
+@bp.errorhandler(Forbidden)
+def handle_forbidden(e):
+    return flask.render_template('forbidden.html', role="Admin")
+```
+
+Place the *forbidden.html* template in the application's *templates* folder, so it can be used by any blueprint or view function.
+
+```html
+<!-- mfo/templates/forbidden.html -->
+
+{% extends "base.html" %}
+{% block title %}Access forbidden{% endblock %}
+
+{% block content %}
+    <div>
+        <h1>Access forbidden</h1>
+
+        <div>
+            Sorry, you must be a {{role}} to access this page 
+        </div>
+    </div>
+{% endblock %}
+
+{% block additional_css %}{% endblock %}
+```
+
+now, when a normal user tries to access the *Admin* page, they see a more professional-looking message:
+
+![A better Forbidden warning page]({attach}./images/forbidden-01.png){ width="85%" }
+
+### Pre-populate some database information
+
+The roles used by the application are fixed. They should be defined by the application, not by the administrator. So, I will build the roles configuration into the *config.py* file. Then, I will also have access to it in other modules without hard-coding role names.
+
+In *config.py*, add a configuration for roles at the end of the file:
+
+```python
+# Roles
+ROLES  = {
+    'USER': {
+        'name': 'User',
+        'description': 'Normal users',
+        'permissions': { 'read', 'write' }
+    },
+    'ADMIN': {
+        'name': 'Admin',
+        'description': 'Administrators',
+        'permissions': { 'read', 'write', 'database' }
+    },
+}
+```
+
+Then, in *database/commands.py* edit the *create()* function as shown below. Add code that reads the contents of the *ROLES* dictionary and adds it to the *role* table.
+
+```python
+# mfo/database.commands.py
+
+import flask
+
+import mfo.database.base as base
+
+
+bp = flask.Blueprint('database', __name__,)
+
+@bp.cli.command('create')
+@flask.cli.with_appcontext
+def create():
+    base.db.create_all()
+
+    roles_dict = flask.current_app.config['ROLES']
+    roles_keys = roles_dict.keys()
+    for key in roles_keys:
+        role=roles_dict[key]
+        flask.current_app.security.datastore.find_or_create_role(
+            name=role['name'], 
+            description=role['description'],
+            permissions=role['permissions'],
+    )
+    flask.current_app.security.datastore.commit()
+```
+
+I used the *find_or_create_role()* method so the *create_roles()* function will not raise an error or overwrite database information if a role already exists.
+
+While I do not use permissions in my application, yet, I added them in the database just to show how they work. They need to be inside a *[set](https://docs.python.org/3/tutorial/datastructures.html#sets)*.
+
+Now, when you start the application with no database, you can create the database, prepopulated with *Roles*, by running the Flask CLI cmmand:
+
+```text
+(.venv) $ flask --app mfo.app database create
+```
 
 ## The application structure
 
@@ -634,6 +760,7 @@ music-festival-organizer
     │   └── css
     │       └── styles.css
     ├── templates
+    │   ├── forbidden.html
     │   └── base.html
     │
     ├── app.py
@@ -646,8 +773,7 @@ I added role-based access control to my simple web app by integrating the *Flask
 
 To do this, I installed the extension in my app's virtual environment and added a few lines of code in the app. The *Flask-Security-Too* extension brings a lot of functionality and I only implemented the simplest system. 
 
-I showed how *Flask-Security-Too* adds its own routes to the web app: */login*, */register*, and */logout*.
-The extension provides other routes and many helper functions. It is worth your time to explore everything this extension offers.
+I showed how *Flask-Security-Too* adds its own routes to the web app: */login*, */register*, and */logout*. The extension provides many more helper functions. It is worth your time to explore everything this extension offers.
 
-
+<!-- Created tag 0.002 -->
 
