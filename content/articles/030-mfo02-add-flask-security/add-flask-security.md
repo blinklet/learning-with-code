@@ -68,7 +68,7 @@ music-festival-organizer
 
 If you prefer to get the project files directly, instead of working through the previous post, download the tagged commit from GitHub, as shown below:
 
-```
+```text
 $ wget https://github.com/blinklet/music-festival-organizer/archive/refs/tags/0.001.zip
 $ unzip 0.001.zip
 $ ls -1

@@ -20,11 +20,8 @@ img
 }
 </style>
 
-Evaluate differnt extensions, but probably just use Bootstrap
 
 
-Flask-Menu
-https://flask-menu.readthedocs.io/en/latest/
 
 flask-nav
 https://pythonhosted.org/flask-nav/
@@ -45,9 +42,6 @@ https://getbootstrap.com/docs/5.2/components/navbar/
 (use dictionary as a way to pass in navigation links for the user?)
 https://education.launchcode.org/lchs/chapters/more-flask/page-navigation.html
 
-
-
-## Add a navigation bar to the base template
 
 In the main application template, named *base.html*, I added navigation links in a nav bar so we can navigate to the different application routes. The new *base.html* file looks like below:
 
@@ -79,56 +73,8 @@ In the main application template, named *base.html*, I added navigation links in
 </html>
 ```
 
-I also added some styles for the nav bar in the main CSS file, *mfo/static/css/styles.css*:
 
-```css
-/* mfo/static/css/styles.css */
-
-.main_content {
-    padding: 20px;
-}
-
-h1 {
-    font-weight: bold;
-    color: rgb(0, 0, 0);
-    font-size: 32px;
-  }
-
-nav {
-    background-color: rgb(15, 63, 196);
-    padding: 10px;
-    font-size: 15px;
-    color: white;
-}
-
-nav > a {
-    color: white;
-    margin-right: 10px;
-}
-```
-
-
-# Creating more blueprints
-
-Add an *admin* blueprint for an admin page 
-
-
-
-```
-$ mkdir admin
-$ mkdir -p admin/templates/admin
-$ mkdir -p admin/static/css
-```
-
-
-
-
-
-
-
-
-
-# Dynamic templates based on roles
+## Dynamic templates based on roles
 
 But, why show users links they can't use?
 
