@@ -30,6 +30,9 @@ supported by flask-bootstrap (https://pythonhosted.org/Flask-Bootstrap/nav.html)
 flask-nav3
 https://github.com/wtfo-guru/flask-nav3
 A "supported" fork of flask-nav but has only 2 stars
+```
+pip install flask-nav3
+```
 
 
 
