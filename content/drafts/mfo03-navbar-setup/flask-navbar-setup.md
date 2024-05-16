@@ -21,6 +21,15 @@ img
 </style>
 
 
+context manager
+https://stackoverflow.com/questions/71834254/flask-nav-navigation-alternative-for-python-3-10
+https://stackoverflow.com/questions/34487967/flask-nav-with-dynamic-secondary-navbar
+
+detect active
+https://stackoverflow.com/questions/22173041/styling-active-element-menu-in-flask
+
+
+
 
 
 flask-nav
