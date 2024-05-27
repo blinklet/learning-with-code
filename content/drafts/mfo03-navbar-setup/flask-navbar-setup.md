@@ -1,10 +1,10 @@
-title: Add a navigation bar to your Flask web app
-slug: python-flask-navbar
-summary: How to create a navigation bar that helps your web app's users understand if they are logged in and to which features they have access
-date: 2024-04-30
-modified: 2024-04-30
+title: Use Flask-Nav3 with Flask Blueprints
+slug: python-flask-nav3-navbar
+summary: How to use Flask-Nav3 to create a navigation bar built from components defined in Flask Blueprints
+date: 2024-05-27
+modified: 2024-05-27
 category: Flask
-status: Draft
+status: Published
 
 <!--
 A bit of extra CSS code to centre all images in the post
@@ -19,34 +19,35 @@ img
 }
 </style>
 
-Flask-Nav3 is a fork of Flask-Nav, which was a popular navigation menu package that is no longer maintained. At the time I write this post, the Flask-Nav3 developers added Python 3.12 and Bootstrap5 support. Flask-Nav3 is at version 0.7.2, released March 12, 2024.
+I [previously reviewed the Flask-Menu Flask extension]({filename}/articles/031-flask-menu-navbar/flask-menu-extension-review.md) and I really liked the way it allowed me to build navigation bar logic into separate blueprint files. This enabled me to keep my blueprints relatively independent from other blueprints and the main application.
 
-    nav = Nav()
-    nav.init_app(app, bootstrap=True)
+I wanted to see if I could implement a navbar in the same way using Flask-Nav3. Flask-Nav3 is more actively maintained than Flask-Menu and supports the latest version of Flask and Flask-security-Too.
 
+This post describes my solution to that problem.
 
+## A quick Flask-Nav3 review
 
-## My Flask-Nav journey
+[Flask-Nav3](https://github.com/wtfo-guru/flask-nav3) is a fork of [Flask-Nav](https://github.com/mbr/flask-nav/tree/master), which was a popular navigation menu package that is no longer maintained. At the time I write this post, the Flask-Nav3 developers added Python 3.12 and Bootstrap5 support. Flask-Nav3 is at version 0.7.2, released March 12, 2024.
 
-Flask-Nav3 simply points to [Flask-Nav's documentation](https://github.com/mbr/flask-nav). This is OK, because the functionality is mostly the same. But the docs are very lightweight and it would be great to see some more examples of how to use Flask-Nav3.
+Flask-Nav3 is a relatively new project with only two stars in GitHub (I added a third star). Flask-Nav3 does not have its own documentation and it simply points to [Flask-Nav's documentation](https://github.com/mbr/flask-nav). This is OK, because its functionality is the same. But, the Flask-Nav docs are very lightweight and it would be great to see some more examples of how to use Flask-Nav3.
 
-The Flask-Nav documentation shows users how to create navigation menus in the main Flask application file, but does not explain how to implement them in Flask Blueprints. I like to separate the business logic of a Flask application into blueprints that modularize the application's functionality so, in my application, I want to place the code for each page's portion of the navbar in a separate blueprint folder. This includes the code the builds the navigation menu.
+Flask-Nav3 works the same as Flask-Nav so you can refer to old answers on StackOverflow or to old blog posts for help using it. 
 
-For example, in the my [current application]({filename}/articles/030-mfo02-add-flask-security/add-flask-security.md), I will add code that implements navbar items related to the *admin* blueprint into the same folder as the *admin* blueprint's view functions, templates, and other files. 
-
-Also, the Flask-Nav documentation would make you think you can render a navbar with a simple method call but that will only render a menu as a simple bulleted list of links. If I only used the method recommended in teh Flask-Nav docs, I found that I could not style the navigation menu in a way that I liked. I tried writing a custom renderer that would use Bootstrap5 classes to style the navigation menu, but I could not make it work. 
-
-In the end, I had to iterate through the navbar object and style each element using HTML in a Jinja2 template. It seems to me that most people who have used Flask-Nav or Flask-Nav3 do the same.
+I think Flask-Nav3 is most useful when you need a way to build complex navigation bars and if you want to separate the navigation bar content from its formatting. That is, when you want all the navbar's program logic to be in your Python program and your navbar's formatting code to be in either a custom renderer or in a template.
 
 ### Integrating navbar creation with Flask Blueprints
 
-I like to separate the business logic of a Flask application into blueprints that modularize the application's functionality so, in my application, I want to place the code for each page's portion of the navbar in a separate blueprint folder. This includes the code the builds the navigation menu.
+The Flask-Nav documentation shows users how to create navigation menus in the main Flask application file, but does not explain how to implement them in Flask Blueprints. This is probably because it is much simpler to keep the logic related to a global navbar centralized in the main application context.
 
-The Flask-Nav documentation shows users how to create navigation menus in the main Flask application file, but does not explain how to implement them in Flask Blueprints. So, I wrote this post.
+It is possible to use Flask-Nav with blueprints to manage a global navigation bar. However, you need to carefully manage the application context. 
 
 ## Create a static navbar in an existing app
 
-I used Flask-Nav3 to add a simple navigation menu to my current project, a [small Flask app that has two pages]({filename}/articles/030-mfo02-add-flask-security/add-flask-security.md). Follow along with that post to build the application or get the code directly from GitHub and run it, as shown below:
+The method I created is suitable for creating static navigation menus. It automatically adds to the global navigation bar navigation items that are defined in each blueprint. The order of items is determined by the order in which the Flask application registers each blueprint.
+
+### The base application
+
+I used Flask-Nav3 to add a simple navigation menu to my current project, a [small Flask app that has two pages]({filename}/articles/030-mfo02-add-flask-security/add-flask-security.md). Follow along with [that post]({filename}/articles/030-mfo02-add-flask-security/add-flask-security.md) to build the application or get the code directly from GitHub and run it, as shown below:
 
 ```text
 $ wget https://github.com/blinklet/music-festival-organizer/archive/refs/tags/0.002.zip
@@ -66,9 +67,17 @@ You will see that, if you log into the app as the admin user, `admin@testmail.co
 
 ![App without a navigation menu]({attach}./images/old-app-01.png){ width=85% }
 
-### Install Flask-Menu
+But, the application does not have a navigation bar that allows user to easily switch between the *admin* and *home* pages.
 
-To install Flask-Nav3, add it to the requirements.txt file as follows:
+### Install Flask-Nav3
+
+To install Flask-Nav3, add it to the project's *requirements.txt* file:
+
+```text
+$ nano requirements.txt
+```
+
+The new *requirements.txt* file will be as follows:
 
 ```python
 # requirements.txt
@@ -87,7 +96,13 @@ Then, run the command:
 
 ### Create the *nav* instance
 
-Create a new module in the application folder named *nav.py*. In it, create an instance of the *Nav()* class, named *nav*. 
+Create a new module in the application folder named *nav.py*. 
+
+```text
+$ nano mfo/nav.py
+```
+
+In it, create an instance of the *Nav()* class, named *nav*. 
 
 ```python
 # mfo/home/nav.py
@@ -97,9 +112,7 @@ from flask_nav3 import Nav
 nav = Nav()
 ```
 
-You only want one instance of the *Nav()* class in your program. Creating it in a separate module lets you import it into the main application or into a blueprint file. This avoids the problem of circular imports.
-
-
+You only want one instance of the *Nav()* class in your program. Creating it in a separate module lets you import it into the main application or into a blueprint file, while avoiding the problem of circular imports.
 
 We also need to use Flask-Nav3's *NavBar* class to create a *global_navbar* instance that we can use as a base upon which blueprints will add their own navigation bar items. Register the global navigation bar with the *nav* instance under the name *nav.main_navbar*. 
 
@@ -110,7 +123,11 @@ global_navbar = Navbar(title=Text('MFO'))
 nav.register_element('main_navbar', global_navbar)
 ```
 
-Flask-Nav does not provide a built-in method to fetch a navbar object by name directly, so you can't add menu items just by manipulating teh *nav.main_navbar* object. To modify the global navigation bar, directly manipulate the global navbar object you defined, then and then re-register it with the application's *nav* instance.
+Flask-Nav does not provide a built-in method to fetch a registered navbar object by name directly, so you can't add menu items just by manipulating the *nav.main_navbar* object. 
+
+To modify the global navigation bar, directly manipulate the *global_navbar* object you defined, then and then re-register it with the application's *nav* instance under the name *main_nav*.
+
+> **Note:** I registered the *global_navbar* instance as an element of the *nav* instance named *main_navbar* to make it clear that there are two separate objects in this case. It might be simpler to register the global navbar as a *nav* element using the same name so you alway know which navbar instance is associated with which navbar element.
 
 Define a function that the application's blueprints will use to add their navigation bar items to the global navigation bar:
 
@@ -123,9 +140,7 @@ def add_to_global_nav(nav, local_navbar):
 
 The function, above, adds the items from another navbar instance to the end of the global navbar instance. Then, it re-registers the new global navbar with the application's *nav* instance under the name *main_navbar*.
 
-This setup avoids duplicating the global navbar and maintains a single navigation structure across the application. The *nav.main_navbar* object is used when rendering the navigation bar in a template [^1].
-
-[^1]: I registered the *global_navbar* instance as an element of the *nav* instance named *main_navbar* to make it clear that there are two separate objects in this case. It might be simpler to register the global navbar as a *nav* element using the same name so you alway know which navbar instance is associated with which navbar element.
+This setup avoids duplicating the global navbar and maintains a single navigation structure across the application. The *nav.main_navbar* object is used when rendering the navigation bar in a template.
 
 The entire *mfo/nav.py* file will look like the listing below:
 
@@ -149,7 +164,13 @@ def add_to_global_nav(nav, local_navbar):
 
 ### Register Flask-Nav3 with the app
 
-To use Flask-Nav3 in your flask application, you need to initialize the *nav* instance you previously created in the *nav.py* module with your Flask application. Import the *nav* module and then add the `nav.init_app(app)` method to the application, as shown below:
+To use Flask-Nav3 in your flask application, you need to initialize the *nav* instance you previously created in the *nav.py* module with your Flask application. 
+
+```text
+$ nano mfo/app.py
+```
+
+Import the *nav* module and then add the `nav.init_app(app)` method to the application, as shown below:
 
 ```python
     # Register navbars
@@ -207,7 +228,7 @@ The [existing application]({filename}/articles/030-mfo02-add-flask-security/add-
 In the *home* blueprint folder, create the *navbar.py* file:
 
 ```text
-$ nano home/navbar.py
+$ nano mfo/home/navbar.py
 ```
 
 The navbar is simple, in this case, but could become more complex in the future or you might eventually define more than one navbar for the blueprint. 
@@ -232,7 +253,7 @@ Similarly, in the *admin* blueprint folder, create its *navbar.py* file:
 
 
 ```text
-$ nano admin/navbar.py
+$ nano mfo/admin/navbar.py
 ```
 
 The contents of *admin* blueprint's *navbar.py* file are:
@@ -258,19 +279,15 @@ Similar to the first blueprint, it contains a View item that renders the *admin*
 
 #### Register the navbars in the blueprint
 
-To create a static navbar with blueprints, you simply create a function that appends the blueprint's menu items ito the global navbar AND Wrap it with the [Flask Blueprint's *record* decorator](https://flask.palletsprojects.com/en/3.0.x/api/#flask.Blueprint.record). The *record* decorator registers the function with the blueprint so that it is called when the blueprint is registered by the application. 
+To create a static navbar with blueprints, you simply create a function that appends the blueprint's menu items ito the global navbar and wrap it with the [Flask Blueprint's *record* decorator](https://flask.palletsprojects.com/en/3.0.x/api/#flask.Blueprint.record). The *record* decorator registers the function with the blueprint so that it is called when the blueprint is registered by the application. 
 
 First, edit the *views.py* file in the *home* blueprint folder:
 
 ```text
-$ nano home/views.py
+$ nano mfo/home/views.py
 ```
 
-Import the *nav.py* module and the *home/navbar.py* module so you have access to the 
-
-[Register with each blueprint its corresponding navigation menu element](https://pythonhosted.org/flask-nav/api.html#flask_nav.Nav.register_element). 
-
-In the new function, get the main application's *nav* instance from the application's *state* object, which is made available to the function by the *record* decorator. Then, call the *add_to_global_nav()* function, which will iterate through the *home* blueprint's navbar object and add its items to the global navbar. 
+In the new function, get the main application's *nav* instance from the application's *state* object, which is made available to the function by the *record* decorator. Then, call the *add_to_global_nav()* function, which will iterate through the *home* blueprint's navbar object, add its items to the global navbar, and then [re-register]((https://pythonhosted.org/flask-nav/api.html#flask_nav.Nav.register_element)) the global navbar with the application's *nav* instance. 
 
 Add the following code to the *mfo/home/views.py* module:
 
@@ -283,7 +300,6 @@ def register_home_menu(state):
     nav = state.app.extensions['nav']
     mfo.nav.add_to_global_nav(nav, mfo.home.navbar.home_navbar)
 ```
-
 
 The entire *mfo/home/views.py* module will look like below. Remember, you need to import the blueprint's *navbar.py* module and the main application's *nav.py* mpodule.
 
@@ -319,7 +335,7 @@ def index():
 Do the same with the *admin* blueprint. Edit the *admin* blueprint's *views.py* module:
 
 ```text
-$ nano admin/views.py
+$ nano mfo/admin/views.py
 ```
 
 Add a decorated function that will add the *admin* blueprint's navbar items to the global navbar: 
@@ -384,9 +400,7 @@ Add the Flask-Nav3 *render()* method in the template:
 ```html
 <!-- mfo/templates/navbar.html -->
 
-<nav>
-    {{ nav.main_navbar.render() }}
-</nav>
+{{ nav.main_navbar.render() }}
 ```
 
 Then, include the *navbar.html* template in the *mfo/templates/base.html* template:
@@ -423,25 +437,25 @@ The new contents of the *base.html* template file will be:
 
 In the main application, you need to initailize the Flask-Nav3 *nav* instance before any blueprints are registered so the *nav* instance will be available when the blueprints' *record* functions are executed.
 
-In this program, the blueprints are registered only once. However, if you have a more complex application that registeres the same blueprint more than once, you might consider using the *record_once* decorator instead of the *record* decorator. The *record_once* decorator ensures the decorated function is only called once, even if the blueprint is registered more than once.
+In this program, the blueprints are registered only once. However, if you have a more complex application that registers the same blueprint more than once, you might consider using the *record_once* decorator instead of the *record* decorator. The *record_once* decorator ensures the decorated function is only called once, even if the blueprint is registered more than once.
 
 ### Test the application
 
-Now, test the new navigation menu created by Flask-Nav3. 
+Test the new navigation menu created by Flask-Nav3. 
 
-The application should still be running, so navigate your web browser to the URL: `http://localhost:5000`. You will see the *login* page created by the Flask-Security-Too Flask extension. The login page does not display a navigation menu because the *security* blueprint provided bt the Flask-Security-Too package has not yet been customized to include it.
+The application should still be running, so navigate your web browser to the URL: `http://localhost:5000`. You will see the *login* page created by the Flask-Security-Too Flask extension. The login page does not display a navigation menu because the *security* blueprint provided by the Flask-Security-Too package has not yet been customized to include it.
 
-![](./images/navbar-01-login.png)
+![Login page]({attach}./images/navbar-01-login.png){ width=85% }
 
 Login with userid `admin@testmail.com` and password `abcd1234`.
 
 Then, you should see the *home* page and a menu with four main items and an indented list that represents the subgroup of links. 
 
-![](./images/navbar-02-home.png)
+![Home page]({attach}./images/navbar-02-home.png){ width=85% }
 
 If you click on the *Admin* link in the navigation menu, you will open the *admin* page. 
 
-![](./images/navbar-03-admin.png)
+![Admin page]({attach}./images/navbar-03-admin.png){ width=85% }
 
 ### Next steps
 
@@ -529,7 +543,8 @@ from flask_bootstrap import Bootstrap5
 Bootstrap5 is a class that will integrate Bootstrap version 5 into a Flask application. Call it, and tell it application's name, This will register the Bootstrap-Flask extension with the Flask application:
 
 ```python
-bootstrap = Bootstrap5(app)
+bootstrap = Bootstrap5()
+bootstrap.init_app(app)
 ```
 
 The full *mfo/app.py* file will look like below:
@@ -558,7 +573,8 @@ def create_app():
     app.config.from_pyfile('config.py')
 
     # Register Bootstrap
-    Bootstrap5(app)
+    bootstrap = Bootstrap5()
+    bootstrap.init_app(app)
 
     # Register Flask-SQLAlchemy
     base.db.init_app(app)
@@ -579,7 +595,7 @@ def create_app():
 
 ### Include Bootstrap in the base template
 
-Bootstrap-Flask automatically creates a context processor that injects the *bootstrap* object into the template's context. You can invoke the *bootstrap.load_css()* and *bootstrap.load_js()* helper functions as methods in the header and at the end of the body, respectively, in the base template. You should also add metadata that defines the viewport, as recommended in the Bootstrap-Flask documentation.
+Bootstrap-Flask automatically creates a [context processor](https://flask.palletsprojects.com/en/3.0.x/templating/#context-processors) that injects the *bootstrap* object into the template's context. You can invoke the `bootstrap.load_css()` and `bootstrap.load_js()` helper functions as methods in the header and at the end of the body, respectively, in the base template. You should also add metadata that defines the viewport, as recommended in the Bootstrap-Flask documentation.
 
 ```html
 <!-- mfo/templates/base.html -->
@@ -617,20 +633,18 @@ To style the nav items, tell the Flask-Nav3 *render* method to use the *bootstra
 ```html
 <!-- mfo/templates/navbar.html -->
 
-<nav>
-    {{ nav.main_navbar.render(renderer='bootstrap5') }}
-</nav>
+{{ nav.main_navbar.render(renderer='bootstrap5') }}
 ```
 
 ### Test the application
 
 The application should still be running. Refresh the web browser to see the new styling. You should see that the *home* page has a nice navbar at the top and that the last link displays a dropdown menu when you click on it:
 
-![](./images/navbar-04-home-bootstrap.png)
+![Bootstrap with Home page]({attach}./images/navbar-04-home-bootstrap.png){ width=85% }
 
 If you click on the *Admin* link, the app displays the *admin* page:
 
-![](./images/navbar-05-admin-bootstrap.png)
+![Bootstrap with Admin page]({attach}./images/navbar-05-admin-bootstrap.png){ width=85% }
 
 If you look at the HTML code generated by the web page, you will see that the navbar has been styled using Bootstrap5 classes:
 
@@ -665,7 +679,7 @@ If you look at the HTML code generated by the web page, you will see that the na
 
 ### Additional navbar classes
 
-You can add keyword arguments to the *render* method when you call it in the template. These arguments will be added to the main *<nav> tag in the resulting HTML.
+You can add keyword arguments to the *render* method when you call it in the template. These arguments will be added to the main *<nav\>* tag in the resulting HTML.
 
 For example, to make the navbar a dark blue color and to use dark mode styling (which automatically makes the text lighter than the navbar background) modify the *navbar.html* template as shown below:
 
@@ -677,277 +691,35 @@ For example, to make the navbar a dark blue color and to use dark mode styling (
 
 This will result in a navbar that looks like the screenshot below:
 
-![](./images/navbar-06-home-dark.png)
+![Dark navbar]({attach}./images/navbar-06-home-dark.png){ width=85% }
 
-The extra classes, and other keyword arguments, will be applied to the <nav> tag in the HTML output. 
+The extra classes, and other keyword arguments, will be applied to the *<nav\>* tag in the HTML output. 
 
 ### Custom renderers
 
 If you want to control attributes like spacing between nav links, justification, highlighting the active item, and more, you must explore creating a [custom renderer](https://pythonhosted.org/flask-nav/advanced-topics.html#implementing-custom-renderers).
 
-To create a custom renderer, I suggest you [copy the code from the Bootstrap-Flask *BootStrap5Renderer* class](https://github.com/wtfo-guru/flask-nav3/blob/main/flask_nav3/renderers.py). You may also look at the [old *BootStrapRender* class in the defunct Flask-Bootstrap project](https://github.com/mbr/flask-bootstrap/blob/master/flask_bootstrap/nav.py) for additional inspiration.
+To create a custom renderer, I suggest you [copy and modify the code from the Bootstrap-Flask *BootStrap5Renderer* class](https://github.com/wtfo-guru/flask-nav3/blob/main/flask_nav3/renderers.py). You may also look at the [old *BootStrapRender* class in the defunct Flask-Bootstrap project](https://github.com/mbr/flask-bootstrap/blob/master/flask_bootstrap/nav.py) for additional inspiration.
 
 Write a new class that overrides the functions you need to override. Then define that class as a new renderer and use it in your template.
 
+## Making a dynamic navbar?
 
-## Make a dynamic navbar
+If, like me, you want to separate as much business logic as possible into re-usable Flask blueprints, including logic that defines the navbar, you will find it is too complex to create a global navbar that is dynamic.
 
+I tried creating blueprint functions that updated their portion of the global navbar based on the application state. But, I found that I had to keep track of global objects that reduced the independence of the blueprints. I decided that it was not worth the complexity to create a dynamic global navbar based on blueprints. It is much simpler to have one central function that builds the global navbar, running in the main application context.
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-```html
-<!-- mfo/templates/navbar.html -->
-
-<nav <nav class="navbar navbar-expand-sm bg-primary" data-bs-theme="dark">
-    <a class="navbar-brand ps-4" href="#">Navbar</a>
-    <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarNav">
-        <span class="navbar-toggler-icon"></span>
-    </button>
-    <div class="collapse navbar-collapse" id="navbarNav">
-        <ul class="navbar-nav">
-            {% for item in nav.main_nav.items %}
-                <li class="nav-item">
-                    <a class="nav-link" href="{{ item.get_url() }}">{{ item.text }}</a>
-                </li>
-            {% endfor %}
-        </ul>
-        <ul class="navbar-nav ml-auto">
-            {% for item in nav.user_nav.items %}
-                <li class="nav-item">
-                    <a class="nav-link" href="{{ item.get_url() }}">{{ item.text }}</a>
-                </li>
-            {% endfor %}
-        </ul>
-    </div>
-</nav>
-```
-
-The Flask-Nav3 documentation suggests that you can style the navbar by creating a [custom renderer](https://pythonhosted.org/flask-nav/advanced-topics.html#implementing-custom-renderers). Then, you apply all this formatting in the custom renderer instead of in the Jinja2 template. However, I could not get a Bootstrap-Flask custom renderer to work.
-
-Now, the menu looks like a navigation bar. The admin's view is shown below. 
-
-
-You can see that Flask-Menu works well with CSS frameworks like Bootstrap because it creates an iterable object containing menu items that can be styled using HTML and CSS in a Jinja2 template.
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-## Style with default render
-
-## Style each item with bootstrap 
-
-detect active
-https://stackoverflow.com/questions/22173041/styling-active-element-menu-in-flask
-
-
-## Customize Security-Flask-Too templates
-
-...to include navbar
-
-use app_context_manager
-
-From: 
-https://flask.palletsprojects.com/en/3.0.x/api/#flask.Flask.context_processor
-
-    Registers a template context processor function. These functions run before rendering a template. The keys of the returned dict are added as variables available in the template.
-
-    This is available on both app and blueprint objects. When used on an app, this is called for every rendered template. When used on a blueprint, this is called for templates rendered from the blueprint’s views. To register with a blueprint and affect every template, use Blueprint.app_context_processor().
-
-    Like context_processor(), but for templates rendered by every view, not only by the blueprint. Equivalent to Flask.context_processor().
-
-because we need every navbar to be recalculated every time the user is redirected to a new view function, because the dynamic navbars from other blueprints may have changed due to the state of the application.
-
-## Dynamic navbars in blueprints
-
-Check out the @nav.navigation decorator
-Would this work in a blueprint?
-https://pythonhosted.org/flask-nav/advanced-topics.html#dynamic-construction
-
-
-
-
-Flask-Nav with Blueprints
-https://gist.github.com/thedod/eafad9458190755ce943e7aa58355934
-
-
-
-
+But, if you only need a static navbar, then it is still possible to separate the navbar definition into each blueprint.
 
 ## Conclusion
 
-I showed how you can use the Flask-Nav3 library to build dynamic navigation bars for each blueprint in you project, and I showed how to style the menu items using a Jinja2 template.
-
-I discovered that the process of building separate navigation menus for each blueprint could become confusing.
-
-I found that the code required to divide up Flask-Nav3 navbar functionality into multiple blueprints was hard to read and could cause confusion for future developers. 
-
-... not so different than using a navbar template. Would like a more modular approach based on blueprints
-
-
-
-context manager
-https://stackoverflow.com/questions/71834254/flask-nav-navigation-alternative-for-python-3-10
-https://stackoverflow.com/questions/34487967/flask-nav-with-dynamic-secondary-navbar
-
-detect active
-https://stackoverflow.com/questions/22173041/styling-active-element-menu-in-flask
-
-
-https://chat.openai.com/share/30cacaad-6625-4317-b329-c473f9a5901e
+I showed how you can use the Flask-Nav3 library to build a static navigation bar taht builds its items based on each blueprint in your project, and I showed how to style the menu items using a Jinja2 template.
 
 
 
 
-flask-nav
-https://pythonhosted.org/flask-nav/
-supported by flask-bootstrap (https://pythonhosted.org/Flask-Bootstrap/nav.html) but has not been updated in a long time
-
-flask-nav3
-https://github.com/wtfo-guru/flask-nav3
-A "supported" fork of flask-nav but has only 2 stars
-```
-pip install flask-nav3
-```
 
 
-
-Bootstrap navbar class
-https://getbootstrap.com/docs/5.2/components/navbar/
-
-
-
-
-(use dictionary as a way to pass in navigation links for the user?)
-https://education.launchcode.org/lchs/chapters/more-flask/page-navigation.html
-
-
-In the main application template, named *base.html*, I added navigation links in a nav bar so we can navigate to the different application routes. The new *base.html* file looks like below:
-
-```html
-<!-- mfo/templates/base.html -->
-
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <title>{% block title %}Music Festival Website{% endblock %}</title>
-    <link rel="stylesheet" href="/static/css/styles.css" />
-    {% block additional_css %}{% endblock %}
-</head>
-
-<body>
-    <nav>
-        <a href="/">Home</a>
-        <a href="{{ url_for('account.index') }}">Account</a>
-        <a href="{{ url_for('admin.index') }}">Admin</a>
-    </nav>
-
-    <div class="content">
-        {% block content %}
-        <h1>This is a simple example page</h1>
-        {% endblock %}
-    </div>
-</body>
-</html>
-```
-
-
-## Dynamic templates based on roles
-
-But, why show users links they can't use?
-
-We modify templates so they show links based on user's roles. We can look at the *current_user.roles* context to evaluate if a user has the role required tio see a specific navbar link.
-
-
-In the *shared_layout.html* template, add these checks around the *Admin* and *Account* links.
-
-
-```python
-<nav>
-    <a href="{{ url_for('home.index') }}">Home</a>
-    {% if "Admin" in current_user.roles %}
-    <a href="{{ url_for('admin.index') }}">Admin</a>
-    {% endif %}
-    {% if ("User" in current_user.roles) or ("Admin" in current_user.roles) %}
-    <a href="{{ url_for('account.index') }}">Account</a>
-    {% endif %}
-    {% if not _fs_is_user_authenticated(current_user) %}
-    <a href="{{ url_for_security('login') }}">Login</a>
-    <a href="{{ url_for_security('register') }}">Register</a>
-    {% endif %}
-    {% if _fs_is_user_authenticated(current_user) %}
-    <a href="{{ url_for_security('logout') }}">Logout</a>
-    {% endif %}
-</nav>
-```
-
-This is a bit "clunky" and there is probably a better way to refactor this so I don't have to revisit the template every time a new role is added to the code. But, for now, this works in our simple navbar.
-
-When you run the app again, you'll find that logged-in users who have the *Admin* role can see the *Admin* and *Account* links. Users who have the *User* role can see the *Account* link. Users who have no role assigned, which is all users who registered via teh *Register* page, will not see either the *Admin* nor the *Account* link in the navbar.
-
-![User with no role assigned](./images/no_role.png)
-
-> Maybe use Flask-Nav?  https://pythonhosted.org/flask-nav/
-> This would require a major restructure of how the navbar works. Now, we need to [generate a list of navigation links allowed based on roles](https://stackoverflow.com/questions/33161507/how-can-i-hide-certain-links-in-jinja2-template-engine-using-flask-login-and-per) and pass that list into the template whenever it is rendered.
 
 
 
