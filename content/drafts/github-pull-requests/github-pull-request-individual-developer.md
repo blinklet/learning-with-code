@@ -33,6 +33,7 @@ Lifecycle of a change
 
 ```
 git fetch remote
+git pull
 git checkout 1-confirm-or-cancel-spreadsheet-import-to-database
 ```
 
@@ -47,6 +48,13 @@ git checkout 1-confirm-or-cancel-spreadsheet-import-to-database
 
 - Merge the PR, which will automatically close the issue
 - ensure changes are synced back to my local repo
-- delete the branch in both local and remote
+- delete the branch in github
 
-- 
+- On local PC:
+
+```
+git checkout main
+git fetch
+git pull
+git branch --delete 1-confirm-or-cancel-spreadsheet-import-to-database
+```
