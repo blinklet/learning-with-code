@@ -4,8 +4,8 @@ from datetime import datetime
 AUTHOR = 'Brian Linkletter'
 SITENAME = 'Learning with Code'
 SITEURL = 'https://learningwithcode.com'
-LINKS = (('My other blog', 'https://brianlinkletter.com/'),)
-SOCIAL = (("github", "https://github.com/blinklet"), ('linkedin', 'https://www.linkedin.com/in/brianlinkletter/'), ('twitter', 'http://twitter.com/belinkletter'),)
+LINKS = (('Network Simulation blog', 'https://brianlinkletter.com/'),)
+SOCIAL = (("github", "https://github.com/blinklet"), ('linkedin', 'https://www.linkedin.com/in/brianlinkletter/'), ('mastodon', 'https://fosstodon.org/@blinklet'),)
 STATIC_PATHS = ['images','extras']
 PAGE_PATHS = ['pages']
 ARTICLE_PATHS = ['articles','drafts']
